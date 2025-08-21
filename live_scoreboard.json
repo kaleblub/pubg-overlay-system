@@ -1,0 +1,1095 @@
+{
+  "gameId": "2860125895586612078",
+  "matchFinished": false,
+  "live_scoreboard": [
+    {
+      "teamId": 18,
+      "teamName": "THE ROYAL ONE",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 3,
+      "currentMatchKills": 9,
+      "currentPhaseKills": 9,
+      "currentPhasePlacementPoints": 4,
+      "totalPoints": 22,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5503389444,
+          "playerName": "S4esSKYTOŪRS",
+          "playerPhoto": null,
+          "kills": 4,
+          "damage": 557,
+          "healthPercent": 0.0,
+          "knockouts": 3
+        },
+        {
+          "uId": 5798459614,
+          "playerName": "S4esNAVINŪRS",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 350,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5379635238,
+          "playerName": "S4esDoraŪRS",
+          "playerPhoto": null,
+          "kills": 3,
+          "damage": 456,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        },
+        {
+          "uId": 5108889735,
+          "playerName": "S4esPASHAŪRS",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 162,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 9,
+      "teamName": "6 TEEN SHOTS ES",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 8,
+      "currentPhaseKills": 8,
+      "currentPhasePlacementPoints": 3,
+      "totalPoints": 19,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 51220975057,
+          "playerName": "HoneyBEEE",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 554,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        },
+        {
+          "uId": 5273936252,
+          "playerName": "SPN丨LOKIĪSir",
+          "playerPhoto": null,
+          "kills": 3,
+          "damage": 380,
+          "healthPercent": 0.0,
+          "knockouts": 3
+        },
+        {
+          "uId": 5650150136,
+          "playerName": "ZrX๛FURIOUS",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 168,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5317428786,
+          "playerName": "TeamX・MirEfaz",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 294,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        }
+      ]
+    },
+    {
+      "teamId": 6,
+      "teamName": "BLOOD SYNDICATE",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 8,
+      "currentPhaseKills": 8,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 16,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5496612890,
+          "playerName": "AmixAether",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 208,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        },
+        {
+          "uId": 5786032924,
+          "playerName": "ē・SF・",
+          "playerPhoto": null,
+          "kills": 3,
+          "damage": 331,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5187625387,
+          "playerName": "TFīRIo",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 35,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 51593817521,
+          "playerName": "ū・EGOIST・",
+          "playerPhoto": null,
+          "kills": 3,
+          "damage": 735,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        }
+      ]
+    },
+    {
+      "teamId": 12,
+      "teamName": "BD16NJW ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 1,
+      "currentMatchKills": 6,
+      "currentPhaseKills": 6,
+      "currentPhasePlacementPoints": 1,
+      "totalPoints": 13,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5623753564,
+          "playerName": "BD16esWARLocK",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 87,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5310286250,
+          "playerName": "BD16njwPRO",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 279,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 51908318974,
+          "playerName": "ūūMAX๛",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 358,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        },
+        {
+          "uId": 5380865118,
+          "playerName": "BD16njwREVYuWu",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 121,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5684829202,
+          "playerName": "ZZesMEMON",
+          "playerPhoto": null,
+          "kills": 3,
+          "damage": 421,
+          "healthPercent": 0.0,
+          "knockouts": 3
+        }
+      ]
+    },
+    {
+      "teamId": 5,
+      "teamName": "ZERO X ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 6,
+      "currentPhaseKills": 6,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 12,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5364628440,
+          "playerName": "ZEROxDoyal",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 111,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5729849347,
+          "playerName": "ZEROxMEGADEN",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 100,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5729373703,
+          "playerName": "ZEROxMJ47",
+          "playerPhoto": null,
+          "kills": 3,
+          "damage": 310,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        },
+        {
+          "uId": 5583051518,
+          "playerName": "ZEROxKolaMan",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 99,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5758110607,
+          "playerName": "ZEROxN3ZHA",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 129,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5916820085,
+          "playerName": "ZEROxSTAAR",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 354,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        }
+      ]
+    },
+    {
+      "teamId": 23,
+      "teamName": "BROTHERS OF DESTRUCTION",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 0,
+      "currentPhaseKills": 0,
+      "currentPhasePlacementPoints": 10,
+      "totalPoints": 10,
+      "wwcd": 1,
+      "players": [
+        {
+          "uId": 5196330042,
+          "playerName": "BODxLeoN",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5176358301,
+          "playerName": "vnmSiánX9",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 103,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 564250559,
+          "playerName": "BODxSiCA4iO",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 78,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5744770430,
+          "playerName": "MʀメHridoy",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 8,
+      "teamName": "TDSXESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 4,
+      "currentPhaseKills": 4,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 8,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 52186356436,
+          "playerName": "TDSxWriterHü",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 265,
+          "healthPercent": 0.0,
+          "knockouts": 3
+        },
+        {
+          "uId": 5884731191,
+          "playerName": "TDSxSingerHü",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5863103399,
+          "playerName": "TDSxNeuroShøT",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 177,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5723363027,
+          "playerName": "FFbwDohan20",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 76,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 51217937814,
+          "playerName": "MWsMowezZy",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 402,
+          "healthPercent": 0.0,
+          "knockouts": 2
+        }
+      ]
+    },
+    {
+      "teamId": 14,
+      "teamName": "ZEUS ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 4,
+      "currentPhaseKills": 4,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 8,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5107186115,
+          "playerName": "ToBiRaMa",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 24,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5298585907,
+          "playerName": "ツMJ×Miraz",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 52263904870,
+          "playerName": "4TFprofessor",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 120,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 51397460306,
+          "playerName": "٭ʚZUBAYERɞ",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 282,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 572330820,
+          "playerName": "4TFxALADDIN",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 7,
+      "teamName": "RTD ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 4,
+      "currentPhaseKills": 4,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 8,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5688257491,
+          "playerName": "RTDesF4NG",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 273,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5236666776,
+          "playerName": "TLSxSpicyAR51",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 55,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 51231694843,
+          "playerName": "TiñNiツ",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 54,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5257282698,
+          "playerName": "RTDesSCARNOX",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 377,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5543708167,
+          "playerName": "RTDesWalkeR",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 366,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 19,
+      "teamName": "TBM ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 3,
+      "currentMatchKills": 3,
+      "currentPhaseKills": 3,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 6,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5320327573,
+          "playerName": "TBMesBLAMEop",
+          "playerPhoto": null,
+          "kills": 3,
+          "damage": 472,
+          "healthPercent": 0.0,
+          "knockouts": 3
+        },
+        {
+          "uId": 5802453696,
+          "playerName": "TBMesMaxtonNuB",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 53,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5399324111,
+          "playerName": "TBMesRAHAT",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 78,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5401793945,
+          "playerName": "TBMesMEHEDI",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 95,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5285670004,
+          "playerName": "TBMesADIL",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 100.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 17,
+      "teamName": "XNIGHT ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 3,
+      "currentPhaseKills": 3,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 6,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5330150018,
+          "playerName": "XN8esSE7ON",
+          "playerPhoto": null,
+          "kills": 2,
+          "damage": 306,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5124040461,
+          "playerName": "XN8esSLAYER",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 104,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5664501788,
+          "playerName": "XN8esÎDENT",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 82,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5243802335,
+          "playerName": "XN8esZOMBI3",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 146,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5791156986,
+          "playerName": "XN8esAlfi7",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 196,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5208708795,
+          "playerName": "XN8esZixXoNuB",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 16,
+      "teamName": "SLASH GAMERS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 0,
+      "currentPhaseKills": 0,
+      "currentPhasePlacementPoints": 6,
+      "totalPoints": 6,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5365736895,
+          "playerName": "SLASHxRyJaXX",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5974691867,
+          "playerName": "SLASHxSiCKSiN",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5829678053,
+          "playerName": "SLASHxKAKAROT",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5316334662,
+          "playerName": "SLASHxLanterN",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5396524971,
+          "playerName": "SLASH令SUPR3MO",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 15,
+      "teamName": "4 WARRIOR FORCE",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 0,
+      "currentPhaseKills": 0,
+      "currentPhasePlacementPoints": 5,
+      "totalPoints": 5,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5727651642,
+          "playerName": "4WF๛HASIB",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 51378452288,
+          "playerName": "๛〖Ghost〗乛M",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5663445198,
+          "playerName": "4WF๛SOHAG",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5807194493,
+          "playerName": "4WF๛Fardin",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 102,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5589581480,
+          "playerName": "4WF๛GoBLiNop",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 100.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 13,
+      "teamName": "ELEVATE CREW",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 3,
+      "currentMatchKills": 2,
+      "currentPhaseKills": 2,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 4,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 51717863676,
+          "playerName": "EVCxRAFI",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 165,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5150412964,
+          "playerName": "EVCxSEDIL",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 100,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5720988291,
+          "playerName": "EVCxFE4RLESS",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 194,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5504386178,
+          "playerName": "EVCxHEIZEN",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 60,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 4,
+      "teamName": "ELXMPO ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 3,
+      "currentMatchKills": 2,
+      "currentPhaseKills": 2,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 4,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5184925818,
+          "playerName": "EL・ŁUCIFER",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 161,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5235736392,
+          "playerName": "ELmpoATHECAL",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 51831802747,
+          "playerName": "ElmpoVenX",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 263,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 51522056215,
+          "playerName": "ELmpoVenX",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 100.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 10,
+      "teamName": "SIUU BOYS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 1,
+      "currentPhaseKills": 1,
+      "currentPhasePlacementPoints": 2,
+      "totalPoints": 4,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5394534897,
+          "playerName": "SiUUUxTAHSIN",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5688285611,
+          "playerName": "TREXīīMARCO",
+          "playerPhoto": null,
+          "kills": 1,
+          "damage": 198,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5513452842,
+          "playerName": "F4esTAMiM",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5505202270,
+          "playerName": "SiUUUxSHUVO",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5402942858,
+          "playerName": "Baki丨Hanma么",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5924799984,
+          "playerName": "Dok4xboyy・18",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 75,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 11,
+      "teamName": "OTTOMANX ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 4,
+      "currentMatchKills": 0,
+      "currentPhaseKills": 0,
+      "currentPhasePlacementPoints": 1,
+      "totalPoints": 1,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 51773841980,
+          "playerName": "OTMNxCYBORG",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 85,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 5332984921,
+          "playerName": "OTMNxSOVYN",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 106,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 51542338275,
+          "playerName": "OTMNxZEROiqoo",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 51523444863,
+          "playerName": "BuOesSAIF",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 97,
+          "healthPercent": 0.0,
+          "knockouts": 1
+        },
+        {
+          "uId": 52298861505,
+          "playerName": "ROMANNEAR",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 100.0,
+          "knockouts": 0
+        }
+      ]
+    },
+    {
+      "teamId": 22,
+      "teamName": "KTC ESPORTS",
+      "teamLogo": "http://localhost:5000/assets/default-team-logo.jpg",
+      "liveMembers": 0,
+      "currentMatchKills": 0,
+      "currentPhaseKills": 0,
+      "currentPhasePlacementPoints": 0,
+      "totalPoints": 0,
+      "wwcd": 0,
+      "players": [
+        {
+          "uId": 5764316945,
+          "playerName": "KTC・Ninja47",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 0,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 51274303829,
+          "playerName": "KTC・RoRoX",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 66,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        },
+        {
+          "uId": 5483729401,
+          "playerName": "KTC・OGGY",
+          "playerPhoto": null,
+          "kills": 0,
+          "damage": 29,
+          "healthPercent": 0.0,
+          "knockouts": 0
+        }
+      ]
+    }
+  ],
+  "current_match_top_players": [
+    {
+      "uId": 5503389444,
+      "playerName": "S4esSKYTOŪRS",
+      "playerPhoto": null,
+      "kills": 4,
+      "damage": 557,
+      "knockouts": 3
+    },
+    {
+      "uId": 51593817521,
+      "playerName": "ū・EGOIST・",
+      "playerPhoto": null,
+      "kills": 3,
+      "damage": 735,
+      "knockouts": 2
+    },
+    {
+      "uId": 5320327573,
+      "playerName": "TBMesBLAMEop",
+      "playerPhoto": null,
+      "kills": 3,
+      "damage": 472,
+      "knockouts": 3
+    },
+    {
+      "uId": 5379635238,
+      "playerName": "S4esDoraŪRS",
+      "playerPhoto": null,
+      "kills": 3,
+      "damage": 456,
+      "knockouts": 2
+    },
+    {
+      "uId": 5684829202,
+      "playerName": "ZZesMEMON",
+      "playerPhoto": null,
+      "kills": 3,
+      "damage": 421,
+      "knockouts": 3
+    }
+  ],
+  "overall_top_players": [
+    {
+      "uId": 5765032446,
+      "playerName": "GhLuxxy",
+      "playerPhoto": "http://localhost:5000/assets/PUBG.png",
+      "totalKills": 12,
+      "totalDamage": 1856,
+      "totalKnockouts": 8,
+      "totalMatches": 2
+    },
+    {
+      "uId": 5766253527,
+      "playerName": "ZODzReBeL",
+      "playerPhoto": "http://localhost:5000/assets/PUBG.png",
+      "totalKills": 10,
+      "totalDamage": 1816,
+      "totalKnockouts": 6,
+      "totalMatches": 2
+    },
+    {
+      "uId": 5363941655,
+      "playerName": "MSBesEXEee",
+      "playerPhoto": "http://localhost:5000/assets/PUBG.png",
+      "totalKills": 8,
+      "totalDamage": 2030,
+      "totalKnockouts": 10,
+      "totalMatches": 2
+    },
+    {
+      "uId": 5142843260,
+      "playerName": "GhPOWER",
+      "playerPhoto": "http://localhost:5000/assets/PUBG.png",
+      "totalKills": 8,
+      "totalDamage": 1628,
+      "totalKnockouts": 6,
+      "totalMatches": 2
+    },
+    {
+      "uId": 5392267756,
+      "playerName": "LO・Nozuka46",
+      "playerPhoto": "http://localhost:5000/assets/PUBG.png",
+      "totalKills": 8,
+      "totalDamage": 1366,
+      "totalKnockouts": 8,
+      "totalMatches": 2
+    }
+  ],
+  "kill_feed": []
+}

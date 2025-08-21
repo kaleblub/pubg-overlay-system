@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUBG Live Match Top Players</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        
+        body {
+            /* The background color is transparent to allow this to be used as an overlay */
+            background-color: transparent; 
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+
+        .overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block; /* Always active */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay-title {
+            text-align: center;
+            font-size: 3em;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: midnightblue;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .overlay-subtitle {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 400;
+            text-transform: uppercase;
+            margin-top: -10px;
+            color: #1d3148;
+        }
+        
+        /* Top Players specific styles */
+        .players-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .player-card {
+            width: 215px;
+            text-align: center;
+            background-color: #b5a420;
+            padding-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            position: relative; /* Added for absolute positioning of children */
+        }
+
+        .player-rank {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: black;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .player-name-bg {
+            background-color: #5ab4d6;
+            padding: 5px;
+            /* border-radius: 5px; */
+            /* margin-top: 5px; */
+        }
+
+        .player-name {
+            background-color: #5ab4d6;
+            font-size: 1.2em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: midnightblue;
+            font-weight: bold;
+            padding: 5px;
+        }
+
+        .player-image {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            margin-top: 15px;
+        }
+
+        .elimination-count, .damage-count, .knockout-count {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 10px;
+            color: white;
+        }
+
+        .player-details {
+            font-size: 0.9em;
+            margin-top: 5px;
+            color: #ccc;
+        }
+        
+        .team-logo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Live Match Top Players Overlay -->
+    <div id="top-players" class="overlay-container">
+        <h1 class="overlay-title">Live Match Top Players</h1>
+        <h2 class="overlay-subtitle">CURRENT GAME</h2>
+        <div class="players-container" id="top-players-container">
+            <!-- Data will be populated here -->
+        </div>
+    </div>
+    
+    <script>
+const API_URL = 'http://localhost:5000/live_scoreboard.json';
+
+async function fetchData() {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+
+    const topPlayers = data.current_match_top_players || [];
+    const teams = data.teams || [];
+
+    if (!Array.isArray(topPlayers) || topPlayers.length === 0) {
+      console.warn("⚠️ No current_match_top_players in JSON");
+      updateTopPlayers([]);
+      return;
+    }
+
+    // Attach team logos where possible
+    const playersWithTeam = topPlayers.map(p => {
+      const team = teams.find(t => t.players?.some(pl => pl.uId === p.uId));
+      return {
+        ...p,
+        teamLogo: team ? team.teamLogo : null
+      };
+    });
+
+    // Sort by kills, then damage
+    playersWithTeam.sort((a, b) => {
+      if (b.kills !== a.kills) return b.kills - a.kills;
+      return b.damage - a.damage;
+    });
+
+    // Slice top 5
+    updateTopPlayers(playersWithTeam.slice(0, 5));
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+}
+
+function updateTopPlayers(players) {
+  const container = document.getElementById('top-players-container');
+  container.innerHTML = '';
+
+  if (!players.length) {
+    container.innerHTML = `<p style="color:red;">No live player data available.</p>`;
+    return;
+  }
+
+  players.forEach((player, index) => {
+    const playerCard = document.createElement('div');
+    playerCard.className = 'player-card';
+    playerCard.innerHTML = `
+      <div class="player-rank">#${index + 1}</div>
+      <img src="${player.teamLogo || 'http://localhost:5000/assets/default-team-logo.jpg'}" alt="Team Logo" class="team-logo">
+      <img src="${player.playerPhoto || 'http://localhost:5000/assets/PUBG.png'}" alt="Player Image" class="player-image">
+      <div class="player-name-bg">
+        <div class="player-name">${player.playerName}</div>
+      </div>
+      <div class="elimination-count">Eliminations: ${player.kills}</div>
+      <div class="damage-count">Damage: ${player.damage}</div>
+      <div class="knockout-count">Knockouts: ${player.knockouts}</div>
+    `;
+    container.appendChild(playerCard);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchData();
+  setInterval(fetchData, 500);
+});
+</script>
+
+</body>
+</html>

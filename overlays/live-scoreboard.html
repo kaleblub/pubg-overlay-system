@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Scoreboard Overlay</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: transparent;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .scoreboard-container {
+      width: 700px;
+      max-width: 95%;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      background-color: #36393f;
+    }
+    .header {
+      display: grid;
+      grid-template-columns: 50px 1fr 60px 100px 70px;
+      align-items: center;
+      padding: 12px 20px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background-color: #b5a420;
+      border-bottom: 2px solid #23272a;
+      color: #ffffff;
+    }
+    .team-row {
+      display: grid;
+      grid-template-columns: 50px 1fr 60px 100px 70px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background-color 0.2s ease-in-out;
+      background-color: #3f6e91;
+      color: #ffffff;
+    }
+    .team-row:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    .rank {
+      background-color: #b5a420;
+      text-align: center;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 5px;
+    }
+    .team-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1em;
+      color: #ffffff;
+      padding: 2px 5px;
+    }
+    .team-eliminated {
+      opacity: 0.6;
+    }
+    .team-logo {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      border: 2px solid #5ab4d6;
+      object-fit: cover;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    }
+    .elim-count, .total-points {
+      font-weight: bold;
+      text-align: center;
+      font-size: 1.1em;
+      padding: 2px 5px;
+    }
+    .health-bar-container {
+      width: 10px;
+      height: 50px;
+      background-color: #ffffff;
+      border-radius: 5px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+    .health-bar {
+      width: 100%;
+      background-color: #5ab4d6;
+      border-radius: 5px;
+      transition: height 0.3s ease;
+    }
+    .status-bars {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      height: 50px;
+      padding: 2px 5px;
+    }
+    .status-x {
+      width: 10px;
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      color: #a39a49;
+    }
+  </style>
+</head>
+<body>
+  <div class="scoreboard-container">
+    <div class="header">
+      <div>#</div>
+      <div>Team</div>
+      <div>Elms</div>
+      <div>Status</div>
+      <div>Pts</div>
+    </div>
+    <div id="teams-list"></div>
+  </div>
+
+<script>
+(async function() {
+  const jsonUrl = 'http://localhost:5000/live_scoreboard.json';
+
+  const retryFetch = async (url, retries = 5, delay = 1000) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) return response;
+      } catch (err) {
+        console.warn(`Fetch attempt ${i+1} failed, retrying...`);
+      }
+      await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+    }
+    throw new Error("Failed to fetch after retries");
+  };
+
+  const updateScoreboard = (teams, phaseStandings) => {
+    const teamsList = document.getElementById("teams-list");
+    teamsList.innerHTML = "";
+
+    const phasePointsMap = {};
+    phaseStandings.forEach(s => {
+      phasePointsMap[s.teamId] = s.totalPoints;
+    });
+
+    teams.forEach((team, index) => {
+      const totalPoints = phasePointsMap[team.teamId] || 0;
+      const isEliminated = team.liveMembers === 0;
+
+      const statusBarsHtml = team.players.map(player => {
+        const hp = player.healthPercent || 0;
+        if (hp > 0) {
+          return `
+            <div class="health-bar-container">
+              <div class="health-bar" style="height:${hp}%;"></div>
+            </div>
+          `;
+        } else {
+          return `<div class="status-x">X</div>`;
+        }
+      }).join("");
+
+      const row = document.createElement("div");
+      row.className = "team-row";
+      if (isEliminated) row.classList.add("team-eliminated");
+
+      row.innerHTML = `
+        <div class="rank">${index+1}</div>
+        <div class="team-info">
+          <img src="${team.teamLogo || 'https://placehold.co/35x35/ffffff/000000?text=L'}" class="team-logo">
+          <span>${team.teamName}</span>
+        </div>
+        <div class="elim-count">${team.currentMatchKills}</div>
+        <div class="status-bars">${statusBarsHtml}</div>
+        <div class="total-points">${totalPoints}</div>
+      `;
+
+      teamsList.appendChild(row);
+    });
+  };
+
+  const fetchData = async () => {
+    try {
+        const res = await retryFetch(jsonUrl);
+        const data = await res.json();
+
+        if (data.live_scoreboard) {
+            // Use live_scoreboard for both display and total points
+            const phaseStandings = data.live_scoreboard.map(team => ({
+                teamId: team.teamId,
+                totalPoints: team.totalPoints
+            }));
+            updateScoreboard(data.live_scoreboard, phaseStandings);
+        } else {
+            console.error("JSON missing key live_scoreboard");
+        }
+    } catch (err) {
+        console.error("Error fetching data:", err);
+    }
+};
+
+
+  await fetchData();
+  setInterval(fetchData, 5000);
+})();
+</script>
+
+</body>
+</html>

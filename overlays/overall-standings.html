@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUBG Match Standings</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        
+        body {
+            /* Transparent background for use as an overlay */
+            background-color: transparent; 
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+
+        .overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay-title {
+            text-align: center;
+            font-size: 3em;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: midnightblue;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .overlay-subtitle {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 400;
+            text-transform: uppercase;
+            margin-top: -10px;
+            color: #1d3148;
+        }
+        
+        .scoreboard-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            width: 90%;
+            max-width: 1200px;
+        }
+        
+        /* Styles for the two main columns */
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 50%;
+        }
+
+        /* Styles for the rest of the teams list */
+        .team-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .list-header {
+            background-color: #1a2a3a;
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .list-header-stats {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .team-item {
+            background-color: #0d1a26;
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1em;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            border-left: 5px solid #b5a420;
+        }
+
+        .team-rank-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .team-rank {
+            font-weight: bold;
+            font-size: 1.2em;
+            width: 30px;
+            text-align: center;
+        }
+
+        .team-stats {
+            display: flex;
+            gap: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Match Standings Overlay -->
+    <div id="match-standings" class="overlay-container">
+        <h1 class="overlay-title">Match Standings</h1>
+        <h2 class="overlay-subtitle">SEMI FINAL B</h2>
+        <div class="scoreboard-grid" id="scoreboard-grid">
+            <div class="left-column">
+                <!-- List of teams (left column) -->
+                <ul class="team-list" id="team-list-left"></ul>
+            </div>
+            
+            <div class="right-column">
+                <!-- List of teams (right column) -->
+                <ul class="team-list" id="team-list-right"></ul>
+            </div>
+        </div>
+    </div>
+    
+<script>
+const API_URL = 'http://localhost:5000/live_scoreboard.json';
+
+async function fetchData() {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+
+    // Use the correct block
+    const standings = data.current_phase_standings;
+
+    // Sort by total points, then total kills
+    standings.sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      return b.totalKills - a.totalKills;
+    });
+
+    renderScoreboard(standings);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+}
+
+function renderScoreboard(teams) {
+  const teamListLeft = document.getElementById('team-list-left');
+  const teamListRight = document.getElementById('team-list-right');
+  teamListLeft.innerHTML = '';
+  teamListRight.innerHTML = '';
+
+  const headerHtml = `
+    <li class="list-header">
+      <div style="width:30px;text-align:center;">#</div>
+      <div style="flex-grow:1;">TEAM</div>
+      <div class="list-header-stats">
+        <div style="width:50px;">WWCD</div>
+        <div style="width:70px;">PLACE</div>
+        <div style="width:50px;">ELIM</div>
+        <div style="width:50px;">TOTAL</div>
+      </div>
+    </li>
+  `;
+  teamListLeft.innerHTML = headerHtml;
+  teamListRight.innerHTML = headerHtml;
+
+  const mid = Math.ceil(teams.length / 2);
+  const left = teams.slice(0, mid);
+  const right = teams.slice(mid);
+
+  left.forEach((team, i) => {
+    const li = document.createElement('li');
+    li.className = 'team-item';
+    li.innerHTML = `
+      <div class="team-rank-name">
+        <span class="team-rank">#${i + 1}</span>
+        <span>${team.teamName}</span>
+      </div>
+      <div class="team-stats">
+        <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
+        <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
+        <span style="width:50px;text-align:center;">${team.totalKills}</span>
+        <span style="width:50px;text-align:center;">${team.totalPoints}</span>
+      </div>
+    `;
+    teamListLeft.appendChild(li);
+  });
+
+  right.forEach((team, i) => {
+    const li = document.createElement('li');
+    li.className = 'team-item';
+    li.innerHTML = `
+      <div class="team-rank-name">
+        <span class="team-rank">#${mid + i + 1}</span>
+        <span>${team.teamName}</span>
+      </div>
+      <div class="team-stats">
+        <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
+        <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
+        <span style="width:50px;text-align:center;">${team.totalKills}</span>
+        <span style="width:50px;text-align:center;">${team.totalPoints}</span>
+      </div>
+    `;
+    teamListRight.appendChild(li);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchData();
+  setInterval(fetchData, 5000);
+});
+</script>
+
+</body>
+</html>
