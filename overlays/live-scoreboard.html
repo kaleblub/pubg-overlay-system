@@ -6,6 +6,10 @@
   <title>Live Scoreboard Overlay</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Inter font is a great default for a clean, modern look */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    
+    /* Overall styling for the body */
     body {
       background-color: transparent;
       color: #ffffff;
@@ -17,14 +21,18 @@
       align-items: center;
       min-height: 100vh;
     }
+    
+    /* Main container for the scoreboard */
     .scoreboard-container {
       width: 700px;
       max-width: 95%;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      background-color: #36393f;
+      background-color: #23272a;
     }
+    
+    /* Header row styling */
     .header {
       display: grid;
       grid-template-columns: 50px 1fr 60px 100px 70px;
@@ -37,186 +45,222 @@
       border-bottom: 2px solid #23272a;
       color: #ffffff;
     }
+
+    /* Styling for each team row */
     .team-row {
       display: grid;
       grid-template-columns: 50px 1fr 60px 100px 70px;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      transition: background-color 0.2s ease-in-out;
-      background-color: #3f6e91;
-      color: #ffffff;
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background-color 0.3s ease;
     }
     .team-row:hover {
       background-color: rgba(255, 255, 255, 0.05);
     }
-    .rank {
-      background-color: #b5a420;
-      text-align: center;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px 5px;
+    .team-row:last-child {
+      border-bottom: none;
     }
-    .team-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.1em;
-      color: #ffffff;
-      padding: 2px 5px;
-    }
-    .team-eliminated {
-      opacity: 0.6;
-    }
-    .team-logo {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      border: 2px solid #5ab4d6;
-      object-fit: cover;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-    }
-    .elim-count, .total-points {
-      font-weight: bold;
-      text-align: center;
-      font-size: 1.1em;
-      padding: 2px 5px;
-    }
-    .health-bar-container {
-      width: 10px;
-      height: 50px;
-      background-color: #ffffff;
-      border-radius: 5px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column-reverse;
-    }
-    .health-bar {
-      width: 100%;
-      background-color: #5ab4d6;
-      border-radius: 5px;
-      transition: height 0.3s ease;
-    }
+    
+    /* Styling for specific columns */
+    .rank { font-weight: bold; font-size: 1.1em; text-align: center; }
+    .team-info { display: flex; align-items: center; }
+    .team-logo { width: 35px; height: 35px; border-radius: 50%; margin-right: 10px; }
+    .team-name { font-weight: 500; font-size: 0.95em; }
+    .elim-count, .total-points { text-align: center; font-weight: bold; }
+    
+    /* Player status bars container */
     .status-bars {
       display: flex;
-      flex-direction: row;
+      gap: 4px;
       justify-content: center;
       align-items: center;
-      gap: 5px;
-      height: 50px;
-      padding: 2px 5px;
     }
+    
+    /* Player status bar and health bar styling */
+    .status-bar {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      background-color: #4a4d52;
+      border: 1px solid #3d4045;
+      position: relative;
+      overflow: hidden;
+    }
+    .status-bar-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #2ecc71; /* Green for health */
+      transition: height 0.3s ease; /* Smooth transition for health updates */
+    }
+    
+    /* Specific styles for low health */
+    .status-bar-fill.low-health {
+      background-color: #e74c3c; /* Red for low health */
+    }
+    
+    /* Styling for eliminated players */
     .status-x {
-      width: 10px;
-      height: 50px;
+      width: 20px;
+      height: 20px;
       display: flex;
       justify-content: center;
       align-items: center;
       font-weight: bold;
-      color: #a39a49;
+      color: #e74c3c;
+      font-size: 1.2em;
     }
+    
+    /* Styling for an eliminated team */
+    .team-eliminated {
+      opacity: 0.5;
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
   </style>
 </head>
-<body>
-  <div class="scoreboard-container">
+<body class="bg-gray-800 text-white p-4">
+
+  <div class="scoreboard-container" id="scoreboard">
     <div class="header">
-      <div>#</div>
+      <div>Rank</div>
       <div>Team</div>
-      <div>Elms</div>
+      <div>Kills</div>
       <div>Status</div>
-      <div>Pts</div>
+      <div>Points</div>
     </div>
-    <div id="teams-list"></div>
+    <div id="teams-list">
+      <!-- Team rows will be injected here by the script -->
+    </div>
   </div>
 
-<script>
-(async function() {
-  const jsonUrl = 'http://localhost:5000/live_scoreboard.json';
+  <script>
+    // The URL for the live JSON data
+    const jsonUrl = "../live_scoreboard.json";
 
-  const retryFetch = async (url, retries = 5, delay = 1000) => {
-    for (let i = 0; i < retries; i++) {
-      try {
-        const response = await fetch(url);
-        if (response.ok) return response;
-      } catch (err) {
-        console.warn(`Fetch attempt ${i+1} failed, retrying...`);
-      }
-      await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
-    }
-    throw new Error("Failed to fetch after retries");
-  };
-
-  const updateScoreboard = (teams, phaseStandings) => {
-    const teamsList = document.getElementById("teams-list");
-    teamsList.innerHTML = "";
-
-    const phasePointsMap = {};
-    phaseStandings.forEach(s => {
-      phasePointsMap[s.teamId] = s.totalPoints;
-    });
-
-    teams.forEach((team, index) => {
-      const totalPoints = phasePointsMap[team.teamId] || 0;
-      const isEliminated = team.liveMembers === 0;
-
-      const statusBarsHtml = team.players.map(player => {
-        const hp = player.healthPercent || 0;
-        if (hp > 0) {
-          return `
-            <div class="health-bar-container">
-              <div class="health-bar" style="height:${hp}%;"></div>
-            </div>
-          `;
-        } else {
-          return `<div class="status-x">X</div>`;
+    // Simple exponential backoff for fetching data to handle intermittent network issues
+    const retryFetch = async (url, retries = 5, delay = 1000) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (response.ok) {
+            return response;
+          }
+        } catch (error) {
+          console.warn(`Fetch attempt ${i + 1} failed. Retrying in ${delay}ms...`, error);
+          await new Promise(res => setTimeout(res, delay));
+          delay *= 2; // Exponential backoff
         }
-      }).join("");
+      }
+      throw new Error('Failed to fetch data after multiple retries.');
+    };
 
-      const row = document.createElement("div");
-      row.className = "team-row";
-      if (isEliminated) row.classList.add("team-eliminated");
+    /**
+     * Updates the scoreboard UI with new data from the JSON file.
+     * @param {Array} standings - An array of team standings.
+     * @param {Object} teams - A dictionary of team information by teamId.
+     * @param {Object} players - A dictionary of player information by playerId.
+     */
+    const updateScoreboard = (standings, teams, players) => {
+      // --- DEBUGGING: Log the data being passed to the function ---
+      console.log("updateScoreboard called with data:");
+      console.log("Standings:", standings);
+      console.log("Teams:", teams);
+      console.log("Players:", players);
+      // --- END DEBUGGING ---
 
-      row.innerHTML = `
-        <div class="rank">${index+1}</div>
-        <div class="team-info">
-          <img src="${team.teamLogo || 'https://placehold.co/35x35/ffffff/000000?text=L'}" class="team-logo">
-          <span>${team.teamName}</span>
-        </div>
-        <div class="elim-count">${team.currentMatchKills}</div>
-        <div class="status-bars">${statusBarsHtml}</div>
-        <div class="total-points">${totalPoints}</div>
-      `;
+      const teamsList = document.getElementById("teams-list");
+      teamsList.innerHTML = ""; // Clear previous data
 
-      teamsList.appendChild(row);
-    });
-  };
+      // Sort standings by rank
+      standings.sort((a, b) => a.rank - b.rank);
 
-  const fetchData = async () => {
-    try {
+      standings.forEach(standing => {
+        // --- DEBUGGING: Log the current standing object in the loop ---
+        console.log("Processing standing:", standing);
+        // --- END DEBUGGING ---
+
+        const teamInfo = teams[standing.teamId];
+        if (!teamInfo) {
+          console.warn(`Team info not found for teamId: ${standing.teamId}`);
+          return;
+        }
+
+        // Filter players for the current team and ensure they have live data
+        // NOTE: The previous code was expecting the `players` object to be an array.
+        // It's a key-value object, so we use Object.values() to get the players.
+        const teamPlayers = Object.values(players).filter(p => p.teamId === standing.teamId);
+
+        // --- DEBUGGING: Check if teamPlayers array is populated ---
+        console.log(`Found ${teamPlayers.length} players for team ${teamInfo.name}`);
+        // --- END DEBUGGING ---
+
+        // Generate the HTML for the player status bars
+        const statusBarsHtml = teamPlayers.map(player => {
+          // Check if the player is alive and has live data
+          if (player.live && typeof player.live.isAlive !== 'undefined') {
+            if (player.live.isAlive) {
+              const healthPercentage = (player.live.health / player.live.healthMax) * 100;
+              const healthClass = healthPercentage <= 25 ? 'low-health' : '';
+              return `
+                <div class="status-bar" title="${player.name}: ${player.live.health} HP">
+                  <div class="status-bar-fill ${healthClass}" style="height: ${healthPercentage}%;"></div>
+                </div>
+              `;
+            } else {
+              // Player is eliminated
+              return `<div class="status-x">X</div>`;
+            }
+          }
+          // If player.live or player.live.isAlive is missing, return an X to indicate a non-live state
+          return `<div class="status-x">X</div>`;
+        }).join("");
+
+        // Check if all players on the team are eliminated
+        const isEliminated = teamPlayers.length > 0 && teamPlayers.every(player => !player.live.isAlive);
+
+        const row = document.createElement("div");
+        row.className = "team-row";
+        if (isEliminated) row.classList.add("team-eliminated");
+
+        row.innerHTML = `
+          <div class="rank">${standing.rank}</div>
+          <div class="team-info">
+            <img src="${teamInfo.logo || 'https://placehold.co/35x35/ffffff/000000?text=L'}" class="team-logo">
+            <span class="team-name">${teamInfo.name}</span>
+          </div>
+          <div class="elim-count">${standing.kills}</div>
+          <div class="status-bars">${statusBarsHtml}</div>
+          <div class="total-points">${standing.points}</div>
+        `;
+        teamsList.appendChild(row);
+      });
+    };
+
+    const fetchData = async () => {
+      try {
         const res = await retryFetch(jsonUrl);
         const data = await res.json();
 
-        if (data.live_scoreboard) {
-            // Use live_scoreboard for both display and total points
-            const phaseStandings = data.live_scoreboard.map(team => ({
-                teamId: team.teamId,
-                totalPoints: team.totalPoints
-            }));
-            updateScoreboard(data.live_scoreboard, phaseStandings);
+        // Check if the required data keys exist in the new JSON structure
+        if (data.phase && data.phase.standings && data.phase.teams && data.phase.players) {
+          updateScoreboard(data.phase.standings, data.phase.teams, data.phase.players);
         } else {
-            console.error("JSON missing key live_scoreboard");
+          console.error("JSON missing 'phase', 'standings', 'teams', or 'players' key.");
         }
-    } catch (err) {
-        console.error("Error fetching data:", err);
-    }
-};
+      } catch (error) {
+        console.error("Failed to fetch or parse JSON:", error);
+      }
+    };
 
-
-  await fetchData();
-  setInterval(fetchData, 5000);
-})();
-</script>
+    // Fetch data immediately on load and then every 2 seconds
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchData();
+      setInterval(fetchData, 2000);
+    });
+  </script>
 
 </body>
 </html>

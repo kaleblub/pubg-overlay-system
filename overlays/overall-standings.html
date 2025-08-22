@@ -73,13 +73,21 @@
         }
 
         .list-header {
-            background-color: #1a2a3a;
+            background-color: #b5a420; /* Yellow background */
             padding: 10px;
             margin-bottom: 5px;
             display: flex;
-            justify-content: space-between;
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .list-header-rank {
+            width: 60px;
+            text-align: center;
+        }
+        
+        .list-header-name {
+            flex-grow: 1;
         }
 
         .list-header-stats {
@@ -88,51 +96,63 @@
         }
         
         .team-item {
-            background-color: #0d1a26;
-            padding: 10px;
+            background-color: transparent; /* Make background transparent */
+            padding: 0; /* Remove padding from the container */
             margin-bottom: 5px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: stretch; /* Stretch to fill full height */
             font-size: 1.1em;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            border-left: 5px solid #b5a420;
-        }
-
-        .team-rank-name {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */
+            overflow: hidden; /* To apply border-radius */
+            border-radius: 5px;
         }
 
         .team-rank {
             font-weight: bold;
             font-size: 1.2em;
-            width: 30px;
+            width: 60px; /* Give it a fixed width */
             text-align: center;
+            background-color: #b5a420; /* Yellow background */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
+        
+        .team-name-column {
+            background-color: #5ab4d6;
+            flex-grow: 1;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+        }
+         .team-logo {
+            height: 25px; /* Adjust logo size */
+            width: 25px;
+            object-fit: contain;
+            padding-right: 10px;
+        }
         .team-stats {
             display: flex;
             gap: 20px;
             font-weight: bold;
+            background-color: rgba(158, 202, 247, 0.2); /* mostly transparent blue */
+            padding: 10px;
+            align-items: center;
         }
     </style>
 </head>
 <body>
 
-    <!-- Match Standings Overlay -->
     <div id="match-standings" class="overlay-container">
-        <h1 class="overlay-title">Match Standings</h1>
+        <h1 class="overlay-title">Tournament Phase Standings</h1>
         <h2 class="overlay-subtitle">SEMI FINAL B</h2>
         <div class="scoreboard-grid" id="scoreboard-grid">
             <div class="left-column">
-                <!-- List of teams (left column) -->
                 <ul class="team-list" id="team-list-left"></ul>
             </div>
             
             <div class="right-column">
-                <!-- List of teams (right column) -->
                 <ul class="team-list" id="team-list-right"></ul>
             </div>
         </div>
@@ -153,7 +173,7 @@ async function fetchData() {
     // Sort by total points, then total kills
     standings.sort((a, b) => {
       if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-      return b.totalKills - a.totalKills;
+      return b.currentPhaseKills - a.currentPhaseKills;
     });
 
     renderScoreboard(standings);
@@ -170,13 +190,13 @@ function renderScoreboard(teams) {
 
   const headerHtml = `
     <li class="list-header">
-      <div style="width:30px;text-align:center;">#</div>
-      <div style="flex-grow:1;">TEAM</div>
+      <div class="list-header-rank">#</div>
+      <div class="list-header-name">TEAM</div>
       <div class="list-header-stats">
-        <div style="width:50px;">WWCD</div>
-        <div style="width:70px;">PLACE</div>
-        <div style="width:50px;">ELIM</div>
-        <div style="width:50px;">TOTAL</div>
+        <div style="width:50px; text-align:center;">WWCD</div>
+        <div style="width:70px; text-align:center;">PLACE</div>
+        <div style="width:50px; text-align:center;">ELIM</div>
+        <div style="width:50px; text-align:center;">TOTAL</div>
       </div>
     </li>
   `;
@@ -187,46 +207,37 @@ function renderScoreboard(teams) {
   const left = teams.slice(0, mid);
   const right = teams.slice(mid);
 
-  left.forEach((team, i) => {
+  const renderTeamItem = (team, i) => {
     const li = document.createElement('li');
     li.className = 'team-item';
     li.innerHTML = `
-      <div class="team-rank-name">
-        <span class="team-rank">#${i + 1}</span>
+      <div class="team-rank">#${i}</div>
+      <div class="team-name-column">
+        <img src="http://localhost:5000/assets/default-team-logo.jpg" alt="Team Logo" class="team-logo">
         <span>${team.teamName}</span>
       </div>
       <div class="team-stats">
         <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
         <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
-        <span style="width:50px;text-align:center;">${team.totalKills}</span>
+        <span style="width:50px;text-align:center;">${team.currentPhaseKills || 0}</span>
         <span style="width:50px;text-align:center;">${team.totalPoints}</span>
       </div>
     `;
-    teamListLeft.appendChild(li);
+    return li;
+  };
+  
+  left.forEach((team, i) => {
+    teamListLeft.appendChild(renderTeamItem(team, i + 1));
   });
 
   right.forEach((team, i) => {
-    const li = document.createElement('li');
-    li.className = 'team-item';
-    li.innerHTML = `
-      <div class="team-rank-name">
-        <span class="team-rank">#${mid + i + 1}</span>
-        <span>${team.teamName}</span>
-      </div>
-      <div class="team-stats">
-        <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
-        <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
-        <span style="width:50px;text-align:center;">${team.totalKills}</span>
-        <span style="width:50px;text-align:center;">${team.totalPoints}</span>
-      </div>
-    `;
-    teamListRight.appendChild(li);
+    teamListRight.appendChild(renderTeamItem(team, mid + i + 1));
   });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
-  setInterval(fetchData, 5000);
+  setInterval(fetchData, 1000);
 });
 </script>
 

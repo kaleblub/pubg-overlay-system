@@ -9,8 +9,10 @@ ROOT_LOG_DIR = Path("./logs")
 TEST_LOG_DIR = ROOT_LOG_DIR / "test"
 CURRENT_LOG_DIR = ROOT_LOG_DIR / "current"
 OUTPUT_LOG_NAME = "simulated_live.txt"
-SIMULATION_SPEED = 0.1  # Seconds between updates (adjustable)
-CHUNK_SIZE = 5  # How many log entries to write at once
+SIMULATION_SPEED = 0.01  # Seconds between updates (adjustable)
+CHUNK_SIZE = 1  # How many log entries to write at once
+current_game_id = None
+teams_in_game = {}  # {teamId: liveMemberNum}
 
 def ensure_directories():
     """Ensure required directories exist."""
@@ -113,59 +115,58 @@ def simulate_live_log(source_file, output_file):
         current_game_id = None
         
         while block_index < len(blocks):
-            # Check if the next block contains a game ID change
-            if block_index < len(blocks):
-                game_id_match = re.search(r"GameID:\s*['\"]?(\d+)['\"]?", blocks[block_index])
-                if game_id_match:
-                    new_game_id = game_id_match.group(1)
-                    if current_game_id is not None and new_game_id != current_game_id:
-                        print(f"A new game ID ({new_game_id}) was detected. Preparing to start new game...")
-                        input("🏁 Match ended. Press Enter to continue to the next match...")
-                    current_game_id = new_game_id
+            current_block = blocks[block_index]
 
-            # Write blocks and check for game end
-            blocks_written_this_chunk = 0
-            for i in range(CHUNK_SIZE):
-                if block_index >= len(blocks):
-                    break # End of file
+            # Write the current block
+            with open(output_file, 'a', encoding='utf-8') as f:
+                f.write(current_block + '\n')
+                f.flush()
+
+            # Check for match end condition within TeamInfoList blocks
+            pause_simulation = False
+            if 'GameID:' in current_block:
+                # Extract the GameID
+                match = re.search(r'GameID:\s*["\']?(\d+)["\']?', current_block)
+                if match:
+                    current_game_id = match.group(1)
+                    teams_in_game = {}  # Reset team tracker for the new game
+                    print(f"🎮 Starting simulation for GameID {current_game_id}")
+
+            elif 'TeamInfoList:' in current_block and current_game_id:
+                # Update the live members for each team in this game
+                matches = re.findall(r'teamId:\s*(\d+).*?liveMemberNum:\s*(\d+)', current_block, re.DOTALL)
+                for team_id, live_num in matches:
+                    teams_in_game[int(team_id)] = int(live_num)
                 
-                current_block = blocks[block_index]
-                
-                # Write the current block
-                with open(output_file, 'a', encoding='utf-8') as f:
-                    f.write(current_block + '\n')
-                    f.flush()
-                
-                blocks_written_this_chunk += 1
-                block_index += 1
-                
-                # Check for match end condition within TeamInfoList blocks
-                if 'TeamInfoList:' in current_block:
-                    teams_string = re.search(r'\[(.*)\]', current_block, re.DOTALL)
-                    if teams_string:
-                        live_teams = 0
-                        live_members_matches = re.findall(r'liveMemberNum:\s*(\d+)', teams_string.group(1))
-                        for count_str in live_members_matches:
-                            if int(count_str) > 0:
-                                live_teams += 1
-                        
-                        # Match ends when NO teams have live members (everyone eliminated)
-                        # OR when only 1 team remains AND you want to pause at victory
-                        if live_teams == 0:
-                            print("🏁 Match end detected: All teams eliminated.")
-                            input("🏁 Match ended. Press Enter to continue to the next match...")
-                        elif live_teams == 1:
-                            print("🏆 Match end detected: One team victorious.")
-                            input("🏁 Match ended. Press Enter to continue to the next match...")
-                            pass  
-            
+                # Count how many teams still have >0 members
+                live_teams = sum(1 for v in teams_in_game.values() if v > 0)
+                print(f"Number of live teams: {live_teams}")
+
+                # Pause if only one team remains alive
+                if live_teams == 1:
+                    print("🏆 Match end detected: One team victorious.")
+                    input("⏸️ Match ended. Press Enter to continue to the next match...")
+
+                # Pause if all teams eliminated
+                elif live_teams == 0:
+                    print("🏁 Match end detected: All teams eliminated.")
+                    input("⏸️ Match ended. Press Enter to continue to the next match...")
+
+
+            block_index += 1
+
             # Show progress
             progress = (block_index / len(blocks)) * 100
             print(f"📝 Written {block_index}/{len(blocks)} blocks ({progress:.1f}%)")
-            
+
+            # Pause if needed
+            if pause_simulation:
+                input("⏸️ Match ended. Press Enter to continue to the next match...")
+
             # Wait before next update
             if block_index < len(blocks):
                 time.sleep(SIMULATION_SPEED)
+
         
         print("✅ Simulation complete! All blocks written.")        
 

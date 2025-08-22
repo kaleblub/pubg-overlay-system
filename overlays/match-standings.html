@@ -195,7 +195,7 @@
     <!-- Match Standings Overlay -->
     <div id="match-standings" class="overlay-container">
         <h1 class="overlay-title">Match Standings</h1>
-        <h2 class="overlay-subtitle">SEMI FINAL B</h2>
+        <h2 class="overlay-subtitle"></h2>
         <div class="scoreboard-grid" id="scoreboard-grid">
             <div class="left-column">
                 <!-- Winning team card -->
@@ -335,7 +335,7 @@ function renderScoreboard(teams) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
-  setInterval(fetchData, 5000);
+  setInterval(fetchData, 500);
 });
 </script>
 
