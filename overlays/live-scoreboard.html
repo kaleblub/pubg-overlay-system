@@ -24,7 +24,7 @@
     
     /* Main container for the scoreboard */
     .scoreboard-container {
-      width: 700px;
+      width: 550px;
       max-width: 95%;
       border-radius: 12px;
       overflow: hidden;
@@ -50,10 +50,11 @@
     .team-row {
       display: grid;
       grid-template-columns: 50px 1fr 60px 100px 70px;
-      align-items: center;
-      padding: 10px 20px;
+      align-items: stretch;
+      padding: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       transition: background-color 0.3s ease;
+      margin-top: 2px;
     }
     .team-row:hover {
       background-color: rgba(255, 255, 255, 0.05);
@@ -61,6 +62,21 @@
     .team-row:last-child {
       border-bottom: none;
     }
+    /* Rank column in team rows */
+    .team-row .rank {
+      font-weight: bold;
+      font-size: 1.1em;
+      text-align: center;
+      background-color: #b5a420; /* same as header Rank column */
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
+      border-radius: 0; /* optional: remove rounding to cover full height */
+    }
+
     
     /* Styling for specific columns */
     .rank { font-weight: bold; font-size: 1.1em; text-align: center; }
@@ -188,10 +204,18 @@
           return;
         }
 
-        // Filter players for the current team and ensure they have live data
-        // NOTE: The previous code was expecting the `players` object to be an array.
-        // It's a key-value object, so we use Object.values() to get the players.
-        const teamPlayers = Object.values(players).filter(p => p.teamId === standing.teamId);
+        // Filter players for the current team
+        let teamPlayers = Object.values(players).filter(p => p.teamId === standing.teamId);
+
+        // Sort: alive first, then by kills
+        teamPlayers.sort((a, b) => {
+          if (a.live.isAlive && !b.live.isAlive) return -1;
+          if (!a.live.isAlive && b.live.isAlive) return 1;
+          return b.stats.kills - a.stats.kills;
+        });
+
+        // Only take the first 4
+        teamPlayers = teamPlayers.slice(0, 4);
 
         // --- DEBUGGING: Check if teamPlayers array is populated ---
         console.log(`Found ${teamPlayers.length} players for team ${teamInfo.name}`);
@@ -244,16 +268,20 @@
         const res = await retryFetch(jsonUrl);
         const data = await res.json();
 
-        // Check if the required data keys exist in the new JSON structure
-        if (data.phase && data.phase.standings && data.phase.teams && data.phase.players) {
-          updateScoreboard(data.phase.standings, data.phase.teams, data.phase.players);
+        if (data.phase && data.phase.standings && data.match && data.live) {
+          updateScoreboard(
+            data.phase.standings,
+            data.match.teams,      // live team data
+            data.match.players     // live player data
+          );
         } else {
-          console.error("JSON missing 'phase', 'standings', 'teams', or 'players' key.");
+          console.error("JSON missing expected keys.");
         }
       } catch (error) {
         console.error("Failed to fetch or parse JSON:", error);
       }
     };
+
 
     // Fetch data immediately on load and then every 2 seconds
     document.addEventListener("DOMContentLoaded", () => {

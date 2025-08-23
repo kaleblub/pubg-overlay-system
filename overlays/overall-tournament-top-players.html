@@ -143,23 +143,31 @@ async function fetchOverallTopPlayers() {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    const topPlayers = data.overall_top_players || [];
-    const teams = data.teams || [];
+    // Correct JSON path
+    const topPlayers = data.leaderboards?.allTimeTopPlayers || [];
+    const teams = data.match?.teams || {};
+    const players = data.match?.players || {};
 
     if (!Array.isArray(topPlayers) || topPlayers.length === 0) {
-      console.warn("⚠️ No overall_top_players data in JSON");
+      console.warn("⚠️ No allTimeTopPlayers data in JSON");
       updateTopPlayers([]);
       return;
     }
 
     const playersWithTeam = topPlayers.map(p => {
-      const playerTeam = teams.find(t => t.players?.some(pl => pl.uId === p.uId || pl.playerName === p.playerName));
+      const team = p.teamId ? teams[p.teamId] : null;  
+      const livePlayer = players[p.playerId];  // see if we have them in current match data
       return {
         ...p,
-        teamLogo: playerTeam?.teamLogo
+        teamLogo: team ? team.logo : 'http://localhost:5000/assets/default-team-logo.jpg',
+        playerPhoto: livePlayer ? livePlayer.photo : 'http://localhost:5000/assets/PUBG.png',
+        playerName: p.name
       };
     });
 
+
+
+    // Sort by kills, then damage
     playersWithTeam.sort((a, b) => {
       if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
       return b.totalDamage - a.totalDamage;
@@ -185,14 +193,15 @@ function updateTopPlayers(players) {
     playerCard.className = 'player-card';
     playerCard.innerHTML = `
       <div class="player-rank">#${index + 1}</div>
-      <img src="${player.teamLogo || 'http://localhost:5000/assets/default-team-logo.jpg'}" alt="Team Logo" class="team-logo">
-      <img src="${player.playerPhoto || 'http://localhost:5000/assets/PUBG.png'}" alt="Player Image" class="player-image">
+      <img src="${player.teamLogo}" alt="Team Logo" class="team-logo">
+      <img src="${player.playerPhoto}" alt="Player Image" class="player-image">
       <div class="player-name-bg">
         <div class="player-name">${player.playerName}</div>
       </div>
       <div class="elimination-count">Eliminations: ${player.totalKills}</div>
       <div class="damage-count">Damage: ${player.totalDamage}</div>
       <div class="knockout-count">Knockouts: ${player.totalKnockouts}</div>
+      <div class="matches-count">Matches: ${player.totalMatches}</div>
     `;
     container.appendChild(playerCard);
   });
@@ -200,9 +209,10 @@ function updateTopPlayers(players) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchOverallTopPlayers();
-  setInterval(fetchOverallTopPlayers, 500);
+  setInterval(fetchOverallTopPlayers, 1000);
 });
 </script>
+
 
 </body>
 </html>

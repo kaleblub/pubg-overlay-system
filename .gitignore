@@ -1,5 +1,8 @@
 .txt
 previous_versions/
+instructions/
+logs/
+TeamLogoAndColor.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

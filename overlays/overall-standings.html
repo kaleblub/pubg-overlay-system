@@ -167,13 +167,24 @@ async function fetchData() {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    // Use the correct block
-    const standings = data.current_phase_standings;
+    const phase = data.phase; // current phase
+    const standingsRaw = phase.standings || [];
+    const teamsRaw = phase.teams || {};
 
-    // Sort by total points, then total kills
+    // Merge team info with standings
+    const standings = standingsRaw.map(teamStanding => {
+      const teamInfo = teamsRaw[teamStanding.teamId] || {};
+      return {
+        ...teamStanding,
+        teamName: teamInfo.name || `Team ${teamStanding.teamId}`,
+        teamLogo: teamInfo.logo || 'http://localhost:5000/assets/default-team-logo.jpg'
+      };
+    });
+
+    // Sort by points then kills
     standings.sort((a, b) => {
-      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-      return b.currentPhaseKills - a.currentPhaseKills;
+      if (b.points !== a.points) return b.points - a.points;
+      return (b.kills || 0) - (a.kills || 0);
     });
 
     renderScoreboard(standings);
@@ -213,14 +224,14 @@ function renderScoreboard(teams) {
     li.innerHTML = `
       <div class="team-rank">#${i}</div>
       <div class="team-name-column">
-        <img src="http://localhost:5000/assets/default-team-logo.jpg" alt="Team Logo" class="team-logo">
+        <img src="${team.teamLogo}" alt="Team Logo" class="team-logo">
         <span>${team.teamName}</span>
       </div>
       <div class="team-stats">
         <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
         <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
-        <span style="width:50px;text-align:center;">${team.currentPhaseKills || 0}</span>
-        <span style="width:50px;text-align:center;">${team.totalPoints}</span>
+        <span style="width:50px;text-align:center;">${team.kills || 0}</span>
+        <span style="width:50px;text-align:center;">${team.points || 0}</span>
       </div>
     `;
     return li;

@@ -233,14 +233,44 @@ async function fetchData() {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    const teams = data.live_scoreboard || [];
+    const match = data.match;
+    const teamsRaw = match.teams || {};
+    const playersRaw = match.players || {};
 
-    // Assign ranks for display purposes
+    // Convert teams object into array
+    const teams = Object.values(teamsRaw).map(team => {
+      // Calculate team kills by summing player kills
+      let teamKills = 0;
+      team.players.forEach(pid => {
+        const player = playersRaw[pid];
+        if (player && player.stats) teamKills += player.stats.kills || 0;
+      });
+
+      const placementPoints = team.placementPointsLive || 0;
+      const totalPoints = teamKills + placementPoints;
+
+      return {
+        id: team.id,
+        teamName: team.name,
+        teamLogo: team.logo,
+        players: team.players.map(pid => ({
+          playerId: pid,
+          playerName: playersRaw[pid]?.name || 'Unknown',
+          playerPhoto: playersRaw[pid]?.photo || 'http://localhost:5000/assets/PUBG.png'
+        })),
+        kills: teamKills,
+        placementPoints: placementPoints,
+        totalPoints: totalPoints,
+        liveMembers: team.liveMembers || 0
+      };
+    });
+
+    // Sort teams by total points descending
+    teams.sort((a, b) => b.totalPoints - a.totalPoints);
+
+    // Assign rank
     teams.forEach((team, index) => {
       team.placement = index + 1;
-      team.kills = team.currentMatchKills || 0;
-      team.placementPoints = team.currentPhasePlacementPoints || 0;
-      team.totalPoints = team.totalPoints || team.currentPhaseKills + team.currentPhasePlacementPoints + team.currentMatchKills;
     });
 
     renderScoreboard(teams);
@@ -268,17 +298,17 @@ function renderScoreboard(teams) {
   if (winner) {
     winnerCard.style.display = 'flex';
     winnerTeamName.textContent = winner.teamName || 'Unknown Team';
-    winnerTeamLogo.src = winner.teamLogo || 'https://placehold.co/50x50/A0522D/ffffff?text=Logo';
+    winnerTeamLogo.src = winner.teamLogo || 'https://localhost:5000/assets/default-team-logo.jpg';
 
-    // Show player avatars
-    winner.players.forEach(player => {
-      const img = document.createElement('img');
-      img.src = player.playerPhoto || 'http://localhost:5000/assets/PUBG.png';
-      img.alt = player.playerName;
-      img.style.width = '40px';
-      img.style.height = '40px';
-      img.style.borderRadius = '50%';
-      winnerPlayersContainer.appendChild(img);
+    // Show only first 4 player avatars
+    winner.players.slice(0, 4).forEach(player => {
+    const img = document.createElement('img');
+    img.src = player.playerPhoto || 'http://localhost:5000/assets/PUBG.png';
+    img.alt = player.playerName;
+    img.style.width = '40px';
+    img.style.height = '40px';
+    img.style.borderRadius = '50%';
+    winnerPlayersContainer.appendChild(img);
     });
 
     winnerStatsContainer.innerHTML = `

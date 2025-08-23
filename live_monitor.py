@@ -349,10 +349,13 @@ def _all_time_top_players():
     for pid, p in state["all_time"]["players"].items():
         t = p["totals"]
         players.append({
-            "playerId": pid, "name": p["name"],
-            "teamId": None,  # unknown from archives; overlay can map last-known if desired
-            "totalKills": t["kills"], "totalDamage": t["damage"],
-            "totalKnockouts": t["knockouts"], "totalMatches": t["matches"]
+            "playerId": pid,
+            "name": p["name"],
+            "teamId": p.get("teamId"),
+            "totalKills": t["kills"],
+            "totalDamage": t["damage"],
+            "totalKnockouts": t["knockouts"],
+            "totalMatches": t["matches"]
         })
     players.sort(key=lambda x: (x["totalKills"], x["totalDamage"], x["totalKnockouts"]), reverse=True)
     return players[:5]
@@ -404,23 +407,32 @@ def end_match_and_update_phase(_state):
         ph["totals"]["matches"] += 1
 
 def apply_archived_file_to_all_time(log_text, parsed_logos):
-    # parse into a temp match, then update all_time players only
+    # backup current match
     temp_before = state["match"].copy()
+
+    # parse the log into state["match"]
     parse_and_apply(log_text, parsed_logos=parsed_logos, mode="full")
+
+    # update all-time players from parsed match
     for pid, pl in state["match"]["players"].items():
         at = state["all_time"]["players"].setdefault(pid, {
-            "id": pid, "name": pl["name"], "photo": pl.get("photo") or DEFAULT_PLAYER_PHOTO,
+            "id": pid,
+            "name": pl["name"],
+            "teamId": pl.get("teamId") or "unknown",
+            "photo": pl.get("photo") or DEFAULT_PLAYER_PHOTO,
             "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
         })
+        # always update values
         at["name"] = pl["name"]
         at["photo"] = pl.get("photo") or at["photo"]
+        at["teamId"] = pl.get("teamId") or at["teamId"]
         at["totals"]["kills"] += int(pl["stats"]["kills"])
         at["totals"]["damage"] += int(pl["stats"]["damage"])
         at["totals"]["knockouts"] += int(pl["stats"]["knockouts"])
         at["totals"]["matches"] += 1
-    # restore match (archives should not affect live match)
-    _reset_match(state["match"])
-    state["match"].update({k: temp_before[k] for k in temp_before})
+
+    # restore previous match (archives should not affect live match)
+    state["match"].update(temp_before)
 
 # ---------- IO ----------
 def get_all_log_files(log_dir):

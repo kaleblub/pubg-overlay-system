@@ -133,7 +133,7 @@
         </div>
     </div>
     
-    <script>
+<script>
 const API_URL = 'http://localhost:5000/live_scoreboard.json';
 
 async function fetchData() {
@@ -142,21 +142,26 @@ async function fetchData() {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    const topPlayers = data.current_match_top_players || [];
-    const teams = data.teams || [];
+    // Correct path in JSON
+    const topPlayers = data.leaderboards?.currentMatchTopPlayers || [];
+    const teams = data.match?.teams || {};
+    const players = data.match?.players || {};
 
     if (!Array.isArray(topPlayers) || topPlayers.length === 0) {
-      console.warn("⚠️ No current_match_top_players in JSON");
+      console.warn("⚠️ No currentMatchTopPlayers in JSON");
       updateTopPlayers([]);
       return;
     }
 
-    // Attach team logos where possible
+    // Attach team logos and photos where possible
     const playersWithTeam = topPlayers.map(p => {
-      const team = teams.find(t => t.players?.some(pl => pl.uId === p.uId));
+      const team = teams[p.teamId];
+      const player = players[p.playerId];
       return {
         ...p,
-        teamLogo: team ? team.teamLogo : null
+        teamLogo: team ? team.logo : 'http://localhost:5000/assets/default-team-logo.jpg',
+        playerPhoto: player ? player.photo : 'http://localhost:5000/assets/PUBG.png',
+        playerName: p.name
       };
     });
 
@@ -187,8 +192,8 @@ function updateTopPlayers(players) {
     playerCard.className = 'player-card';
     playerCard.innerHTML = `
       <div class="player-rank">#${index + 1}</div>
-      <img src="${player.teamLogo || 'http://localhost:5000/assets/default-team-logo.jpg'}" alt="Team Logo" class="team-logo">
-      <img src="${player.playerPhoto || 'http://localhost:5000/assets/PUBG.png'}" alt="Player Image" class="player-image">
+      <img src="${player.teamLogo}" alt="Team Logo" class="team-logo">
+      <img src="${player.playerPhoto}" alt="Player Image" class="player-image">
       <div class="player-name-bg">
         <div class="player-name">${player.playerName}</div>
       </div>
@@ -202,9 +207,10 @@ function updateTopPlayers(players) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
-  setInterval(fetchData, 500);
+  setInterval(fetchData, 1000); // refresh every second
 });
 </script>
+
 
 </body>
 </html>
