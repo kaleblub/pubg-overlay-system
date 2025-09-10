@@ -179,89 +179,94 @@
      * @param {Object} teams - A dictionary of team information by teamId.
      * @param {Object} players - A dictionary of player information by playerId.
      */
-    const updateScoreboard = (standings, teams, players) => {
-      // --- DEBUGGING: Log the data being passed to the function ---
-      console.log("updateScoreboard called with data:");
-      console.log("Standings:", standings);
-      console.log("Teams:", teams);
-      console.log("Players:", players);
-      // --- END DEBUGGING ---
+const updateScoreboard = (standings, teams, players) => {
+    console.log("updateScoreboard called with data:");
+    console.log("Standings:", standings);
+    console.log("Teams:", teams);
+    console.log("Players:", players);
 
-      const teamsList = document.getElementById("teams-list");
-      teamsList.innerHTML = ""; // Clear previous data
+    const teamsList = document.getElementById("teams-list");
+    teamsList.innerHTML = ""; // Clear previous data
 
-      // Sort standings by rank
-      standings.sort((a, b) => a.rank - b.rank);
+    // Create a new array to hold standings with calculated total points
+    const standingsWithTotals = standings.map(standing => {
+        const teamInfo = Object.values(teams).find(team => team.name && standing.teamName && team.name.toLowerCase() === standing.teamName.toLowerCase());
+        const totalPoints = (standing.points || 0) + (teamInfo?.kills || 0);
+        return {
+            ...standing,
+            totalPoints: totalPoints,
+            teamInfo: teamInfo
+        };
+    });
 
-      standings.forEach(standing => {
-        // --- DEBUGGING: Log the current standing object in the loop ---
+    // Sort the new array by total points, descending
+    standingsWithTotals.sort((a, b) => b.totalPoints - a.totalPoints);
+    
+    // Assign ranks based on the new sort order
+    standingsWithTotals.forEach((standing, index) => {
+      standing.rank = index + 1;
+    });
+
+    standingsWithTotals.forEach(standing => {
         console.log("Processing standing:", standing);
-        // --- END DEBUGGING ---
 
-        const teamInfo = teams[standing.teamId];
+        const teamInfo = standing.teamInfo;
         if (!teamInfo) {
-          console.warn(`Team info not found for teamId: ${standing.teamId}`);
-          return;
+            console.warn(`Team info not found for teamId: ${standing.teamId}`);
+            return;
         }
 
-        // Filter players for the current team
-        let teamPlayers = Object.values(players).filter(p => p.teamId === standing.teamId);
+        let teamPlayers = Object.values(players).filter(p => p.teamId === teamInfo.id);
 
-        // Sort: alive first, then by kills
         teamPlayers.sort((a, b) => {
-          if (a.live.isAlive && !b.live.isAlive) return -1;
-          if (!a.live.isAlive && b.live.isAlive) return 1;
-          return b.stats.kills - a.stats.kills;
+            if (a.live.isAlive && !b.live.isAlive) return -1;
+            if (!a.live.isAlive && b.live.isAlive) return 1;
+            return b.stats.kills - a.stats.kills;
         });
 
-        // Only take the first 4
         teamPlayers = teamPlayers.slice(0, 4);
 
-        // --- DEBUGGING: Check if teamPlayers array is populated ---
         console.log(`Found ${teamPlayers.length} players for team ${teamInfo.name}`);
-        // --- END DEBUGGING ---
 
-        // Generate the HTML for the player status bars
         const statusBarsHtml = teamPlayers.map(player => {
-          // Check if the player is alive and has live data
-          if (player.live && typeof player.live.isAlive !== 'undefined') {
-            if (player.live.isAlive) {
-              const healthPercentage = (player.live.health / player.live.healthMax) * 100;
-              const healthClass = healthPercentage <= 25 ? 'low-health' : '';
-              return `
-                <div class="status-bar" title="${player.name}: ${player.live.health} HP">
-                  <div class="status-bar-fill ${healthClass}" style="height: ${healthPercentage}%;"></div>
-                </div>
-              `;
-            } else {
-              // Player is eliminated
-              return `<div class="status-x">X</div>`;
+            if (player.live && typeof player.live.isAlive !== 'undefined') {
+                if (player.live.isAlive) {
+                    const healthPercentage = (player.live.health / player.live.healthMax) * 100;
+                    const healthClass = healthPercentage <= 25 ? 'low-health' : '';
+                    return `
+                        <div class="status-bar" title="${player.name}: ${player.live.health} HP">
+                            <div class="status-bar-fill ${healthClass}" style="height: ${healthPercentage}%;"></div>
+                        </div>
+                    `;
+                } else {
+                    return `<div class="status-x">X</div>`;
+                }
             }
-          }
-          // If player.live or player.live.isAlive is missing, return an X to indicate a non-live state
-          return `<div class="status-x">X</div>`;
+            return `<div class="status-x">X</div>`;
         }).join("");
 
-        // Check if all players on the team are eliminated
         const isEliminated = teamPlayers.length > 0 && teamPlayers.every(player => !player.live.isAlive);
 
         const row = document.createElement("div");
         row.className = "team-row";
         if (isEliminated) row.classList.add("team-eliminated");
 
+        const matchKills = teamInfo.kills || 0;
+        const totalPoints = (standing.points || 0) + matchKills;
+
         row.innerHTML = `
-          <div class="rank">${standing.rank}</div>
-          <div class="team-info">
-            <img src="${teamInfo.logo || 'https://placehold.co/35x35/ffffff/000000?text=L'}" class="team-logo">
-            <span class="team-name">${teamInfo.name}</span>
-          </div>
-          <div class="elim-count">${standing.kills}</div>
-          <div class="status-bars">${statusBarsHtml}</div>
-          <div class="total-points">${standing.points}</div>
+            <div class="rank">${standing.rank}</div>
+            <div class="team-info">
+                <img src="${teamInfo.logo || 'https://placehold.co/35x35/ffffff/000000?text=L'}" class="team-logo">
+                <span class="team-name">${teamInfo.name}</span>
+            </div>
+            <div class="elim-count">${matchKills}</div>
+            <div class="status-bars">${statusBarsHtml}</div>
+            <div class="total-points">${totalPoints}</div>
         `;
         teamsList.appendChild(row);
-      });
-    };
+    });
+};
 
     const fetchData = async () => {
       try {

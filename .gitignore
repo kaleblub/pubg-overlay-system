@@ -3,6 +3,9 @@ previous_versions/
 instructions/
 logs/
 TeamLogoAndColor.ini
+simulated_live.txt
+assets/
+all_time_players.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

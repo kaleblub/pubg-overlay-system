@@ -166,6 +166,13 @@
             color: black;
         }
 
+        .team-logo {
+          width: 35px; /* Adjust size as needed */
+          height: 35px;
+          object-fit: contain;
+          margin-right: 10px; /* Adds a small gap */
+        }
+
         .team-name {
             flex-grow: 1; /* takes remaining space */
             display: flex;
@@ -188,6 +195,18 @@
             background-color: rgba(158, 202, 247, 0.2); /* mostly transparent blue */
             color: white;
         }
+
+        .status-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 165, 0, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -195,7 +214,7 @@
     <!-- Match Standings Overlay -->
     <div id="match-standings" class="overlay-container">
         <h1 class="overlay-title">Match Standings</h1>
-        <h2 class="overlay-subtitle"></h2>
+        <h2 class="overlay-subtitle" id="match-subtitle"></h2>
         <div class="scoreboard-grid" id="scoreboard-grid">
             <div class="left-column">
                 <!-- Winning team card -->
@@ -225,148 +244,286 @@
     </div>
     
 <script>
+// Placement points mapping
+const PLACEMENT_POINTS = {
+    1: 15, 2: 12, 3: 10, 4: 8, 5: 6, 6: 4, 7: 2, 8: 1,
+    9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0, 16: 0
+};
+
+// API URL - adjust this to match your server configuration
 const API_URL = 'http://localhost:5000/live_scoreboard.json';
 
 async function fetchData() {
-  try {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
 
-    const match = data.match;
-    const teamsRaw = match.teams || {};
-    const playersRaw = match.players || {};
+        // Determine which match data to use
+        let match = null;
+        let usingPreviousMatch = false;
+        let matchStatus = '';
 
-    // Convert teams object into array
-    const teams = Object.values(teamsRaw).map(team => {
-      // Calculate team kills by summing player kills
-      let teamKills = 0;
-      team.players.forEach(pid => {
-        const player = playersRaw[pid];
-        if (player && player.stats) teamKills += player.stats.kills || 0;
-      });
+        // Priority 1: Use current match if it has meaningful data
+        if (data.match && data.match.id && data.match.status !== "idle" && 
+            Object.keys(data.match.teams || {}).length > 0) {
+            match = data.match;
+            matchStatus = `LIVE MATCH: ${match.id}`;
+            console.log("Using current match data");
+        }
+        // Priority 2: Use previous match if current is empty/idle
+        else if (data.previousMatch && data.previousMatch.id && 
+                 Object.keys(data.previousMatch.teams || {}).length > 0) {
+            match = data.previousMatch;
+            usingPreviousMatch = true;
+            matchStatus = `PREVIOUS MATCH: ${match.id}`;
+            console.log("Using previous match data");
+        }
+        // Priority 3: No match data available
+        else {
+            console.log("No match data available");
+            renderNoData();
+            return;
+        }
 
-      const placementPoints = team.placementPointsLive || 0;
-      const totalPoints = teamKills + placementPoints;
+        const teamsRaw = match.teams || {};
+        const playersRaw = match.players || {};
+        const winnerTeamName = match.winnerTeamName;
+        const eliminationOrder = match.eliminationOrder || [];
 
-      return {
-        id: team.id,
-        teamName: team.name,
-        teamLogo: team.logo,
-        players: team.players.map(pid => ({
-          playerId: pid,
-          playerName: playersRaw[pid]?.name || 'Unknown',
-          playerPhoto: playersRaw[pid]?.photo || 'http://localhost:5000/assets/PUBG.png'
-        })),
-        kills: teamKills,
-        placementPoints: placementPoints,
-        totalPoints: totalPoints,
-        liveMembers: team.liveMembers || 0
-      };
-    });
+        // Create final ranking: winner first, then eliminated teams in reverse order
+        const finalRanking = [];
+        if (winnerTeamName) {
+            finalRanking.push(winnerTeamName);
+        }
+        
+        // Add eliminated teams in reverse order (last eliminated = highest rank)
+        const reversedElimination = [...eliminationOrder].reverse();
+        finalRanking.push(...reversedElimination);
 
-    // Sort teams by total points descending
-    teams.sort((a, b) => b.totalPoints - a.totalPoints);
+        // Convert teams object into array and calculate points
+        const teams = Object.values(teamsRaw).map(team => {
+            const teamKills = team.kills || 0;
+            
+            // Find the team's final rank from the finalRanking list
+            let teamFinalRank = finalRanking.findIndex(name => 
+                name && name.toLowerCase() === (team.name || '').toLowerCase()) + 1;
+            
+            // If team not found in ranking, assign based on live members and kills
+            if (teamFinalRank === 0) {
+                teamFinalRank = Object.keys(teamsRaw).length;
+            }
+            
+            const placementPoints = team.placementPointsLive ?? (PLACEMENT_POINTS[teamFinalRank] || 0);
+            const totalPoints = teamKills + placementPoints;
 
-    // Assign rank
-    teams.forEach((team, index) => {
-      team.placement = index + 1;
-    });
+            return {
+                id: team.id,
+                teamName: team.name || 'Unknown Team',
+                teamLogo: team.logo || 'https://placehold.co/35x35/ffffff/000000?text=L',
+                players: (team.players || []).map(pid => ({
+                    playerId: pid,
+                    playerName: playersRaw[pid]?.name || 'Unknown',
+                    playerPhoto: playersRaw[pid]?.photo || 'http://localhost:5000/assets/PUBG.png'
+                })),
+                kills: teamKills,
+                placementPoints: placementPoints,
+                totalPoints: totalPoints,
+                liveMembers: team.liveMembers || 0,
+                finalRank: teamFinalRank
+            };
+        });
 
-    renderScoreboard(teams);
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  }
+        // Sort teams by total points (highest first)
+        teams.sort((a, b) => {
+            if (b.totalPoints !== a.totalPoints) {
+                return b.totalPoints - a.totalPoints;
+            }
+            // Tiebreaker: more kills wins
+            return b.kills - a.kills;
+        });
+        
+        // Assign display placement
+        teams.forEach((team, index) => {
+            team.placement = index + 1;
+        });
+
+        renderScoreboard(teams, usingPreviousMatch, matchStatus);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        renderError(error.message);
+    }
 }
 
-function renderScoreboard(teams) {
-  const winnerCard = document.getElementById('winner-card');
-  const winnerTeamName = document.getElementById('winner-team-name');
-  const winnerTeamLogo = document.getElementById('winner-team-logo');
-  const winnerPlayersContainer = document.getElementById('winner-players');
-  const winnerStatsContainer = document.getElementById('winner-stats');
-  const teamListLeft = document.getElementById('team-list-left');
-  const teamListRight = document.getElementById('team-list-right');
-
-  // Clear old content
-  teamListLeft.innerHTML = '';
-  teamListRight.innerHTML = '';
-  winnerPlayersContainer.innerHTML = '';
-  winnerStatsContainer.innerHTML = '';
-
-  const winner = teams[0];
-  if (winner) {
-    winnerCard.style.display = 'flex';
-    winnerTeamName.textContent = winner.teamName || 'Unknown Team';
-    winnerTeamLogo.src = winner.teamLogo || 'https://localhost:5000/assets/default-team-logo.jpg';
-
-    // Show only first 4 player avatars
-    winner.players.slice(0, 4).forEach(player => {
-    const img = document.createElement('img');
-    img.src = player.playerPhoto || 'http://localhost:5000/assets/PUBG.png';
-    img.alt = player.playerName;
-    img.style.width = '40px';
-    img.style.height = '40px';
-    img.style.borderRadius = '50%';
-    winnerPlayersContainer.appendChild(img);
-    });
-
-    winnerStatsContainer.innerHTML = `
-      <div class="winner-stat-item"><span>WWCD</span><span>${winner.wwcd || 0}</span></div>
-      <div class="winner-stat-item"><span>ELIM</span><span>${winner.kills}</span></div>
-      <div class="winner-stat-item"><span>PTS</span><span>${winner.placementPoints}</span></div>
-      <div class="winner-stat-item"><span>TOTAL</span><span>${winner.totalPoints}</span></div>
-    `;
-  } else {
-    winnerCard.style.display = 'none';
-  }
-
-  // Table header
-  const headerHtml = `
-    <li class="list-header">
-      <div style="width: 30px; text-align: center;">#</div>
-      <div style="flex-grow: 1;">TEAM NAME</div>
-      <div class="list-header-stats">
-        <div style="width: 50px;">ELIM</div>
-        <div style="width: 50px;">PLACE</div>
-        <div style="width: 50px;">TOTAL</div>
-      </div>
-    </li>
-  `;
-  teamListLeft.innerHTML = headerHtml;
-  teamListRight.innerHTML = headerHtml;
-
-  // Split remaining teams into two columns
-  const otherTeams = teams.slice(1);
-  const midPoint = Math.ceil(otherTeams.length / 2);
-  const leftColumnTeams = otherTeams.slice(0, midPoint);
-  const rightColumnTeams = otherTeams.slice(midPoint);
-
-  const renderTeamItem = (team) => {
-    const li = document.createElement('li');
-    li.className = 'team-item';
-    li.innerHTML = `
-      <div class="team-rank">#${team.placement}</div>
-      <div class="team-name">${team.teamName || 'Unknown Team'}</div>
-      <div class="team-stats">
-        <span>${team.kills}</span>
-        <span>${team.placementPoints}</span>
-        <span>${team.totalPoints}</span>
-      </div>
-    `;
-    return li;
-  };
-
-
-
-  leftColumnTeams.forEach(team => teamListLeft.appendChild(renderTeamItem(team)));
-  rightColumnTeams.forEach(team => teamListRight.appendChild(renderTeamItem(team)));
+function renderNoData() {
+    const subtitle = document.getElementById('match-subtitle');
+    subtitle.textContent = 'No match data available';
+    
+    // Hide winner card and clear team lists
+    document.getElementById('winner-card').style.display = 'none';
+    document.getElementById('team-list-left').innerHTML = '<li style="text-align: center; padding: 20px; color: #ccc;">Waiting for match data...</li>';
+    document.getElementById('team-list-right').innerHTML = '';
+    
+    hideStatusIndicator();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  fetchData();
-  setInterval(fetchData, 500);
-});
+function renderError(errorMessage) {
+    const subtitle = document.getElementById('match-subtitle');
+    subtitle.textContent = 'Error loading data';
+    
+    document.getElementById('winner-card').style.display = 'none';
+    document.getElementById('team-list-left').innerHTML = `<li style="text-align: center; padding: 20px; color: #ff6b6b;">Error: ${errorMessage}</li>`;
+    document.getElementById('team-list-right').innerHTML = '';
+    
+    hideStatusIndicator();
+}
+
+function renderScoreboard(teams, usingPreviousMatch = false, matchStatus = '') {
+    const winnerCard = document.getElementById('winner-card');
+    const winnerTeamName = document.getElementById('winner-team-name');
+    const winnerTeamLogo = document.getElementById('winner-team-logo');
+    const winnerPlayersContainer = document.getElementById('winner-players');
+    const winnerStatsContainer = document.getElementById('winner-stats');
+    const teamListLeft = document.getElementById('team-list-left');
+    const teamListRight = document.getElementById('team-list-right');
+    const subtitle = document.getElementById('match-subtitle');
+
+    // Update subtitle with match info
+    subtitle.textContent = matchStatus;
+
+    // // Show status indicator if using previous match data
+    // if (usingPreviousMatch) {
+    //     showStatusIndicator('SHOWING PREVIOUS MATCH RESULTS');
+    // } else {
+    //     hideStatusIndicator();
+    // }
+
+    // Clear old content
+    teamListLeft.innerHTML = '';
+    teamListRight.innerHTML = '';
+    winnerPlayersContainer.innerHTML = '';
+    winnerStatsContainer.innerHTML = '';
+
+    // Render winner card
+    const winner = teams[0];
+    if (winner) {
+        winnerCard.style.display = 'flex';
+        winnerTeamName.textContent = winner.teamName;
+        winnerTeamLogo.src = winner.teamLogo;
+        winnerTeamLogo.onerror = function() {
+            this.src = 'https://placehold.co/50x50/A0522D/ffffff?text=Logo';
+        };
+
+        // Display winner's players (up to 4)
+        winner.players.slice(0, 4).forEach(player => {
+            const img = document.createElement('img');
+            img.src = player.playerPhoto;
+            img.alt = player.playerName;
+            img.style.cssText = 'width: 40px; height: 40px; border-radius: 50%; object-fit: cover;';
+            img.onerror = function() {
+                this.src = 'http://localhost:5000/assets/PUBG.png';
+            };
+            winnerPlayersContainer.appendChild(img);
+        });
+
+        // Winner stats
+        winnerStatsContainer.innerHTML = `
+            <div class="winner-stat-item">
+                <span style="font-size: 0.8em;">WWCD</span>
+                <span style="font-size: 1.2em;">1</span>
+            </div>
+            <div class="winner-stat-item">
+                <span style="font-size: 0.8em;">ELIM</span>
+                <span style="font-size: 1.2em;">${winner.kills}</span>
+            </div>
+            <div class="winner-stat-item">
+                <span style="font-size: 0.8em;">PLACE</span>
+                <span style="font-size: 1.2em;">${winner.placementPoints}</span>
+            </div>
+            <div class="winner-stat-item">
+                <span style="font-size: 0.8em;">TOTAL</span>
+                <span style="font-size: 1.2em;">${winner.totalPoints}</span>
+            </div>
+        `;
+    } else {
+        winnerCard.style.display = 'none';
+    }
+
+    // Table headers for both columns
+    const headerHtml = `
+      <li class="list-header">
+        <div style="width: 50px; text-align: center;">#</div>
+        <div style="flex-grow: 1;">TEAM NAME</div>
+        <div class="list-header-stats">
+          <div style="width: 60px; text-align: center;">ELIM</div>
+          <div style="width: 60px; text-align: center;">PLACE</div>
+          <div style="width: 60px; text-align: center;">TOTAL</div>
+        </div>
+      </li>
+    `;
+    
+    // Only show headers if we have teams to display
+    if (teams.length > 1) {
+        teamListLeft.innerHTML = headerHtml;
+        teamListRight.innerHTML = headerHtml;
+    }
+
+    // Split remaining teams into two columns (excluding winner)
+    const otherTeams = teams.slice(1);
+    const midPoint = Math.ceil(otherTeams.length / 2);
+    const leftColumnTeams = otherTeams.slice(0, midPoint);
+    const rightColumnTeams = otherTeams.slice(midPoint);
+
+    const renderTeamItem = (team) => {
+        const li = document.createElement('li');
+        li.className = 'team-item';
+        li.innerHTML = `
+          <div class="team-rank">#${team.placement}</div>
+          <div class="team-name">
+            <img src="${team.teamLogo}" class="team-logo" 
+                 onerror="this.src='https://placehold.co/35x35/ffffff/000000?text=L'">
+            <span>${team.teamName}</span>
+          </div>
+          <div class="team-stats">
+            <span>${team.kills}</span>
+            <span>${team.placementPoints}</span>
+            <span>${team.totalPoints}</span>
+          </div>
+        `;
+        return li;
+    };
+
+    leftColumnTeams.forEach(team => teamListLeft.appendChild(renderTeamItem(team)));
+    rightColumnTeams.forEach(team => teamListRight.appendChild(renderTeamItem(team)));
+}
+
+function showStatusIndicator(message) {
+    let statusIndicator = document.getElementById('match-status-indicator');
+    if (!statusIndicator) {
+        statusIndicator = document.createElement('div');
+        statusIndicator.id = 'match-status-indicator';
+        statusIndicator.className = 'status-indicator';
+        document.body.appendChild(statusIndicator);
+    }
+    statusIndicator.textContent = message;
+    statusIndicator.style.display = 'block';
+}
+
+function hideStatusIndicator() {
+    const statusIndicator = document.getElementById('match-status-indicator');
+    if (statusIndicator) {
+        statusIndicator.style.display = 'none';
+    }
+}
+
+// Initialize and start polling
+function init() {
+    fetchData();
+    setInterval(fetchData, 2000); // Poll every 2 seconds
+}
+
+// Start when page loads
+document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>

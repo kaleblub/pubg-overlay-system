@@ -1,0 +1,6458 @@
+{
+  "meta": {
+    "schemaVersion": 1,
+    "generatedAt": 1756800947
+  },
+  "phase": {
+    "standings": [
+      {
+        "teamId": "IVS ESPORTS",
+        "teamName": "IVS ESPORTS",
+        "kills": 626,
+        "placementPoints": 727,
+        "points": 1353,
+        "wwcd": 62,
+        "rank": 1
+      },
+      {
+        "teamId": "TEAM LEGENDS",
+        "teamName": "TEAM LEGENDS",
+        "kills": 539,
+        "placementPoints": 373,
+        "points": 912,
+        "wwcd": 29,
+        "rank": 2
+      },
+      {
+        "teamId": "U1 SNE ESPORTS",
+        "teamName": "U1 SNE ESPORTS",
+        "kills": 373,
+        "placementPoints": 342,
+        "points": 715,
+        "wwcd": 1,
+        "rank": 3
+      },
+      {
+        "teamId": "WARFACE ESPORTS",
+        "teamName": "WARFACE ESPORTS",
+        "kills": 306,
+        "placementPoints": 307,
+        "points": 613,
+        "wwcd": 0,
+        "rank": 4
+      },
+      {
+        "teamId": "MRY ESPORTS",
+        "teamName": "MRY ESPORTS",
+        "kills": 339,
+        "placementPoints": 265,
+        "points": 604,
+        "wwcd": 0,
+        "rank": 5
+      },
+      {
+        "teamId": "VENOM BD69",
+        "teamName": "VENOM BD69",
+        "kills": 205,
+        "placementPoints": 175,
+        "points": 380,
+        "wwcd": 0,
+        "rank": 6
+      },
+      {
+        "teamId": "VENOM SECRET",
+        "teamName": "VENOM SECRET",
+        "kills": 288,
+        "placementPoints": 77,
+        "points": 365,
+        "wwcd": 1,
+        "rank": 7
+      },
+      {
+        "teamId": "BLOODRUSH ESPORTS",
+        "teamName": "BLOODRUSH ESPORTS",
+        "kills": 192,
+        "placementPoints": 135,
+        "points": 327,
+        "wwcd": 0,
+        "rank": 8
+      },
+      {
+        "teamId": "KITTY GAMING",
+        "teamName": "KITTY GAMING",
+        "kills": 197,
+        "placementPoints": 127,
+        "points": 324,
+        "wwcd": 0,
+        "rank": 9
+      },
+      {
+        "teamId": "STORMXDL ESPORTS",
+        "teamName": "STORMXDL ESPORTS",
+        "kills": 201,
+        "placementPoints": 85,
+        "points": 286,
+        "wwcd": 1,
+        "rank": 10
+      },
+      {
+        "teamId": "TNZ ESPORTS",
+        "teamName": "TNZ ESPORTS",
+        "kills": 195,
+        "placementPoints": 76,
+        "points": 271,
+        "wwcd": 0,
+        "rank": 11
+      },
+      {
+        "teamId": "RED NOTICE SQUAD",
+        "teamName": "RED NOTICE SQUAD",
+        "kills": 143,
+        "placementPoints": 101,
+        "points": 244,
+        "wwcd": 0,
+        "rank": 12
+      },
+      {
+        "teamId": "DZ ESPORTS",
+        "teamName": "DZ ESPORTS",
+        "kills": 96,
+        "placementPoints": 109,
+        "points": 205,
+        "wwcd": 0,
+        "rank": 13
+      },
+      {
+        "teamId": "ICONIC ESPORTS",
+        "teamName": "ICONIC ESPORTS",
+        "kills": 113,
+        "placementPoints": 48,
+        "points": 161,
+        "wwcd": 0,
+        "rank": 14
+      },
+      {
+        "teamId": "T4X ZEN ESPORTS",
+        "teamName": "T4X ZEN ESPORTS",
+        "kills": 61,
+        "placementPoints": 67,
+        "points": 128,
+        "wwcd": 0,
+        "rank": 15
+      },
+      {
+        "teamId": "TEAM VILANCY",
+        "teamName": "TEAM VILANCY",
+        "kills": 74,
+        "placementPoints": 15,
+        "points": 89,
+        "wwcd": 1,
+        "rank": 16
+      },
+      {
+        "teamId": "Unknown Team",
+        "teamName": "Unknown Team",
+        "kills": 50,
+        "placementPoints": 32,
+        "points": 82,
+        "wwcd": 1,
+        "rank": 17
+      },
+      {
+        "teamId": "RSXS4 ESPORTS",
+        "teamName": "RSXS4 ESPORTS",
+        "kills": 0,
+        "placementPoints": 6,
+        "points": 6,
+        "wwcd": 0,
+        "rank": 18
+      },
+      {
+        "teamId": "TEAM REBORN",
+        "teamName": "TEAM REBORN",
+        "kills": 0,
+        "placementPoints": 5,
+        "points": 5,
+        "wwcd": 0,
+        "rank": 19
+      },
+      {
+        "teamId": "ELXMPO ESPORTS",
+        "teamName": "ELXMPO ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 20
+      },
+      {
+        "teamId": "ZERO X ESPORTS",
+        "teamName": "ZERO X ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 21
+      },
+      {
+        "teamId": "BLOOD SYNDICATE",
+        "teamName": "BLOOD SYNDICATE",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 22
+      },
+      {
+        "teamId": "RTD ESPORTS",
+        "teamName": "RTD ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 23
+      },
+      {
+        "teamId": "TDSXESPORTS",
+        "teamName": "TDSXESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 24
+      },
+      {
+        "teamId": "6 TEEN SHOTS ES",
+        "teamName": "6 TEEN SHOTS ES",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 25
+      },
+      {
+        "teamId": "SIUU BOYS",
+        "teamName": "SIUU BOYS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 26
+      },
+      {
+        "teamId": "OTTOMANX ESPORTS",
+        "teamName": "OTTOMANX ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 27
+      },
+      {
+        "teamId": "BD16NJW ESPORTS",
+        "teamName": "BD16NJW ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 28
+      },
+      {
+        "teamId": "ELEVATE CREW",
+        "teamName": "ELEVATE CREW",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 29
+      },
+      {
+        "teamId": "ZEUS ESPORTS",
+        "teamName": "ZEUS ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 30
+      },
+      {
+        "teamId": "4 WARRIOR FORCE",
+        "teamName": "4 WARRIOR FORCE",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 31
+      },
+      {
+        "teamId": "SLASH GAMERS",
+        "teamName": "SLASH GAMERS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 32
+      },
+      {
+        "teamId": "XNIGHT ESPORTS",
+        "teamName": "XNIGHT ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 33
+      },
+      {
+        "teamId": "THE ROYAL ONE",
+        "teamName": "THE ROYAL ONE",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 34
+      },
+      {
+        "teamId": "TBM ESPORTS",
+        "teamName": "TBM ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 35
+      },
+      {
+        "teamId": "KTC ESPORTS",
+        "teamName": "KTC ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 36
+      },
+      {
+        "teamId": "BROTHERS OF DESTRUCTION",
+        "teamName": "BROTHERS OF DESTRUCTION",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 37
+      },
+      {
+        "teamId": "HIGH VOLTAGE ESPORTS",
+        "teamName": "HIGH VOLTAGE ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 38
+      },
+      {
+        "teamId": "RANDOM FAMILY",
+        "teamName": "RANDOM FAMILY",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 39
+      },
+      {
+        "teamId": "XBROTHER ESPORTS",
+        "teamName": "XBROTHER ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 40
+      },
+      {
+        "teamId": "LIMIT OVER",
+        "teamName": "LIMIT OVER",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 41
+      },
+      {
+        "teamId": "KR ESPORTS",
+        "teamName": "KR ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 42
+      },
+      {
+        "teamId": "ZOD ZONE",
+        "teamName": "ZOD ZONE",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 43
+      },
+      {
+        "teamId": "1HITXTGR",
+        "teamName": "1HITXTGR",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 44
+      },
+      {
+        "teamId": "FORSAKEN ESPORTS",
+        "teamName": "FORSAKEN ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 45
+      },
+      {
+        "teamId": "4 ULTRA INSTINCT",
+        "teamName": "4 ULTRA INSTINCT",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 46
+      },
+      {
+        "teamId": "INM ESPORTS",
+        "teamName": "INM ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 47
+      },
+      {
+        "teamId": "NL OFFICAL",
+        "teamName": "NL OFFICAL",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 48
+      },
+      {
+        "teamId": "BLOODSTONE ESPORTS",
+        "teamName": "BLOODSTONE ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 49
+      },
+      {
+        "teamId": "ELXGH ESPORTS",
+        "teamName": "ELXGH ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 50
+      },
+      {
+        "teamId": "CLUTCH CREW ESPORTS",
+        "teamName": "CLUTCH CREW ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 51
+      },
+      {
+        "teamId": "HALAL WARRIORS",
+        "teamName": "HALAL WARRIORS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 52
+      },
+      {
+        "teamId": "CS6 ESPORTS",
+        "teamName": "CS6 ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 53
+      },
+      {
+        "teamId": "MS 1971 ESPORTS",
+        "teamName": "MS 1971 ESPORTS",
+        "kills": 0,
+        "placementPoints": 0,
+        "points": 0,
+        "wwcd": 0,
+        "rank": 54
+      }
+    ],
+    "teams": {
+      "ELXMPO ESPORTS": {
+        "id": "4",
+        "name": "ELXMPO ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/hv.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "ZERO X ESPORTS": {
+        "id": "5",
+        "name": "ZERO X ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/rf.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "BLOOD SYNDICATE": {
+        "id": "6",
+        "name": "BLOOD SYNDICATE",
+        "logo": "http://localhost:5000/assets/LOGO/xb.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "RTD ESPORTS": {
+        "id": "7",
+        "name": "RTD ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/lo.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "TDSXESPORTS": {
+        "id": "8",
+        "name": "TDSXESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/kr.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "6 TEEN SHOTS ES": {
+        "id": "9",
+        "name": "6 TEEN SHOTS ES",
+        "logo": "http://localhost:5000/assets/LOGO/zod.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "SIUU BOYS": {
+        "id": "10",
+        "name": "SIUU BOYS",
+        "logo": "http://localhost:5000/assets/LOGO/tr1.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "OTTOMANX ESPORTS": {
+        "id": "11",
+        "name": "OTTOMANX ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/1hit.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "BD16NJW ESPORTS": {
+        "id": "12",
+        "name": "BD16NJW ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/fsn.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "ELEVATE CREW": {
+        "id": "13",
+        "name": "ELEVATE CREW",
+        "logo": "http://localhost:5000/assets/LOGO/4ui.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "ZEUS ESPORTS": {
+        "id": "14",
+        "name": "ZEUS ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/inm.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "4 WARRIOR FORCE": {
+        "id": "15",
+        "name": "4 WARRIOR FORCE",
+        "logo": "http://localhost:5000/assets/LOGO/nl.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "SLASH GAMERS": {
+        "id": "16",
+        "name": "SLASH GAMERS",
+        "logo": "http://localhost:5000/assets/LOGO/bs.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "XNIGHT ESPORTS": {
+        "id": "17",
+        "name": "XNIGHT ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/elxgh.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "THE ROYAL ONE": {
+        "id": "18",
+        "name": "THE ROYAL ONE",
+        "logo": "http://localhost:5000/assets/LOGO/cc.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "TBM ESPORTS": {
+        "id": "19",
+        "name": "TBM ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/halal.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "KTC ESPORTS": {
+        "id": "22",
+        "name": "KTC ESPORTS",
+        "logo": "http://localhost:5000/assets/default-team-logo.jpg",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "BROTHERS OF DESTRUCTION": {
+        "id": "23",
+        "name": "BROTHERS OF DESTRUCTION",
+        "logo": "http://localhost:5000/assets/default-team-logo.jpg",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "TEAM LEGENDS": {
+        "id": "4",
+        "name": "TEAM LEGENDS",
+        "logo": "http://localhost:5000/assets/LOGO/hv.png",
+        "totals": {
+          "kills": 539,
+          "placementPoints": 373,
+          "points": 912,
+          "wwcd": 29
+        }
+      },
+      "KITTY GAMING": {
+        "id": "5",
+        "name": "KITTY GAMING",
+        "logo": "http://localhost:5000/assets/LOGO/rf.png",
+        "totals": {
+          "kills": 197,
+          "placementPoints": 127,
+          "points": 324,
+          "wwcd": 0
+        }
+      },
+      "U1 SNE ESPORTS": {
+        "id": "6",
+        "name": "U1 SNE ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/xb.png",
+        "totals": {
+          "kills": 373,
+          "placementPoints": 342,
+          "points": 715,
+          "wwcd": 1
+        }
+      },
+      "TNZ ESPORTS": {
+        "id": "7",
+        "name": "TNZ ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/lo.png",
+        "totals": {
+          "kills": 195,
+          "placementPoints": 76,
+          "points": 271,
+          "wwcd": 0
+        }
+      },
+      "DZ ESPORTS": {
+        "id": "8",
+        "name": "DZ ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/kr.png",
+        "totals": {
+          "kills": 96,
+          "placementPoints": 109,
+          "points": 205,
+          "wwcd": 0
+        }
+      },
+      "WARFACE ESPORTS": {
+        "id": "9",
+        "name": "WARFACE ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/zod.png",
+        "totals": {
+          "kills": 306,
+          "placementPoints": 307,
+          "points": 613,
+          "wwcd": 0
+        }
+      },
+      "ICONIC ESPORTS": {
+        "id": "10",
+        "name": "ICONIC ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/tr1.png",
+        "totals": {
+          "kills": 113,
+          "placementPoints": 48,
+          "points": 161,
+          "wwcd": 0
+        }
+      },
+      "TEAM VILANCY": {
+        "id": "11",
+        "name": "TEAM VILANCY",
+        "logo": "http://localhost:5000/assets/LOGO/1hit.png",
+        "totals": {
+          "kills": 74,
+          "placementPoints": 15,
+          "points": 89,
+          "wwcd": 1
+        }
+      },
+      "RSXS4 ESPORTS": {
+        "id": "12",
+        "name": "RSXS4 ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/fsn.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 6,
+          "points": 6,
+          "wwcd": 0
+        }
+      },
+      "IVS ESPORTS": {
+        "id": "13",
+        "name": "IVS ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/4ui.png",
+        "totals": {
+          "kills": 626,
+          "placementPoints": 727,
+          "points": 1353,
+          "wwcd": 62
+        }
+      },
+      "T4X ZEN ESPORTS": {
+        "id": "14",
+        "name": "T4X ZEN ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/inm.png",
+        "totals": {
+          "kills": 61,
+          "placementPoints": 67,
+          "points": 128,
+          "wwcd": 0
+        }
+      },
+      "RED NOTICE SQUAD": {
+        "id": "15",
+        "name": "RED NOTICE SQUAD",
+        "logo": "http://localhost:5000/assets/LOGO/nl.png",
+        "totals": {
+          "kills": 143,
+          "placementPoints": 101,
+          "points": 244,
+          "wwcd": 0
+        }
+      },
+      "VENOM SECRET": {
+        "id": "16",
+        "name": "VENOM SECRET",
+        "logo": "http://localhost:5000/assets/LOGO/bs.png",
+        "totals": {
+          "kills": 288,
+          "placementPoints": 77,
+          "points": 365,
+          "wwcd": 1
+        }
+      },
+      "MRY ESPORTS": {
+        "id": "17",
+        "name": "MRY ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/elxgh.png",
+        "totals": {
+          "kills": 339,
+          "placementPoints": 265,
+          "points": 604,
+          "wwcd": 0
+        }
+      },
+      "TEAM REBORN": {
+        "id": "18",
+        "name": "TEAM REBORN",
+        "logo": "http://localhost:5000/assets/LOGO/cc.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 5,
+          "points": 5,
+          "wwcd": 0
+        }
+      },
+      "BLOODRUSH ESPORTS": {
+        "id": "19",
+        "name": "BLOODRUSH ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/halal.png",
+        "totals": {
+          "kills": 192,
+          "placementPoints": 135,
+          "points": 327,
+          "wwcd": 0
+        }
+      },
+      "VENOM BD69": {
+        "id": "20",
+        "name": "VENOM BD69",
+        "logo": "http://localhost:5000/assets/LOGO/cs6.png",
+        "totals": {
+          "kills": 205,
+          "placementPoints": 175,
+          "points": 380,
+          "wwcd": 0
+        }
+      },
+      "STORMXDL ESPORTS": {
+        "id": "21",
+        "name": "STORMXDL ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/ms1971.png",
+        "totals": {
+          "kills": 201,
+          "placementPoints": 85,
+          "points": 286,
+          "wwcd": 1
+        }
+      },
+      "HIGH VOLTAGE ESPORTS": {
+        "id": "4",
+        "name": "HIGH VOLTAGE ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/hv.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "RANDOM FAMILY": {
+        "id": "5",
+        "name": "RANDOM FAMILY",
+        "logo": "http://localhost:5000/assets/LOGO/rf.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "XBROTHER ESPORTS": {
+        "id": "6",
+        "name": "XBROTHER ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/xb.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "LIMIT OVER": {
+        "id": "7",
+        "name": "LIMIT OVER",
+        "logo": "http://localhost:5000/assets/LOGO/lo.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "KR ESPORTS": {
+        "id": "8",
+        "name": "KR ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/kr.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "ZOD ZONE": {
+        "id": "9",
+        "name": "ZOD ZONE",
+        "logo": "http://localhost:5000/assets/LOGO/zod.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "1HITXTGR": {
+        "id": "11",
+        "name": "1HITXTGR",
+        "logo": "http://localhost:5000/assets/LOGO/1hit.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "FORSAKEN ESPORTS": {
+        "id": "12",
+        "name": "FORSAKEN ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/fsn.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "4 ULTRA INSTINCT": {
+        "id": "13",
+        "name": "4 ULTRA INSTINCT",
+        "logo": "http://localhost:5000/assets/LOGO/4ui.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "INM ESPORTS": {
+        "id": "14",
+        "name": "INM ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/inm.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "NL OFFICAL": {
+        "id": "15",
+        "name": "NL OFFICAL",
+        "logo": "http://localhost:5000/assets/LOGO/nl.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "BLOODSTONE ESPORTS": {
+        "id": "16",
+        "name": "BLOODSTONE ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/bs.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "ELXGH ESPORTS": {
+        "id": "17",
+        "name": "ELXGH ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/elxgh.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "CLUTCH CREW ESPORTS": {
+        "id": "18",
+        "name": "CLUTCH CREW ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/cc.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "HALAL WARRIORS": {
+        "id": "19",
+        "name": "HALAL WARRIORS",
+        "logo": "http://localhost:5000/assets/LOGO/halal.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "CS6 ESPORTS": {
+        "id": "20",
+        "name": "CS6 ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/cs6.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "MS 1971 ESPORTS": {
+        "id": "21",
+        "name": "MS 1971 ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/ms1971.png",
+        "totals": {
+          "kills": 0,
+          "placementPoints": 0,
+          "points": 0,
+          "wwcd": 0
+        }
+      },
+      "Unknown Team": {
+        "id": "6",
+        "name": "Unknown Team",
+        "logo": "http://localhost:5000/assets/default-team-logo.jpg",
+        "totals": {
+          "kills": 50,
+          "placementPoints": 32,
+          "points": 82,
+          "wwcd": 1
+        }
+      }
+    },
+    "players": {
+      "5184925818": {
+        "id": "5184925818",
+        "name": "EL・ŁUCIFER",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXMPO ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5235736392": {
+        "id": "5235736392",
+        "name": "ELmpoATHECAL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXMPO ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5364628440": {
+        "id": "5364628440",
+        "name": "ZEROxDoyal",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZERO X ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5729849347": {
+        "id": "5729849347",
+        "name": "ZEROxMEGADEN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZERO X ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5729373703": {
+        "id": "5729373703",
+        "name": "ZEROxMJ47",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZERO X ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5583051518": {
+        "id": "5583051518",
+        "name": "ZEROxKolaMan",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZERO X ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5496612890": {
+        "id": "5496612890",
+        "name": "AmixAether",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOOD SYNDICATE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5786032924": {
+        "id": "5786032924",
+        "name": "ē・SF・",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOOD SYNDICATE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5187625387": {
+        "id": "5187625387",
+        "name": "TFīRIo",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOOD SYNDICATE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51593817521": {
+        "id": "51593817521",
+        "name": "ū・EGOIST・",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOOD SYNDICATE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5688257491": {
+        "id": "5688257491",
+        "name": "RTDesF4NG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RTD ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5236666776": {
+        "id": "5236666776",
+        "name": "TLSxSpicyAR51",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RTD ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51231694843": {
+        "id": "51231694843",
+        "name": "TiñNiツ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RTD ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5257282698": {
+        "id": "5257282698",
+        "name": "RTDesSCARNOX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RTD ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "52186356436": {
+        "id": "52186356436",
+        "name": "TDSxWriterHü",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TDSXESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5884731191": {
+        "id": "5884731191",
+        "name": "TDSxSingerHü",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TDSXESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5863103399": {
+        "id": "5863103399",
+        "name": "TDSxNeuroShøT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TDSXESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5723363027": {
+        "id": "5723363027",
+        "name": "FFbwDohan20",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TDSXESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51220975057": {
+        "id": "51220975057",
+        "name": "HoneyBEEE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "6 TEEN SHOTS ES",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5273936252": {
+        "id": "5273936252",
+        "name": "SPN丨LOKIĪSir",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "6 TEEN SHOTS ES",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5650150136": {
+        "id": "5650150136",
+        "name": "ZrX๛FURIOUS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "6 TEEN SHOTS ES",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5317428786": {
+        "id": "5317428786",
+        "name": "TeamX・MirEfaz",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "6 TEEN SHOTS ES",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5394534897": {
+        "id": "5394534897",
+        "name": "SiUUUxTAHSIN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SIUU BOYS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5688285611": {
+        "id": "5688285611",
+        "name": "TREXīīMARCO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SIUU BOYS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5513452842": {
+        "id": "5513452842",
+        "name": "F4esTAMiM",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SIUU BOYS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5505202270": {
+        "id": "5505202270",
+        "name": "SiUUUxSHUVO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SIUU BOYS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51773841980": {
+        "id": "51773841980",
+        "name": "OTMNxCYBORG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "OTTOMANX ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5332984921": {
+        "id": "5332984921",
+        "name": "OTMNxSOVYN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "OTTOMANX ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51542338275": {
+        "id": "51542338275",
+        "name": "OTMNxZEROiqoo",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "OTTOMANX ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51523444863": {
+        "id": "51523444863",
+        "name": "BuOesSAIF",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "OTTOMANX ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5623753564": {
+        "id": "5623753564",
+        "name": "BD16esWARLocK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BD16NJW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5310286250": {
+        "id": "5310286250",
+        "name": "BD16njwPRO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BD16NJW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51908318974": {
+        "id": "51908318974",
+        "name": "ūūMAX๛",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BD16NJW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5380865118": {
+        "id": "5380865118",
+        "name": "BD16njwREVYuWu",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BD16NJW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51717863676": {
+        "id": "51717863676",
+        "name": "EVCxRAFI",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELEVATE CREW",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5150412964": {
+        "id": "5150412964",
+        "name": "EVCxSEDIL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELEVATE CREW",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5720988291": {
+        "id": "5720988291",
+        "name": "EVCxFE4RLESS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELEVATE CREW",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5107186115": {
+        "id": "5107186115",
+        "name": "ToBiRaMa",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZEUS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5298585907": {
+        "id": "5298585907",
+        "name": "ツMJ×Miraz",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZEUS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "52263904870": {
+        "id": "52263904870",
+        "name": "4TFprofessor",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZEUS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51397460306": {
+        "id": "51397460306",
+        "name": "٭ʚZUBAYERɞ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZEUS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5727651642": {
+        "id": "5727651642",
+        "name": "4WF๛HASIB",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 WARRIOR FORCE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51378452288": {
+        "id": "51378452288",
+        "name": "๛〖Ghost〗乛M",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 WARRIOR FORCE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5663445198": {
+        "id": "5663445198",
+        "name": "4WF๛SOHAG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 WARRIOR FORCE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5365736895": {
+        "id": "5365736895",
+        "name": "SLASHxRyJaXX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SLASH GAMERS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5974691867": {
+        "id": "5974691867",
+        "name": "SLASHxSiCKSiN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SLASH GAMERS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5829678053": {
+        "id": "5829678053",
+        "name": "SLASHxKAKAROT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SLASH GAMERS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5316334662": {
+        "id": "5316334662",
+        "name": "SLASHxLanterN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SLASH GAMERS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5330150018": {
+        "id": "5330150018",
+        "name": "XN8esSE7ON",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XNIGHT ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5124040461": {
+        "id": "5124040461",
+        "name": "XN8esSLAYER",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XNIGHT ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5664501788": {
+        "id": "5664501788",
+        "name": "XN8esÎDENT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XNIGHT ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5243802335": {
+        "id": "5243802335",
+        "name": "XN8esZOMBI3",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XNIGHT ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5503389444": {
+        "id": "5503389444",
+        "name": "S4esSKYTOŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RSXS4 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 847,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5798459614": {
+        "id": "5798459614",
+        "name": "S4esNAVINŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RSXS4 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 7242,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5543708167": {
+        "id": "5543708167",
+        "name": "RTDesWalkeR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "THE ROYAL ONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5379635238": {
+        "id": "5379635238",
+        "name": "S4esDoraŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "THE ROYAL ONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5320327573": {
+        "id": "5320327573",
+        "name": "TBMesBLAMEop",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TBM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5802453696": {
+        "id": "5802453696",
+        "name": "TBMesMaxtonNuB",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TBM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5399324111": {
+        "id": "5399324111",
+        "name": "TBMesRAHAT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TBM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5401793945": {
+        "id": "5401793945",
+        "name": "TBMesMEHEDI",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TBM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5764316945": {
+        "id": "5764316945",
+        "name": "KTC・Ninja47",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KTC ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51274303829": {
+        "id": "51274303829",
+        "name": "KTC・RoRoX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KTC ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5483729401": {
+        "id": "5483729401",
+        "name": "KTC・OGGY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KTC ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5196330042": {
+        "id": "5196330042",
+        "name": "BODxLeoN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BROTHERS OF DESTRUCTION",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5176358301": {
+        "id": "5176358301",
+        "name": "vnmSiánX9",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BROTHERS OF DESTRUCTION",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "564250559": {
+        "id": "564250559",
+        "name": "BODxSiCA4iO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BROTHERS OF DESTRUCTION",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5744770430": {
+        "id": "5744770430",
+        "name": "MʀメHridoy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BROTHERS OF DESTRUCTION",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5402942858": {
+        "id": "5402942858",
+        "name": "Baki丨Hanma么",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SIUU BOYS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5924799984": {
+        "id": "5924799984",
+        "name": "Dok4xboyy・18",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SIUU BOYS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5684829202": {
+        "id": "5684829202",
+        "name": "ZZesMEMON",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BD16NJW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5504386178": {
+        "id": "5504386178",
+        "name": "EVCxHEIZEN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELEVATE CREW",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5807194493": {
+        "id": "5807194493",
+        "name": "4WF๛Fardin",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 WARRIOR FORCE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5396524971": {
+        "id": "5396524971",
+        "name": "SLASH令SUPR3MO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "SLASH GAMERS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5791156986": {
+        "id": "5791156986",
+        "name": "XN8esAlfi7",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XNIGHT ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5208708795": {
+        "id": "5208708795",
+        "name": "XN8esZixXoNuB",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XNIGHT ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "572330820": {
+        "id": "572330820",
+        "name": "4TFxALADDIN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZEUS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51831802747": {
+        "id": "51831802747",
+        "name": "ElmpoVenX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXMPO ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5108889735": {
+        "id": "5108889735",
+        "name": "S4esPASHAŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RSXS4 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 8729,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5758110607": {
+        "id": "5758110607",
+        "name": "ZEROxN3ZHA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZERO X ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51217937814": {
+        "id": "51217937814",
+        "name": "MWsMowezZy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TDSXESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5916820085": {
+        "id": "5916820085",
+        "name": "ZEROxSTAAR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZERO X ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51522056215": {
+        "id": "51522056215",
+        "name": "ELmpoVenX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXMPO ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "52298861505": {
+        "id": "52298861505",
+        "name": "ROMANNEAR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "OTTOMANX ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5285670004": {
+        "id": "5285670004",
+        "name": "TBMesADIL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TBM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5589581480": {
+        "id": "5589581480",
+        "name": "4WF๛GoBLiNop",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 WARRIOR FORCE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5243591658": {
+        "id": "5243591658",
+        "name": "TLGxZ0LEX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM LEGENDS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 183,
+          "damage": 13248,
+          "knockouts": 4,
+          "matches": 96
+        }
+      },
+      "5131652566": {
+        "id": "5131652566",
+        "name": "RipcHordDgg",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM LEGENDS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 175,
+          "damage": 21110,
+          "knockouts": 2,
+          "matches": 95
+        }
+      },
+      "5242464739": {
+        "id": "5242464739",
+        "name": "TLGxNIGHTseiii",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM LEGENDS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 1,
+          "damage": 4799,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5316229898": {
+        "id": "5316229898",
+        "name": "TLGxRONTgenOP",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM LEGENDS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 186,
+          "damage": 8206,
+          "knockouts": 3,
+          "matches": 95
+        }
+      },
+      "5316098877": {
+        "id": "5316098877",
+        "name": "TIPxToXIC",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KITTY GAMING",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 42,
+          "damage": 2472,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5397090105": {
+        "id": "5397090105",
+        "name": "MTxNIOREXxKG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KITTY GAMING",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 157,
+          "damage": 2584,
+          "knockouts": 2,
+          "matches": 95
+        }
+      },
+      "5156280703": {
+        "id": "5156280703",
+        "name": "MTxZIAOOxKG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KITTY GAMING",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 1,
+          "damage": 813,
+          "knockouts": 0,
+          "matches": 95
+        }
+      },
+      "5583275913": {
+        "id": "5583275913",
+        "name": "MTxLeo6TxKG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KITTY GAMING",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 1540,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "51375907796": {
+        "id": "51375907796",
+        "name": "U1sneSATAN69",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "U1 SNE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 3313,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5375956693": {
+        "id": "5375956693",
+        "name": "U1sneBaBaPiNiK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "U1 SNE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 158,
+          "damage": 14835,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5652130506": {
+        "id": "5652130506",
+        "name": "U1sneGeNeSiS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "U1 SNE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 220,
+          "damage": 18670,
+          "knockouts": 8,
+          "matches": 96
+        }
+      },
+      "51492549923": {
+        "id": "51492549923",
+        "name": "U1sneBiGPAPA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "U1 SNE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 4168,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5204528909": {
+        "id": "5204528909",
+        "name": "HBesJohnOntor",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TNZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 1880,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "51951820431": {
+        "id": "51951820431",
+        "name": "TNZesMuLa",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TNZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 186,
+          "damage": 20543,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5153976840": {
+        "id": "5153976840",
+        "name": "I\\",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TNZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 7035,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "51608869794": {
+        "id": "51608869794",
+        "name": "DZesHASANop",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "DZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 2,
+          "damage": 3524,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "51722664073": {
+        "id": "51722664073",
+        "name": "1UPesE4boyyy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "DZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 34498,
+          "knockouts": 2,
+          "matches": 93
+        }
+      },
+      "5193424896": {
+        "id": "5193424896",
+        "name": "ZTesVOLTAGE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "DZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 12521,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5693470837": {
+        "id": "5693470837",
+        "name": "DZesDanger",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "DZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 95,
+          "damage": 7318,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5956615917": {
+        "id": "5956615917",
+        "name": "WFesERRIIC",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "WARFACE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 89,
+          "damage": 20069,
+          "knockouts": 3,
+          "matches": 96
+        }
+      },
+      "5277377937": {
+        "id": "5277377937",
+        "name": "WFesRengoku",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "WARFACE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 40,
+          "damage": 20349,
+          "knockouts": 4,
+          "matches": 95
+        }
+      },
+      "5941372761": {
+        "id": "5941372761",
+        "name": "WFesZOROnub",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "WARFACE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 93,
+          "damage": 5244,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5268537249": {
+        "id": "5268537249",
+        "name": "WFesSALTyy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "WARFACE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 87,
+          "damage": 3379,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5277731923": {
+        "id": "5277731923",
+        "name": "ICesVizorOP",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ICONIC ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 22,
+          "damage": 11221,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5240338053": {
+        "id": "5240338053",
+        "name": "ICesXyZ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ICONIC ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 5351,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5295363938": {
+        "id": "5295363938",
+        "name": "ICesVinTage",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ICONIC ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 4337,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5253277138": {
+        "id": "5253277138",
+        "name": "ICesONeEYE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ICONIC ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 92,
+          "damage": 7147,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5894277206": {
+        "id": "5894277206",
+        "name": "X1vnDEFAULt",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM VILANCY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 3576,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5894302787": {
+        "id": "5894302787",
+        "name": "X1vnVECTOR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM VILANCY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 3252,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5416061241": {
+        "id": "5416061241",
+        "name": "X1vnKNK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM VILANCY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 75,
+          "damage": 7720,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "51536455950": {
+        "id": "51536455950",
+        "name": "S4esZEROeŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RSXS4 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 9207,
+          "knockouts": 0,
+          "matches": 93
+        }
+      },
+      "5117769996": {
+        "id": "5117769996",
+        "name": "iVSesOSTADū77",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "IVS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 133,
+          "damage": 19997,
+          "knockouts": 4,
+          "matches": 96
+        }
+      },
+      "51369133982": {
+        "id": "51369133982",
+        "name": "iVSesFURYY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "IVS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 264,
+          "damage": 29433,
+          "knockouts": 7,
+          "matches": 96
+        }
+      },
+      "5718513705": {
+        "id": "5718513705",
+        "name": "iVSesOXYNuB",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "IVS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 43,
+          "damage": 5024,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5400513610": {
+        "id": "5400513610",
+        "name": "iVSesFLANKY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "IVS ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 195,
+          "damage": 16792,
+          "knockouts": 3,
+          "matches": 96
+        }
+      },
+      "5227316419": {
+        "id": "5227316419",
+        "name": "NoXesLASTONE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "T4X ZEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 3,
+          "damage": 884,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5713702754": {
+        "id": "5713702754",
+        "name": "T4XzenSiCTuX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "T4X ZEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 57,
+          "damage": 6075,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5505309395": {
+        "id": "5505309395",
+        "name": "T4Xzen킨조ĪMN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "T4X ZEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 2,
+          "damage": 7860,
+          "knockouts": 5,
+          "matches": 96
+        }
+      },
+      "52040329979": {
+        "id": "52040329979",
+        "name": "T4XzenH1TMAN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "T4X ZEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 1185,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5330587042": {
+        "id": "5330587042",
+        "name": "RNSesOSVOXxx",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RED NOTICE SQUAD",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 792,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5467215142": {
+        "id": "5467215142",
+        "name": "RNSesTahsinOG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RED NOTICE SQUAD",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 17,
+          "damage": 4623,
+          "knockouts": 4,
+          "matches": 96
+        }
+      },
+      "5333783855": {
+        "id": "5333783855",
+        "name": "RNSesSTARB0Y٭",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RED NOTICE SQUAD",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 126,
+          "damage": 9061,
+          "knockouts": 5,
+          "matches": 96
+        }
+      },
+      "5434363735": {
+        "id": "5434363735",
+        "name": "RNSesDONTExD",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RED NOTICE SQUAD",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 3,
+          "damage": 3625,
+          "knockouts": 4,
+          "matches": 96
+        }
+      },
+      "5516990947": {
+        "id": "5516990947",
+        "name": "zcSPiDYboyy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM SECRET",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 7384,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5335607606": {
+        "id": "5335607606",
+        "name": "vnmRiCH",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM SECRET",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 96,
+          "damage": 12350,
+          "knockouts": 5,
+          "matches": 96
+        }
+      },
+      "5171526839": {
+        "id": "5171526839",
+        "name": "zcCYREX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM SECRET",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 102,
+          "damage": 10587,
+          "knockouts": 4,
+          "matches": 96
+        }
+      },
+      "5604302236": {
+        "id": "5604302236",
+        "name": "zcRONOK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM SECRET",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 93,
+          "damage": 8151,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5732893285": {
+        "id": "5732893285",
+        "name": "7SinsGlitchOp",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "MRY ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 91,
+          "damage": 3795,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5911314356": {
+        "id": "5911314356",
+        "name": "WLxPOHesYAFÎ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "MRY ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 84,
+          "damage": 5451,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5778574593": {
+        "id": "5778574593",
+        "name": "AMesMrOggy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "MRY ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 132,
+          "damage": 14971,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "6861033560": {
+        "id": "6861033560",
+        "name": "SLTesKENECHI",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "MRY ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 36,
+          "damage": 2208,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5224684604": {
+        "id": "5224684604",
+        "name": "R3BesWAHIDxSVG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM REBORN",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 10306,
+          "knockouts": 1,
+          "matches": 93
+        }
+      },
+      "5371150943": {
+        "id": "5371150943",
+        "name": "R3BesYATO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM REBORN",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5434301237": {
+        "id": "5434301237",
+        "name": "BResKAPTAN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODRUSH ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 186,
+          "damage": 14003,
+          "knockouts": 3,
+          "matches": 96
+        }
+      },
+      "5145687761": {
+        "id": "5145687761",
+        "name": "PPxSabJiLeLo",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODRUSH ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 3,
+          "damage": 3461,
+          "knockouts": 3,
+          "matches": 96
+        }
+      },
+      "5644759570": {
+        "id": "5644759570",
+        "name": "BResEcoBoy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODRUSH ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 4,
+          "damage": 3294,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5217292770": {
+        "id": "5217292770",
+        "name": "BResBaziGarr",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODRUSH ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 1,
+          "damage": 1263,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "51885854090": {
+        "id": "51885854090",
+        "name": "vnmファヒム",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM BD69",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 13575,
+          "knockouts": 1,
+          "matches": 93
+        }
+      },
+      "5280634145": {
+        "id": "5280634145",
+        "name": "vnmRahat2opBD",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM BD69",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 135,
+          "damage": 12833,
+          "knockouts": 3,
+          "matches": 96
+        }
+      },
+      "5133942777": {
+        "id": "5133942777",
+        "name": "vnmMRiDHA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM BD69",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 73,
+          "damage": 7196,
+          "knockouts": 4,
+          "matches": 96
+        }
+      },
+      "5233193630": {
+        "id": "5233193630",
+        "name": "STORMesPASHA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "STORMXDL ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 4,
+          "damage": 417,
+          "knockouts": 2,
+          "matches": 96
+        }
+      },
+      "5809038100": {
+        "id": "5809038100",
+        "name": "STORMxXOXO92DL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "STORMXDL ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 197,
+          "damage": 14030,
+          "knockouts": 3,
+          "matches": 96
+        }
+      },
+      "5181568427": {
+        "id": "5181568427",
+        "name": "STORMxAnikDL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "STORMXDL ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 2,
+          "damage": 8231,
+          "knockouts": 6,
+          "matches": 96
+        }
+      },
+      "5864088760": {
+        "id": "5864088760",
+        "name": "STORMxTixzyDL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "STORMXDL ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 1,
+          "damage": 1877,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5645957809": {
+        "id": "5645957809",
+        "name": "X1vnTOXIC",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM VILANCY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 8512,
+          "knockouts": 0,
+          "matches": 96
+        }
+      },
+      "5298894133": {
+        "id": "5298894133",
+        "name": "R3BesBERSEREK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM REBORN",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 93
+        }
+      },
+      "5181043272": {
+        "id": "5181043272",
+        "name": "BlacK٭PanThe",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TNZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 11,
+          "damage": 3055,
+          "knockouts": 1,
+          "matches": 96
+        }
+      },
+      "5640345334": {
+        "id": "5640345334",
+        "name": "T4GesBLADExDoT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "DZ ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 160,
+          "knockouts": 0,
+          "matches": 93
+        }
+      },
+      "5457493645": {
+        "id": "5457493645",
+        "name": "R3BvmBeRSerK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "TEAM REBORN",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 4400,
+          "knockouts": 1,
+          "matches": 93
+        }
+      },
+      "575197015": {
+        "id": "575197015",
+        "name": "FSatWARRIOR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM BD69",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 123,
+          "knockouts": 1,
+          "matches": 93
+        }
+      },
+      "51432194685": {
+        "id": "51432194685",
+        "name": "vnmD21",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "VENOM BD69",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 78,
+          "knockouts": 0,
+          "matches": 93
+        }
+      },
+      "5542926669": {
+        "id": "5542926669",
+        "name": "HV・RaGe",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "HIGH VOLTAGE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5420729242": {
+        "id": "5420729242",
+        "name": "HV・JuNiOrOp",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "HIGH VOLTAGE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5519170334": {
+        "id": "5519170334",
+        "name": "HV・MEHEDI",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "HIGH VOLTAGE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51011795325": {
+        "id": "51011795325",
+        "name": "RFesLEYONsir",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RANDOM FAMILY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5657758870": {
+        "id": "5657758870",
+        "name": "RFesTHANOS٭",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RANDOM FAMILY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51506678734": {
+        "id": "51506678734",
+        "name": "RFes٭LUiS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RANDOM FAMILY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51837713846": {
+        "id": "51837713846",
+        "name": "UNesHRiDØYmp",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "RANDOM FAMILY",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5358195195": {
+        "id": "5358195195",
+        "name": "ZeltrexOP3",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XBROTHER ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5400614738": {
+        "id": "5400614738",
+        "name": "XBesVenom47zzz",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XBROTHER ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5126847216": {
+        "id": "5126847216",
+        "name": "XBesMISPAR69",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XBROTHER ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "581109036": {
+        "id": "581109036",
+        "name": "Salekin33xyz",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "LIMIT OVER",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "599127344": {
+        "id": "599127344",
+        "name": "LO・RIcoOP",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "LIMIT OVER",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5392267756": {
+        "id": "5392267756",
+        "name": "LO・Nozuka46",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "LIMIT OVER",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5556592458": {
+        "id": "5556592458",
+        "name": "LO・AFFAN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "LIMIT OVER",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51248822679": {
+        "id": "51248822679",
+        "name": "KResLeader",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KR ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5656992669": {
+        "id": "5656992669",
+        "name": "KResmáhîk",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KR ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5243597823": {
+        "id": "5243597823",
+        "name": "KResAīSīIīF",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KR ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5226409329": {
+        "id": "5226409329",
+        "name": "KResGʏʀoBOY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "KR ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51657724497": {
+        "id": "51657724497",
+        "name": "ZODzXZi",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZOD ZONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "564739208": {
+        "id": "564739208",
+        "name": "ZODzMahfuzYT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZOD ZONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5766253527": {
+        "id": "5766253527",
+        "name": "ZODzReBeL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZOD ZONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5331377519": {
+        "id": "5331377519",
+        "name": "ZODz2EYES",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ZOD ZONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5599463875": {
+        "id": "5599463875",
+        "name": "TR1・ZeNitsu",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "THE ROYAL ONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51712736161": {
+        "id": "51712736161",
+        "name": "TR1・DAXTER",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "THE ROYAL ONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5183288838": {
+        "id": "5183288838",
+        "name": "TR1・RoxX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "THE ROYAL ONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5329074252": {
+        "id": "5329074252",
+        "name": "TR1xCRoKXX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "THE ROYAL ONE",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "52215849126": {
+        "id": "52215849126",
+        "name": "4ME丨SHAVEEn06",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "1HITXTGR",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5641217818": {
+        "id": "5641217818",
+        "name": "4ME丨DRムXシ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "1HITXTGR",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5237664111": {
+        "id": "5237664111",
+        "name": "4MEJONNYmvp",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "1HITXTGR",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5159494306": {
+        "id": "5159494306",
+        "name": "SCOUT39",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "1HITXTGR",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5912452727": {
+        "id": "5912452727",
+        "name": "FSNesUnknown",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "FORSAKEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51019901310": {
+        "id": "51019901310",
+        "name": "FSNes00Se7eNub",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "FORSAKEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5106279908": {
+        "id": "5106279908",
+        "name": "FSNesStubBorn",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "FORSAKEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5756372469": {
+        "id": "5756372469",
+        "name": "FSNesDada",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "FORSAKEN ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5236853636": {
+        "id": "5236853636",
+        "name": "NBDŪCYCAS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 ULTRA INSTINCT",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5645714327": {
+        "id": "5645714327",
+        "name": "NBDŪANGRY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 ULTRA INSTINCT",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5111947894": {
+        "id": "5111947894",
+        "name": "4uiīDIABLOzz",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 ULTRA INSTINCT",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51217745048": {
+        "id": "51217745048",
+        "name": "NBDŪSPEED",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "4 ULTRA INSTINCT",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5129905818": {
+        "id": "5129905818",
+        "name": "INMesMEHERAZ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "INM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5502142209": {
+        "id": "5502142209",
+        "name": "INMesDANTEz",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "INM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5295786573": {
+        "id": "5295786573",
+        "name": "INMesSHARPX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "INM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5185342138": {
+        "id": "5185342138",
+        "name": "INMesGAARA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "INM ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51398481901": {
+        "id": "51398481901",
+        "name": "AVNesA1ZEN77",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "NL OFFICAL",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5871310422": {
+        "id": "5871310422",
+        "name": "NLxViXTO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "NL OFFICAL",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51947047896": {
+        "id": "51947047896",
+        "name": "NLxWINE7m",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "NL OFFICAL",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5961564488": {
+        "id": "5961564488",
+        "name": "NLxAttitudeOP",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "NL OFFICAL",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5867858720": {
+        "id": "5867858720",
+        "name": "BSesSICK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODSTONE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5322049382": {
+        "id": "5322049382",
+        "name": "BSesTR1GGERzZZ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODSTONE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5227411161": {
+        "id": "5227411161",
+        "name": "BSesOrOcHimarU",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODSTONE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51014907789": {
+        "id": "51014907789",
+        "name": "GooDEyeeeee",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "BLOODSTONE ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5142843260": {
+        "id": "5142843260",
+        "name": "GhPOWER",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXGH ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5638311879": {
+        "id": "5638311879",
+        "name": "GhARMOURog",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXGH ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5765032446": {
+        "id": "5765032446",
+        "name": "GhLuxxy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXGH ESPORTS",
+        "live": {
+          "isAlive": true,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5215819313": {
+        "id": "5215819313",
+        "name": "GhJELLY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "ELXGH ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "596047405": {
+        "id": "596047405",
+        "name": "CCesILLuSioN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CLUTCH CREW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5386103250": {
+        "id": "5386103250",
+        "name": "CCes塔伊夫",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CLUTCH CREW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5602923533": {
+        "id": "5602923533",
+        "name": "CCesZEON",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CLUTCH CREW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5459313341": {
+        "id": "5459313341",
+        "name": "CCesSENǏOR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CLUTCH CREW ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5286943715": {
+        "id": "5286943715",
+        "name": "HALALwrVaL9Tno",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "HALAL WARRIORS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5266212973": {
+        "id": "5266212973",
+        "name": "HALALwrNoOnE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "HALAL WARRIORS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5290038095": {
+        "id": "5290038095",
+        "name": "HALALwrG3nTL3",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "HALAL WARRIORS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5216184989": {
+        "id": "5216184989",
+        "name": "HALALwrAVOCADO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "HALAL WARRIORS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5180189432": {
+        "id": "5180189432",
+        "name": "CS6esVibe77LT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CS6 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5930735297": {
+        "id": "5930735297",
+        "name": "CS6esHYDROXzZz",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CS6 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5166709889": {
+        "id": "5166709889",
+        "name": "CS6esXiaoYan",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CS6 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5288829456": {
+        "id": "5288829456",
+        "name": "CS6esREMONTADA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "CS6 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5363941655": {
+        "id": "5363941655",
+        "name": "MSBesEXEee",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "MS 1971 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5715800216": {
+        "id": "5715800216",
+        "name": "MSBesBRAINSTRO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "MS 1971 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "51530205130": {
+        "id": "51530205130",
+        "name": "MSBesNARUTO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "MS 1971 ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      },
+      "5622705541": {
+        "id": "5622705541",
+        "name": "XBesEntryBae",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "teamName": "XBROTHER ESPORTS",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100
+        },
+        "totals": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0,
+          "matches": 0
+        }
+      }
+    }
+  },
+  "match": {
+    "id": null,
+    "status": "idle",
+    "winnerTeamId": null,
+    "winnerTeamName": null,
+    "eliminationOrder": [],
+    "killFeed": [],
+    "teams": {},
+    "players": {}
+  },
+  "previousMatch": {
+    "id": "2860125895650753191",
+    "status": "completed",
+    "winnerTeamId": "21",
+    "winnerTeamName": "STORMXDL ESPORTS",
+    "eliminationOrder": [
+      "TNZ ESPORTS",
+      "TEAM VILANCY",
+      "TEAM REBORN",
+      "RSXS4 ESPORTS",
+      "MRY ESPORTS",
+      "KITTY GAMING",
+      "VENOM SECRET",
+      "BLOODRUSH ESPORTS",
+      "WARFACE ESPORTS",
+      "U1 SNE ESPORTS",
+      "IVS ESPORTS",
+      "TEAM LEGENDS",
+      "DZ ESPORTS",
+      "ICONIC ESPORTS",
+      "T4X ZEN ESPORTS",
+      "RED NOTICE SQUAD",
+      "VENOM BD69"
+    ],
+    "killFeed": [
+      "Kill: STORMxTixzyDL (STORMXDL ESPORTS) got a new kill!",
+      "Kill: STORMxAnikDL (STORMXDL ESPORTS) got a new kill!",
+      "Kill: vnmMRiDHA (VENOM BD69) got a new kill!",
+      "Kill: STORMesPASHA (STORMXDL ESPORTS) got a new kill!",
+      "Kill: STORMesPASHA (STORMXDL ESPORTS) got a new kill!"
+    ],
+    "teams": {
+      "4": {
+        "id": "4",
+        "name": "TEAM LEGENDS",
+        "logo": "http://localhost:5000/assets/LOGO/hv.png",
+        "liveMembers": 0,
+        "kills": 5,
+        "placementPointsLive": 1,
+        "players": [
+          "5242464739",
+          "5131652566",
+          "5316229898",
+          "5243591658"
+        ]
+      },
+      "5": {
+        "id": "5",
+        "name": "KITTY GAMING",
+        "logo": "http://localhost:5000/assets/LOGO/rf.png",
+        "liveMembers": 0,
+        "kills": 2,
+        "placementPointsLive": 0,
+        "players": [
+          "5583275913",
+          "5316098877",
+          "5397090105",
+          "5156280703"
+        ]
+      },
+      "6": {
+        "id": "6",
+        "name": "U1 SNE ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/xb.png",
+        "liveMembers": 0,
+        "kills": 3,
+        "placementPointsLive": 0,
+        "players": [
+          "51375907796",
+          "5375956693",
+          "51492549923",
+          "5652130506"
+        ]
+      },
+      "7": {
+        "id": "7",
+        "name": "TNZ ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/lo.png",
+        "liveMembers": 0,
+        "kills": 1,
+        "placementPointsLive": 0,
+        "players": [
+          "5204528909",
+          "5181043272",
+          "51951820431",
+          "5153976840"
+        ]
+      },
+      "8": {
+        "id": "8",
+        "name": "DZ ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/kr.png",
+        "liveMembers": 0,
+        "kills": 4,
+        "placementPointsLive": 2,
+        "players": [
+          "5640345334",
+          "5193424896",
+          "5693470837",
+          "51608869794"
+        ]
+      },
+      "9": {
+        "id": "9",
+        "name": "WARFACE ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/zod.png",
+        "liveMembers": 0,
+        "kills": 1,
+        "placementPointsLive": 0,
+        "players": [
+          "5941372761",
+          "5277377937",
+          "5268537249",
+          "5956615917"
+        ]
+      },
+      "10": {
+        "id": "10",
+        "name": "ICONIC ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/tr1.png",
+        "liveMembers": 0,
+        "kills": 0,
+        "placementPointsLive": 3,
+        "players": [
+          "5240338053",
+          "5277731923",
+          "5295363938",
+          "5253277138"
+        ]
+      },
+      "11": {
+        "id": "11",
+        "name": "TEAM VILANCY",
+        "logo": "http://localhost:5000/assets/LOGO/1hit.png",
+        "liveMembers": 0,
+        "kills": 1,
+        "placementPointsLive": 0,
+        "players": [
+          "5894277206",
+          "5645957809",
+          "5894302787",
+          "5416061241"
+        ]
+      },
+      "12": {
+        "id": "12",
+        "name": "RSXS4 ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/fsn.png",
+        "liveMembers": 0,
+        "kills": 0,
+        "placementPointsLive": 0,
+        "players": [
+          "5503389444",
+          "5798459614",
+          "5108889735"
+        ]
+      },
+      "13": {
+        "id": "13",
+        "name": "IVS ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/4ui.png",
+        "liveMembers": 0,
+        "kills": 7,
+        "placementPointsLive": 1,
+        "players": [
+          "5117769996",
+          "5718513705",
+          "5400513610",
+          "51369133982"
+        ]
+      },
+      "14": {
+        "id": "14",
+        "name": "T4X ZEN ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/inm.png",
+        "liveMembers": 0,
+        "kills": 5,
+        "placementPointsLive": 4,
+        "players": [
+          "5713702754",
+          "5227316419",
+          "5505309395",
+          "52040329979"
+        ]
+      },
+      "15": {
+        "id": "15",
+        "name": "RED NOTICE SQUAD",
+        "logo": "http://localhost:5000/assets/LOGO/nl.png",
+        "liveMembers": 0,
+        "kills": 7,
+        "placementPointsLive": 5,
+        "players": [
+          "5330587042",
+          "5333783855",
+          "5467215142",
+          "5434363735"
+        ]
+      },
+      "16": {
+        "id": "16",
+        "name": "VENOM SECRET",
+        "logo": "http://localhost:5000/assets/LOGO/bs.png",
+        "liveMembers": 0,
+        "kills": 6,
+        "placementPointsLive": 0,
+        "players": [
+          "5516990947",
+          "5335607606",
+          "5171526839",
+          "5604302236"
+        ]
+      },
+      "17": {
+        "id": "17",
+        "name": "MRY ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/elxgh.png",
+        "liveMembers": 0,
+        "kills": 2,
+        "placementPointsLive": 0,
+        "players": [
+          "5732893285",
+          "5911314356",
+          "5778574593",
+          "6861033560"
+        ]
+      },
+      "18": {
+        "id": "18",
+        "name": "TEAM REBORN",
+        "logo": "http://localhost:5000/assets/LOGO/cc.png",
+        "liveMembers": 0,
+        "kills": 0,
+        "placementPointsLive": 0,
+        "players": [
+          "5371150943",
+          "5457493645"
+        ]
+      },
+      "19": {
+        "id": "19",
+        "name": "BLOODRUSH ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/halal.png",
+        "liveMembers": 0,
+        "kills": 8,
+        "placementPointsLive": 0,
+        "players": [
+          "5145687761",
+          "5434301237",
+          "5644759570",
+          "5217292770"
+        ]
+      },
+      "20": {
+        "id": "20",
+        "name": "VENOM BD69",
+        "logo": "http://localhost:5000/assets/LOGO/cs6.png",
+        "liveMembers": 0,
+        "kills": 3,
+        "placementPointsLive": 6,
+        "players": [
+          "575197015",
+          "51432194685",
+          "5133942777",
+          "5280634145"
+        ]
+      },
+      "21": {
+        "id": "21",
+        "name": "STORMXDL ESPORTS",
+        "logo": "http://localhost:5000/assets/LOGO/ms1971.png",
+        "liveMembers": 4,
+        "kills": 8,
+        "placementPointsLive": 10,
+        "players": [
+          "5809038100",
+          "5233193630",
+          "5181568427",
+          "5864088760"
+        ]
+      }
+    },
+    "players": {
+      "5242464739": {
+        "id": "5242464739",
+        "teamId": "4",
+        "name": "TLGxNIGHTseiii",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 99,
+          "knockouts": 1
+        }
+      },
+      "5131652566": {
+        "id": "5131652566",
+        "teamId": "4",
+        "name": "RipcHordDgg",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 180,
+          "knockouts": 1
+        }
+      },
+      "5583275913": {
+        "id": "5583275913",
+        "teamId": "5",
+        "name": "MTxLeo6TxKG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5316098877": {
+        "id": "5316098877",
+        "teamId": "5",
+        "name": "TIPxToXIC",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 322,
+          "knockouts": 0
+        }
+      },
+      "5397090105": {
+        "id": "5397090105",
+        "teamId": "5",
+        "name": "MTxNIOREXxKG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 143,
+          "knockouts": 1
+        }
+      },
+      "5156280703": {
+        "id": "5156280703",
+        "teamId": "5",
+        "name": "MTxZIAOOxKG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 62,
+          "knockouts": 0
+        }
+      },
+      "51375907796": {
+        "id": "51375907796",
+        "teamId": "6",
+        "name": "U1sneSATAN69",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 42,
+          "knockouts": 0
+        }
+      },
+      "5375956693": {
+        "id": "5375956693",
+        "teamId": "6",
+        "name": "U1sneBaBaPiNiK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 323,
+          "knockouts": 0
+        }
+      },
+      "51492549923": {
+        "id": "51492549923",
+        "teamId": "6",
+        "name": "U1sneBiGPAPA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 18,
+          "knockouts": 0
+        }
+      },
+      "5652130506": {
+        "id": "5652130506",
+        "teamId": "6",
+        "name": "U1sneGeNeSiS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 549,
+          "knockouts": 5
+        }
+      },
+      "5204528909": {
+        "id": "5204528909",
+        "teamId": "7",
+        "name": "HBesJohnOntor",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5181043272": {
+        "id": "5181043272",
+        "teamId": "7",
+        "name": "BlacK٭PanThe",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 340,
+          "knockouts": 1
+        }
+      },
+      "51951820431": {
+        "id": "51951820431",
+        "teamId": "7",
+        "name": "TNZesMuLa",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 90,
+          "knockouts": 0
+        }
+      },
+      "5153976840": {
+        "id": "5153976840",
+        "teamId": "7",
+        "name": "I\\",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5640345334": {
+        "id": "5640345334",
+        "teamId": "8",
+        "name": "T4GesBLADExDoT",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 160,
+          "knockouts": 0
+        }
+      },
+      "5193424896": {
+        "id": "5193424896",
+        "teamId": "8",
+        "name": "ZTesVOLTAGE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5693470837": {
+        "id": "5693470837",
+        "teamId": "8",
+        "name": "DZesDanger",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 2,
+          "damage": 362,
+          "knockouts": 1
+        }
+      },
+      "51608869794": {
+        "id": "51608869794",
+        "teamId": "8",
+        "name": "DZesHASANop",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 2,
+          "damage": 234,
+          "knockouts": 1
+        }
+      },
+      "5941372761": {
+        "id": "5941372761",
+        "teamId": "9",
+        "name": "WFesZOROnub",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 90,
+          "knockouts": 0
+        }
+      },
+      "5277377937": {
+        "id": "5277377937",
+        "teamId": "9",
+        "name": "WFesRengoku",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5268537249": {
+        "id": "5268537249",
+        "teamId": "9",
+        "name": "WFesSALTyy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5240338053": {
+        "id": "5240338053",
+        "teamId": "10",
+        "name": "ICesXyZ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 268,
+          "knockouts": 1
+        }
+      },
+      "5277731923": {
+        "id": "5277731923",
+        "teamId": "10",
+        "name": "ICesVizorOP",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 288,
+          "knockouts": 0
+        }
+      },
+      "5295363938": {
+        "id": "5295363938",
+        "teamId": "10",
+        "name": "ICesVinTage",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 156,
+          "knockouts": 0
+        }
+      },
+      "5253277138": {
+        "id": "5253277138",
+        "teamId": "10",
+        "name": "ICesONeEYE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 55,
+          "knockouts": 0
+        }
+      },
+      "5894277206": {
+        "id": "5894277206",
+        "teamId": "11",
+        "name": "X1vnDEFAULt",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5645957809": {
+        "id": "5645957809",
+        "teamId": "11",
+        "name": "X1vnTOXIC",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 41,
+          "knockouts": 0
+        }
+      },
+      "5894302787": {
+        "id": "5894302787",
+        "teamId": "11",
+        "name": "X1vnVECTOR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 32,
+          "knockouts": 0
+        }
+      },
+      "5416061241": {
+        "id": "5416061241",
+        "teamId": "11",
+        "name": "X1vnKNK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 188,
+          "knockouts": 1
+        }
+      },
+      "5503389444": {
+        "id": "5503389444",
+        "teamId": "12",
+        "name": "S4esSKYTOŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 48,
+          "knockouts": 0
+        }
+      },
+      "5798459614": {
+        "id": "5798459614",
+        "teamId": "12",
+        "name": "S4esNAVINŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 107,
+          "knockouts": 0
+        }
+      },
+      "5108889735": {
+        "id": "5108889735",
+        "teamId": "12",
+        "name": "S4esPASHAŪRS",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 38,
+          "knockouts": 0
+        }
+      },
+      "5117769996": {
+        "id": "5117769996",
+        "teamId": "13",
+        "name": "iVSesOSTADū77",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 319,
+          "knockouts": 2
+        }
+      },
+      "5718513705": {
+        "id": "5718513705",
+        "teamId": "13",
+        "name": "iVSesOXYNuB",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 153,
+          "knockouts": 1
+        }
+      },
+      "5400513610": {
+        "id": "5400513610",
+        "teamId": "13",
+        "name": "iVSesFLANKY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 7,
+          "knockouts": 0
+        }
+      },
+      "51369133982": {
+        "id": "51369133982",
+        "teamId": "13",
+        "name": "iVSesFURYY",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 4,
+          "damage": 518,
+          "knockouts": 3
+        }
+      },
+      "5713702754": {
+        "id": "5713702754",
+        "teamId": "14",
+        "name": "T4XzenSiCTuX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5227316419": {
+        "id": "5227316419",
+        "teamId": "14",
+        "name": "NoXesLASTONE",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 516,
+          "knockouts": 1
+        }
+      },
+      "5505309395": {
+        "id": "5505309395",
+        "teamId": "14",
+        "name": "T4Xzen킨조ĪMN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 2,
+          "damage": 387,
+          "knockouts": 3
+        }
+      },
+      "52040329979": {
+        "id": "52040329979",
+        "teamId": "14",
+        "name": "T4XzenH1TMAN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 57,
+          "knockouts": 0
+        }
+      },
+      "5330587042": {
+        "id": "5330587042",
+        "teamId": "15",
+        "name": "RNSesOSVOXxx",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5333783855": {
+        "id": "5333783855",
+        "teamId": "15",
+        "name": "RNSesSTARB0Y٭",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 544,
+          "knockouts": 3
+        }
+      },
+      "5467215142": {
+        "id": "5467215142",
+        "teamId": "15",
+        "name": "RNSesTahsinOG",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 781,
+          "knockouts": 3
+        }
+      },
+      "5434363735": {
+        "id": "5434363735",
+        "teamId": "15",
+        "name": "RNSesDONTExD",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 477,
+          "knockouts": 4
+        }
+      },
+      "5516990947": {
+        "id": "5516990947",
+        "teamId": "16",
+        "name": "zcSPiDYboyy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 336,
+          "knockouts": 0
+        }
+      },
+      "5335607606": {
+        "id": "5335607606",
+        "teamId": "16",
+        "name": "vnmRiCH",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 443,
+          "knockouts": 3
+        }
+      },
+      "5171526839": {
+        "id": "5171526839",
+        "teamId": "16",
+        "name": "zcCYREX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 430,
+          "knockouts": 3
+        }
+      },
+      "5604302236": {
+        "id": "5604302236",
+        "teamId": "16",
+        "name": "zcRONOK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 44,
+          "knockouts": 0
+        }
+      },
+      "5732893285": {
+        "id": "5732893285",
+        "teamId": "17",
+        "name": "7SinsGlitchOp",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 36,
+          "knockouts": 0
+        }
+      },
+      "5911314356": {
+        "id": "5911314356",
+        "teamId": "17",
+        "name": "WLxPOHesYAFÎ",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 134,
+          "knockouts": 0
+        }
+      },
+      "5778574593": {
+        "id": "5778574593",
+        "teamId": "17",
+        "name": "AMesMrOggy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 125,
+          "knockouts": 0
+        }
+      },
+      "6861033560": {
+        "id": "6861033560",
+        "teamId": "17",
+        "name": "SLTesKENECHI",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 92,
+          "knockouts": 1
+        }
+      },
+      "5371150943": {
+        "id": "5371150943",
+        "teamId": "18",
+        "name": "R3BesYATO",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 0,
+          "knockouts": 0
+        }
+      },
+      "5457493645": {
+        "id": "5457493645",
+        "teamId": "18",
+        "name": "R3BvmBeRSerK",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 100,
+          "knockouts": 1
+        }
+      },
+      "5145687761": {
+        "id": "5145687761",
+        "teamId": "19",
+        "name": "PPxSabJiLeLo",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 3,
+          "damage": 473,
+          "knockouts": 3
+        }
+      },
+      "5434301237": {
+        "id": "5434301237",
+        "teamId": "19",
+        "name": "BResKAPTAN",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 185,
+          "knockouts": 1
+        }
+      },
+      "5644759570": {
+        "id": "5644759570",
+        "teamId": "19",
+        "name": "BResEcoBoy",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 4,
+          "damage": 521,
+          "knockouts": 2
+        }
+      },
+      "575197015": {
+        "id": "575197015",
+        "teamId": "20",
+        "name": "FSatWARRIOR",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 123,
+          "knockouts": 1
+        }
+      },
+      "51432194685": {
+        "id": "51432194685",
+        "teamId": "20",
+        "name": "vnmD21",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 0,
+          "damage": 78,
+          "knockouts": 0
+        }
+      },
+      "5133942777": {
+        "id": "5133942777",
+        "teamId": "20",
+        "name": "vnmMRiDHA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 2,
+          "damage": 547,
+          "knockouts": 3
+        }
+      },
+      "5280634145": {
+        "id": "5280634145",
+        "teamId": "20",
+        "name": "vnmRahat2op",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 513,
+          "knockouts": 1
+        }
+      },
+      "5809038100": {
+        "id": "5809038100",
+        "teamId": "21",
+        "name": "STORMxXOXO92DL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": true,
+          "health": 46,
+          "healthMax": 100,
+          "liveState": 0
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 177,
+          "knockouts": 1
+        }
+      },
+      "5233193630": {
+        "id": "5233193630",
+        "teamId": "21",
+        "name": "STORMesPASHA",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": true,
+          "health": 68,
+          "healthMax": 100,
+          "liveState": 0
+        },
+        "stats": {
+          "kills": 4,
+          "damage": 417,
+          "knockouts": 2
+        }
+      },
+      "5181568427": {
+        "id": "5181568427",
+        "teamId": "21",
+        "name": "STORMxAnikDL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": true,
+          "health": 75,
+          "healthMax": 100,
+          "liveState": 0
+        },
+        "stats": {
+          "kills": 2,
+          "damage": 733,
+          "knockouts": 5
+        }
+      },
+      "5864088760": {
+        "id": "5864088760",
+        "teamId": "21",
+        "name": "STORMxTixzyDL",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": true,
+          "health": 100,
+          "healthMax": 100,
+          "liveState": 3
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 101,
+          "knockouts": 0
+        }
+      },
+      "5316229898": {
+        "id": "5316229898",
+        "teamId": "4",
+        "name": "TLGxRONTgenOP",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 2,
+          "damage": 443,
+          "knockouts": 2
+        }
+      },
+      "5243591658": {
+        "id": "5243591658",
+        "teamId": "4",
+        "name": "TLGxZ0LEX",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 378,
+          "knockouts": 2
+        }
+      },
+      "5956615917": {
+        "id": "5956615917",
+        "teamId": "9",
+        "name": "WFesERRIIC",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 267,
+          "knockouts": 1
+        }
+      },
+      "5217292770": {
+        "id": "5217292770",
+        "teamId": "19",
+        "name": "BResBaziGarr",
+        "photo": "http://localhost:5000/assets/PUBG.png",
+        "live": {
+          "isAlive": false,
+          "health": 0,
+          "healthMax": 100,
+          "liveState": 5
+        },
+        "stats": {
+          "kills": 1,
+          "damage": 135,
+          "knockouts": 1
+        }
+      }
+    }
+  },
+  "leaderboards": {
+    "currentMatchTopPlayers": [],
+    "allTimeTopPlayers": [
+      {
+        "playerId": "5108889735",
+        "name": "S4esPASHAŪRS",
+        "teamName": "RSXS4 ESPORTS",
+        "totalKills": 8,
+        "totalDamage": 1063,
+        "totalKnockouts": 4,
+        "totalMatches": 2
+      },
+      {
+        "playerId": "5765032446",
+        "name": "GhLuxxy",
+        "teamName": "ELXGH ESPORTS",
+        "totalKills": 6,
+        "totalDamage": 928,
+        "totalKnockouts": 4,
+        "totalMatches": 1
+      },
+      {
+        "playerId": "5766253527",
+        "name": "ZODzReBeL",
+        "teamName": "ZOD ZONE",
+        "totalKills": 5,
+        "totalDamage": 908,
+        "totalKnockouts": 3,
+        "totalMatches": 1
+      },
+      {
+        "playerId": "5503389444",
+        "name": "S4esSKYTOŪRS",
+        "teamName": "RSXS4 ESPORTS",
+        "totalKills": 4,
+        "totalDamage": 1089,
+        "totalKnockouts": 5,
+        "totalMatches": 2
+      },
+      {
+        "playerId": "5363941655",
+        "name": "MSBesEXEee",
+        "teamName": "MS 1971 ESPORTS",
+        "totalKills": 4,
+        "totalDamage": 1015,
+        "totalKnockouts": 5,
+        "totalMatches": 1
+      }
+    ]
+  },
+  "live": {
+    "activePlayers": [],
+    "teamKills": {}
+  }
+}
