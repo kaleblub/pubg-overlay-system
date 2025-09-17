@@ -130,7 +130,7 @@
     
     /* Specific styles for low health */
     .status-bar-fill.low-health {
-      background-color: #e74c3c; /* Red for low health */
+      background-color: #e74c3c;
     }
     
     /* Styling for eliminated players */
@@ -327,7 +327,7 @@
                 teamRow.appendChild(statusCell);
 
                 // POINTS - Use phase total points when idle; add current match kills when live
-                let totalPoints = team.points; // Default to phase total points
+                let totalPoints = team.points;
                 if (matchStatus === 'live') {
                     totalPoints = team.points + killsToDisplay;
                 }

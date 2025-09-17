@@ -643,7 +643,7 @@ def end_match_and_update_phase(state_obj):
         "winnerTeamName": state_obj["match"]["winnerTeamName"],
         "eliminationOrder": list(state_obj["match"]["eliminationOrder"]),
         "killFeed": list(state_obj["match"]["killFeed"]),
-        "teams": dict(state_obj["match"]["teams"]),   # includes placementPointsLive
+        "teams": dict(state_obj["match"]["teams"]),
         "players": dict(state_obj["match"]["players"])
     }
 
@@ -1480,10 +1480,10 @@ def main(test_mode=False, reprocess=False):
             # If a new log file is detected, process it from the beginning
             if next_log_path and next_log_path != current_log_path:
                 current_log_path = next_log_path
-                last_pos = 0  # Reset position for the new file
+                last_pos = 0
                 last_update_time = now
                 log_was_updated = True
-                no_update_start_time = None  # Reset inactivity timer
+                no_update_start_time = None
                 
                 logging.info(f"New log file detected: {current_log_path}. Reading from the start.")
                 try:
@@ -1491,7 +1491,7 @@ def main(test_mode=False, reprocess=False):
                         log_text = f.read()
                         # 'full' mode is only used once per new log file
                         parse_and_apply(log_text, parsed_logos=team_logos, mode="full")
-                        if state["match"]["status"] == "live" and state["match"]["id"]:  # Confirm new match
+                        if state["match"]["status"] == "live" and state["match"]["id"]:
                             state["match_state"]["status"] = "live"
                             state["match_state"]["last_updated"] = int(time.time())
                         last_pos = f.tell()
@@ -1510,9 +1510,8 @@ def main(test_mode=False, reprocess=False):
                         last_pos = new_pos
                         last_update_time = now
                         log_was_updated = True
-                        no_update_start_time = None  # Reset inactivity timer
+                        no_update_start_time = None
 
-                        # Track inactivity for auto-finalization
             # Track inactivity for auto-finalization
             if not log_was_updated:
                 if no_update_start_time is None:
@@ -1524,7 +1523,6 @@ def main(test_mode=False, reprocess=False):
 
             if test_mode and simulation_manager and simulation_manager.is_complete():
                 print_colored("Simulation complete! Monitoring will continue...", Fore.GREEN)
-                # Reset to avoid repeated messages
                 simulation_manager.simulation_complete = False
 
             # Check for match end condition (unified for both modes)
