@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PUBG Match Standings</title>
-    <style>
+        <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
         body {
@@ -109,29 +109,31 @@
         }
 
         .team-rank {
-            font-weight: bold;
-            font-size: 1.2em;
-            width: 60px; /* Give it a fixed width */
-            text-align: center;
-            background-color: #b5a420; /* Yellow background */
+            width: 50px; /* fixed width for rank column */
             display: flex;
             align-items: center;
             justify-content: center;
+            background-color: #b5a420; /* yellow */
+            font-weight: bold;
+            color: black;
         }
-        
+
         .team-name-column {
             background-color: #5ab4d6;
             flex-grow: 1;
             padding: 10px;
             display: flex;
             align-items: center;
+            font-weight: bold; /* ADDED THIS LINE */
         }
-         .team-logo {
+        
+        .team-logo {
             height: 25px; /* Adjust logo size */
             width: 25px;
             object-fit: contain;
             padding-right: 10px;
         }
+        
         .team-stats {
             display: flex;
             gap: 20px;
@@ -141,12 +143,13 @@
             align-items: center;
         }
     </style>
+
 </head>
 <body>
 
     <div id="match-standings" class="overlay-container">
         <h1 class="overlay-title">Tournament Phase Standings</h1>
-        <h2 class="overlay-subtitle">SEMI FINAL B</h2>
+        <h2 class="overlay-subtitle" id="match-subtitle">SEMI FINAL B</h2>
         <div class="scoreboard-grid" id="scoreboard-grid">
             <div class="left-column">
                 <ul class="team-list" id="team-list-left"></ul>
@@ -167,17 +170,52 @@ async function fetchData() {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    const phase = data.phase; // current phase
-    const standingsRaw = phase.standings || [];
-    const teamsRaw = phase.teams || {};
+    const standingsRaw = data.phase?.standings || [];
+    const matchStatus = data.match_state?.status || 'idle';
+    
+    let teamsData = {};
+    let subtitle = "TOURNAMENT STANDINGS";
+    
+    // Determine which team data to use
+    if (matchStatus === 'live' && data.match?.teams && Object.keys(data.match.teams).length > 0) {
+      teamsData = data.match.teams;
+      subtitle = "LIVE STANDINGS";
+    } else if (data.previous?.teams && Object.keys(data.previous.teams).length > 0) {
+      teamsData = data.previous.teams;
+      subtitle = "PREVIOUS MATCH";
+    }
+    
+    // Update subtitle
+    document.getElementById('match-subtitle').textContent = subtitle;
+
+    // Function to find team by name
+    const findTeamByName = (teamName) => {
+      for (const [teamId, teamData] of Object.entries(teamsData)) {
+        if (teamData.name && teamData.name === teamName) {
+          return teamData;
+        }
+      }
+      
+      // Try partial match if exact match fails
+      const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
+      for (const [teamId, teamData] of Object.entries(teamsData)) {
+        if (!teamData.name) continue;
+        
+        const cleanTeamName = teamData.name.toLowerCase().replace('esports', '').trim();
+        if (cleanTeamName.includes(cleanSearchName) || cleanSearchName.includes(cleanTeamName)) {
+          return teamData;
+        }
+      }
+      
+      return null;
+    };
 
     // Merge team info with standings
     const standings = standingsRaw.map(teamStanding => {
-      const teamInfo = teamsRaw[teamStanding.teamId] || {};
+      const teamInfo = findTeamByName(teamStanding.teamName) || {};
       return {
         ...teamStanding,
-        teamName: teamInfo.name || `Team ${teamStanding.teamId}`,
-        teamLogo: teamInfo.logo || 'http://localhost:5000/assets/default-team-logo.jpg'
+        teamLogo: teamInfo.logo || 'https://placehold.co/50x50/A0522D/ffffff?text=Logo'
       };
     });
 
@@ -224,7 +262,7 @@ function renderScoreboard(teams) {
     li.innerHTML = `
       <div class="team-rank">#${i}</div>
       <div class="team-name-column">
-        <img src="${team.teamLogo}" alt="Team Logo" class="team-logo">
+        <img src="${team.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='https://placehold.co/25x25/A0522D/ffffff?text=L'">
         <span>${team.teamName}</span>
       </div>
       <div class="team-stats">
@@ -248,7 +286,7 @@ function renderScoreboard(teams) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
-  setInterval(fetchData, 1000);
+  setInterval(fetchData, 2000);
 });
 </script>
 

@@ -24,7 +24,7 @@
     
     /* Main container for the scoreboard */
     .scoreboard-container {
-      width: 550px;
+      width: 600px;
       max-width: 95%;
       border-radius: 12px;
       overflow: hidden;
@@ -35,7 +35,7 @@
     /* Header row styling */
     .header {
       display: grid;
-      grid-template-columns: 50px 1fr 60px 100px 70px;
+      grid-template-columns: 50px 1fr 70px 60px 100px 70px;
       align-items: center;
       padding: 12px 20px;
       font-weight: bold;
@@ -46,15 +46,15 @@
       color: #ffffff;
     }
 
-    /* Styling for each team row */
+    /* Team row styling */
     .team-row {
       display: grid;
-      grid-template-columns: 50px 1fr 60px 100px 70px;
+      grid-template-columns: 50px 1fr 70px 60px 100px 70px;
       align-items: stretch;
       padding: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       transition: background-color 0.3s ease;
-      margin-top: 2px;
+      margin-top: 0px;
     }
     .team-row:hover {
       background-color: rgba(255, 255, 255, 0.05);
@@ -62,41 +62,57 @@
     .team-row:last-child {
       border-bottom: none;
     }
-    /* Rank column in team rows */
-    .team-row .rank {
+
+    /* Column alignment */
+    .rank-cell, .points-cell, .kills-cell, .status-cell, .wwcd-cell {
+      text-align: center;
+    }
+    
+    .rank-cell {
       font-weight: bold;
       font-size: 1.1em;
       text-align: center;
-      background-color: #b5a420; /* same as header Rank column */
+      background-color: #b5a420;
       color: #ffffff;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100%;
       width: 100%;
-      border-radius: 0; /* optional: remove rounding to cover full height */
     }
-
     
-    /* Styling for specific columns */
-    .rank { font-weight: bold; font-size: 1.1em; text-align: center; }
-    .team-info { display: flex; align-items: center; }
-    .team-logo { width: 35px; height: 35px; border-radius: 50%; margin-right: 10px; }
-    .team-name { font-weight: 500; font-size: 0.95em; }
-    .elim-count, .total-points { text-align: center; font-weight: bold; }
+    .team-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 5px;
+    }
+    .team-name-cell img {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+    }
     
-    /* Player status bars container */
-    .status-bars {
+    .kills-cell, .points-cell, .wwcd-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 5px;
+      font-weight: bold;
+    }
+    
+    .player-status-cell {
       display: flex;
       gap: 4px;
       justify-content: center;
       align-items: center;
+      padding: 5px 5px;
     }
     
     /* Player status bar and health bar styling */
     .status-bar {
-      width: 20px;
-      height: 20px;
+      width: 10px;
+      height: 10px;
       border-radius: 5px;
       background-color: #4a4d52;
       border: 1px solid #3d4045;
@@ -109,7 +125,7 @@
       left: 0;
       width: 100%;
       background-color: #2ecc71; /* Green for health */
-      transition: height 0.3s ease; /* Smooth transition for health updates */
+      transition: height 0.3s ease;
     }
     
     /* Specific styles for low health */
@@ -126,174 +142,243 @@
       align-items: center;
       font-weight: bold;
       color: #e74c3c;
-      font-size: 1.2em;
+      font-size: 1em;
     }
     
-    /* Styling for an eliminated team */
-    .team-eliminated {
-      opacity: 0.5;
-      background-color: rgba(255, 255, 255, 0.02);
+    .status-text {
+      text-align: center;
+      padding: 10px;
+      color: #999;
     }
-
   </style>
 </head>
-<body class="bg-gray-800 text-white p-4">
+<body>
 
-  <div class="scoreboard-container" id="scoreboard">
-    <div class="header">
-      <div>Rank</div>
-      <div>Team</div>
-      <div>Kills</div>
-      <div>Status</div>
-      <div>Points</div>
-    </div>
-    <div id="teams-list">
-      <!-- Team rows will be injected here by the script -->
-    </div>
+<div class="scoreboard-container">
+  <div class="header">
+    <div class="rank-cell">#</div>
+    <div>Team</div>
+    <div class="wwcd-cell">WWCD</div>
+    <div class="kills-cell">Kills</div>
+    <div class="status-cell">Status</div>
+    <div class="points-cell">Points</div>
   </div>
 
-  <script>
-    // The URL for the live JSON data
-    const jsonUrl = "../live_scoreboard.json";
+  <div id="teams-list">
+    <div class="status-text">Loading scoreboard...</div>
+  </div>
 
-    // Simple exponential backoff for fetching data to handle intermittent network issues
-    const retryFetch = async (url, retries = 5, delay = 1000) => {
-      for (let i = 0; i < retries; i++) {
-        try {
-          const response = await fetch(url, { cache: "no-store" });
-          if (response.ok) {
-            return response;
-          }
-        } catch (error) {
-          console.warn(`Fetch attempt ${i + 1} failed. Retrying in ${delay}ms...`, error);
-          await new Promise(res => setTimeout(res, delay));
-          delay *= 2; // Exponential backoff
-        }
-      }
-      throw new Error('Failed to fetch data after multiple retries.');
-    };
+</div>
 
-    /**
-     * Updates the scoreboard UI with new data from the JSON file.
-     * @param {Array} standings - An array of team standings.
-     * @param {Object} teams - A dictionary of team information by teamId.
-     * @param {Object} players - A dictionary of player information by playerId.
-     */
-const updateScoreboard = (standings, teams, players) => {
-    console.log("updateScoreboard called with data:");
-    console.log("Standings:", standings);
-    console.log("Teams:", teams);
-    console.log("Players:", players);
-
-    const teamsList = document.getElementById("teams-list");
-    teamsList.innerHTML = ""; // Clear previous data
-
-    // Create a new array to hold standings with calculated total points
-    const standingsWithTotals = standings.map(standing => {
-        const teamInfo = Object.values(teams).find(team => team.name && standing.teamName && team.name.toLowerCase() === standing.teamName.toLowerCase());
-        const totalPoints = (standing.points || 0) + (teamInfo?.kills || 0);
-        return {
-            ...standing,
-            totalPoints: totalPoints,
-            teamInfo: teamInfo
-        };
-    });
-
-    // Sort the new array by total points, descending
-    standingsWithTotals.sort((a, b) => b.totalPoints - a.totalPoints);
-    
-    // Assign ranks based on the new sort order
-    standingsWithTotals.forEach((standing, index) => {
-      standing.rank = index + 1;
-    });
-
-    standingsWithTotals.forEach(standing => {
-        console.log("Processing standing:", standing);
-
-        const teamInfo = standing.teamInfo;
-        if (!teamInfo) {
-            console.warn(`Team info not found for teamId: ${standing.teamId}`);
-            return;
-        }
-
-        let teamPlayers = Object.values(players).filter(p => p.teamId === teamInfo.id);
-
-        teamPlayers.sort((a, b) => {
-            if (a.live.isAlive && !b.live.isAlive) return -1;
-            if (!a.live.isAlive && b.live.isAlive) return 1;
-            return b.stats.kills - a.stats.kills;
-        });
-
-        teamPlayers = teamPlayers.slice(0, 4);
-
-        console.log(`Found ${teamPlayers.length} players for team ${teamInfo.name}`);
-
-        const statusBarsHtml = teamPlayers.map(player => {
-            if (player.live && typeof player.live.isAlive !== 'undefined') {
-                if (player.live.isAlive) {
-                    const healthPercentage = (player.live.health / player.live.healthMax) * 100;
-                    const healthClass = healthPercentage <= 25 ? 'low-health' : '';
-                    return `
-                        <div class="status-bar" title="${player.name}: ${player.live.health} HP">
-                            <div class="status-bar-fill ${healthClass}" style="height: ${healthPercentage}%;"></div>
-                        </div>
-                    `;
-                } else {
-                    return `<div class="status-x">X</div>`;
-                }
-            }
-            return `<div class="status-x">X</div>`;
-        }).join("");
-
-        const isEliminated = teamPlayers.length > 0 && teamPlayers.every(player => !player.live.isAlive);
-
-        const row = document.createElement("div");
-        row.className = "team-row";
-        if (isEliminated) row.classList.add("team-eliminated");
-
-        const matchKills = teamInfo.kills || 0;
-        const totalPoints = (standing.points || 0) + matchKills;
-
-        row.innerHTML = `
-            <div class="rank">${standing.rank}</div>
-            <div class="team-info">
-                <img src="${teamInfo.logo || 'https://placehold.co/35x35/ffffff/000000?text=L'}" class="team-logo">
-                <span class="team-name">${teamInfo.name}</span>
-            </div>
-            <div class="elim-count">${matchKills}</div>
-            <div class="status-bars">${statusBarsHtml}</div>
-            <div class="total-points">${totalPoints}</div>
-        `;
-        teamsList.appendChild(row);
-    });
-};
-
+<script>
     const fetchData = async () => {
       try {
-        const res = await retryFetch(jsonUrl);
-        const data = await res.json();
+        const response = await fetch("http://localhost:5000/live_scoreboard.json");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        const updateScoreboard = (standings, currentTeams, currentPlayers, liveData, previousData, matchStatus) => {
+            const teamsList = document.getElementById('teams-list');
+            teamsList.innerHTML = '';
+            
+            if (standings.length === 0) {
+                teamsList.innerHTML = `<div class="status-text">No teams data available</div>`;
+                return;
+            }
+            
+            console.log("=== DEBUG INFO ===");
+            console.log("Match status:", matchStatus);
+            console.log("Current teams:", Object.keys(currentTeams));
+            console.log("Previous teams:", previousData ? Object.keys(previousData.teams || {}) : "None");
+            
+            // Loop through the standings data from the JSON
+            standings.forEach((team) => {
+                const teamRow = document.createElement('div');
+                teamRow.className = 'team-row';
 
-        if (data.phase && data.phase.standings && data.match && data.live) {
+                // Rank
+                const rankCell = document.createElement('div');
+                rankCell.className = 'rank-cell';
+                rankCell.textContent = team.rank;
+                teamRow.appendChild(rankCell);
+
+                // Find the team info by matching team names - check both current and previous
+                let teamInfo = null;
+                let teamKey = null;
+                
+                // First check current teams
+                for (const [key, teamData] of Object.entries(currentTeams)) {
+                    if (teamData.name === team.teamName || 
+                        teamData.name === team.teamId ||
+                        (team.teamName && teamData.name.includes(team.teamName)) ||
+                        (team.teamId && teamData.name.includes(team.teamId))) {
+                        teamInfo = teamData;
+                        teamKey = key;
+                        break;
+                    }
+                }
+                
+                // If not found in current, check previous teams
+                if (!teamInfo && previousData && previousData.teams) {
+                    for (const [key, teamData] of Object.entries(previousData.teams)) {
+                        if (teamData.name === team.teamName || 
+                            teamData.name === team.teamId ||
+                            (team.teamName && teamData.name.includes(team.teamName)) ||
+                            (team.teamId && teamData.name.includes(team.teamId))) {
+                            teamInfo = teamData;
+                            teamKey = key;
+                            console.log(`Found team in previous data: ${team.teamName} -> ${teamInfo.name}`);
+                            break;
+                        }
+                    }
+                }
+
+                console.log(`Team: ${team.teamName}, Found: ${teamInfo ? 'Yes' : 'No'}, Key: ${teamKey}, Logo: ${teamInfo?.logo ? 'Yes' : 'No'}`);
+
+                // Team Name with Logo
+                const teamNameCell = document.createElement('div');
+                teamNameCell.className = 'team-name-cell';
+                
+                // Add team logo if available
+                if (teamInfo && teamInfo.logo) {
+                    teamNameCell.innerHTML += `<img src="${teamInfo.logo}" alt="${team.teamName} Logo">`;
+                }
+                teamNameCell.innerHTML += `<span>${team.teamName}</span>`;
+                teamRow.appendChild(teamNameCell);
+                
+                // WWCD - Always use phase standings data (tournament total)
+                const wwcdCell = document.createElement('div');
+                wwcdCell.className = 'wwcd-cell';
+                wwcdCell.textContent = team.wwcd || 0;
+                teamRow.appendChild(wwcdCell);
+                
+                // KILLS - Get from match data for live matches, phase stats for idle
+                let killsToDisplay = 0;
+                let killsSource = "None";
+                
+                // For live matches with current team data
+                if (matchStatus === 'live' && teamInfo && teamInfo.kills !== undefined) {
+                    killsToDisplay = teamInfo.kills;
+                    killsSource = "Current Live";
+                } else {
+                    // Use phase kills when idle or no current match data
+                    killsToDisplay = team.kills || 0;
+                    killsSource = "Phase Standings";
+                }
+                
+                console.log(`Kills for ${team.teamName}: ${killsToDisplay} (Source: ${killsSource})`);
+                
+                const killsCell = document.createElement('div');
+                killsCell.className = 'kills-cell';
+                killsCell.textContent = killsToDisplay;
+                teamRow.appendChild(killsCell);
+                
+                // STATUS COLUMN - Player health bars
+                const statusCell = document.createElement('div');
+                statusCell.className = 'player-status-cell';
+                
+                // Use previous data for player status if current is empty (like for idle matches)
+                let playersToUse = currentPlayers;
+                if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && previousData && previousData.players) {
+                    playersToUse = previousData.players;
+                }
+                
+                // Display player health bars based on status
+                if (teamInfo && teamInfo.players && teamInfo.players.length > 0) {
+                    teamInfo.players.forEach(playerId => {
+                        const playerInfo = playersToUse[playerId];
+                        
+                        if (playerInfo && playerInfo.live && playerInfo.live.isAlive && matchStatus === 'live') {
+                            // Create health bar for alive player during live match
+                            const statusBar = document.createElement('div');
+                            statusBar.className = 'status-bar';
+                            statusBar.title = `${playerInfo.name}: ${playerInfo.live.health} HP`;
+                            
+                            const statusBarFill = document.createElement('div');
+                            statusBarFill.className = 'status-bar-fill';
+                            
+                            const healthPercentage = (playerInfo.live.health / playerInfo.live.healthMax) * 100;
+                            if (healthPercentage <= 25) {
+                                statusBarFill.classList.add('low-health');
+                            }
+                            statusBarFill.style.height = `${healthPercentage}%`;
+                            
+                            statusBar.appendChild(statusBarFill);
+                            statusCell.appendChild(statusBar);
+                        } else {
+                            // Create X for dead/unknown player or when match is idle
+                            const statusX = document.createElement('div');
+                            statusX.className = 'status-x';
+                            statusX.textContent = 'X';
+                            statusCell.appendChild(statusX);
+                        }
+                    });
+                } else {
+                    // Add unknown status indicators if no player data
+                    for (let i = 0; i < 4; i++) {
+                        const statusX = document.createElement('div');
+                        statusX.className = 'status-x';
+                        statusX.textContent = 'X';
+                        statusCell.appendChild(statusX);
+                    }
+                }
+                teamRow.appendChild(statusCell);
+
+                // POINTS - Use phase total points when idle; add current match kills when live
+                let totalPoints = team.points; // Default to phase total points
+                if (matchStatus === 'live') {
+                    totalPoints = team.points + killsToDisplay;
+                }
+                
+                console.log(`Points for ${team.teamName}: ${totalPoints} (Base: ${team.points}, Kills: ${killsToDisplay}, Status: ${matchStatus})`);
+                
+                const pointsCell = document.createElement('div');
+                pointsCell.className = 'points-cell';
+                pointsCell.textContent = totalPoints;
+                teamRow.appendChild(pointsCell);
+                
+                teamsList.appendChild(teamRow);
+            });
+        };
+
+        const matchStatus = data.match?.status || 'idle';
+        
+        if (data.phase?.standings) {
+          let currentTeams = data.match?.teams || {};
+          let currentPlayers = data.match?.players || {};
+          let liveData = data.live || {};
+          let previousData = data.previous || null;
+
+          // If match is idle, use previous players for status display
+          if (matchStatus === 'idle' && previousData && previousData.players) {
+            currentPlayers = { ...(previousData.players || {}), ...currentPlayers };
+          }
+          
           updateScoreboard(
             data.phase.standings,
-            data.match.teams,      // live team data
-            data.match.players     // live player data
+            currentTeams,
+            currentPlayers,
+            liveData,
+            previousData,
+            matchStatus
           );
         } else {
-          console.error("JSON missing expected keys.");
+          console.error("No standings data available");
+          document.getElementById("teams-list").innerHTML = `<div class="status-text">No standings data available</div>`;
         }
       } catch (error) {
         console.error("Failed to fetch or parse JSON:", error);
+        document.getElementById("teams-list").innerHTML = `<div class="status-text" style="color:#ff6b6b;">Error loading data</div>`;
       }
     };
 
-
-    // Fetch data immediately on load and then every 2 seconds
     document.addEventListener("DOMContentLoaded", () => {
       fetchData();
       setInterval(fetchData, 2000);
     });
-  </script>
+</script>
 
 </body>
 </html>

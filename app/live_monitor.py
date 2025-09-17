@@ -1,5 +1,3 @@
-# app/live_monitor.py
-
 import json
 import re
 import time
@@ -10,6 +8,7 @@ import threading
 from pathlib import Path
 from config import *
 from log_simulator import SimulationManager
+import copy
 
 try:
     from colorama import init, Fore, Back, Style
@@ -36,6 +35,7 @@ logging.basicConfig(level=getattr(logging, LOG_LEVEL), format=LOG_FORMAT)
 
 # Global simulation manager
 simulation_manager = None
+previous_match = {}
 
 # ---------- State (normalized) ----------
 state = {
@@ -56,7 +56,20 @@ state = {
         "teams": {},
         "players": {}
     },
-    "teamNameMapping": {}
+    "teamNameMapping": {},
+    "previous_match": {  # keep the single "last match" for convenience
+        "status": "idle",
+        "phase": {"standings": []},
+        "players": {},
+        "leaderboards": {"currentMatchTopPlayers": []},
+        "live": {"activePlayers": [], "teamKills": {}},
+        "teams": {}
+    },
+    "match_history": [],
+    "match_state": {
+        "status": "idle",
+        "last_updated": int(time.time())
+    }
 }
 
 def print_colored(text, color=Fore.WHITE, style=Style.NORMAL, end="\n"):
@@ -78,6 +91,95 @@ INI_BLOCK = re.compile(r'\[/Script/ShadowTrackerExtra.FCustomTeamLogoAndColor](.
 OBJ_BLOCKS = re.compile(r'(TotalPlayerList:|TeamInfoList:)')
 OBJ_KV = re.compile(r'(\w+):\s*(?:"([^"]*)"|\'([^\']*)\'|([^{},\n]+))')
 
+def _calculate_top_players(players_dict, teams_dict):
+    """Calculates and returns the top players for the match, sorted by kills."""
+    top_players = []
+
+    # Flatten the players dictionary into a list
+    all_players = list(players_dict.values())
+
+    # Sort players by kills, then damage, then knockouts
+    all_players.sort(key=lambda p: (
+        p.get("stats", {}).get("kills", 0),
+        p.get("stats", {}).get("damage", 0),
+        p.get("stats", {}).get("knockouts", 0)
+    ), reverse=True)
+
+    # Get the top 5 players
+    for player in all_players[:5]:
+        player_stats = player.get("stats", {})
+        team_id = player.get("teamId")
+        team_name = teams_dict.get(team_id, {}).get("teamName", "Unknown Team")
+
+        top_players.append({
+            "playerId": player["id"],
+            "name": player["name"],
+            "teamName": team_name,
+            "totalKills": player_stats.get("kills", 0),
+            "totalDamage": int(player_stats.get("damage", 0)),
+            "totalKnockouts": player_stats.get("knockouts", 0),
+            "totalMatches": 1 # This is per-match data, so matches = 1
+        })
+    return top_players
+
+def _finalize_and_persist():
+    """Finalizes match data, copies it to previous, and resets current live state."""
+    if state["match_state"]["status"] == "live" and state["match"]["id"]:
+        logging.info(f"Finalizing and persisting match ID: {state['match']['id']}")
+        
+        # Deep copy the current match state
+        final_match_data = copy.deepcopy(state["match"])
+        
+        # Recalculate standings for the final state
+        _end_match_and_update_phase(state, final_match_data)
+        logging.info("Match standings have been updated.")
+        
+        # Populate the state["previous_match"]
+        state["previous_match"] = {
+            "id": final_match_data["id"],
+            "status": "completed",
+            "winnerTeamId": final_match_data.get("winnerTeamId"),
+            "winnerTeamName": final_match_data.get("winnerTeamName"),
+            "eliminationOrder": final_match_data["eliminationOrder"],
+            "killFeed": final_match_data["killFeed"],
+            "teams": final_match_data["teams"],
+            "players": final_match_data["players"],
+            "leaderboards": {
+                "currentMatchTopPlayers": _calculate_top_players(final_match_data["players"], final_match_data["teams"])
+            },
+            "live": {
+                "activePlayers": [],
+                "teamKills": {}
+            },
+            "phase": {
+                "standings": state["phase"]["standings"]
+            }
+        }
+        logging.info("Previous match data populated. Data should now be available in JSON.")
+        
+        # Reset the live match state
+        state["match"] = {
+            "id": None,
+            "status": "idle",
+            "winnerTeamId": None,
+            "winnerTeamName": None,
+            "eliminationOrder": [],
+            "killFeed": [],
+            "teams": {},
+            "players": {}
+        }
+        state["match_state"]["status"] = "idle"
+        state["match_state"]["last_updated"] = int(time.time())
+        logging.info("Live match state has been reset to idle.")
+    else:
+        logging.warning("Finalization requested but no active match ID. Skipping.")
+        
+        # Ensure match_state.status is idle if match.id is None
+        if not state["match"]["id"]:
+            state["match_state"]["status"] = "idle"
+            state["match_state"]["last_updated"] = int(time.time())
+            logging.info("Set match_state.status to idle due to no active match ID.")
+        
 def _parse_kv_object(text):
     obj = {}
     pairs = OBJ_KV.findall(text)
@@ -295,6 +397,10 @@ def parse_and_apply(log_text, parsed_logos=None, mode="chunk"):
     _recalculate_live_members()
     _update_live_eliminations()
     _update_phase_from_live_match()
+
+    # Ensure match_state reflects the current match status after processing
+    state["match_state"]["status"] = "live" if state["match"]["id"] else "idle"
+    state["match_state"]["last_updated"] = int(time.time())
     
     return state["match"]["id"]
 
@@ -541,6 +647,8 @@ def end_match_and_update_phase(state_obj):
         "players": dict(state_obj["match"]["players"])
     }
 
+    state_obj["previous_match"] = copy.deepcopy(previous_match)
+
     # Award WWCD
     if all_teams_data and all_teams_data[0]["liveMembers"] > 0:
         winner_name = all_teams_data[0]["name"]
@@ -740,7 +848,7 @@ def _all_time_top_players():
     players.sort(key=lambda x: (x["totalKills"], x["totalDamage"], x["totalKnockouts"]), reverse=True)
     return players[:5]
 
-def _get_active_players_with_health():
+def _live_active_players():
     """Returns active players with health data."""
     active_players = []
     
@@ -776,7 +884,7 @@ def _get_active_players_with_health():
     
     return active_players
 
-def _get_current_match_team_kills():
+def _live_team_kills():
     """Returns current match team kills."""
     team_kills = {}
     
@@ -791,32 +899,48 @@ def _get_current_match_team_kills():
     return team_kills
 
 def _export_json():
-    """Export current state to JSON with all necessary data including previous match."""
-    global previous_match
-    
-    payload = {
-        "meta": {"schemaVersion": 1, "generatedAt": int(time.time())},
-        "phase": {
-            "standings": _phase_standings(),
-            "teams": state["phase"]["teams"],
-            "players": state["phase"]["players"]
-        },
-        "match": state["match"],
-        "previousMatch": previous_match,  # Add the previous match data
-        "leaderboards": {
-            "currentMatchTopPlayers": _current_match_top_players(),
-            "allTimeTopPlayers": _all_time_top_players()
-        },
-        "live": {
-            "activePlayers": _get_active_players_with_health(),
-            "teamKills": _get_current_match_team_kills()
-        }
-    }
+    """Exports the current state to a JSON file."""
     try:
-        with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
+        # Use state["previous_match"] instead of the global previous_match variable
+        local_previous_match = state["previous_match"] if state["previous_match"] is not None else {}
+        
+        data = {
+            "match_state": state["match_state"],
+            "phase": {
+                "standings": _phase_standings(),
+                "allTimeTopPlayers": _all_time_top_players()
+            },
+            "match": {
+                "id": state["match"]["id"],
+                "status": state["match"]["status"],
+                "winnerTeamId": state["match"]["winnerTeamId"],
+                "winnerTeamName": state["match"]["winnerTeamName"],
+                "eliminationOrder": state["match"]["eliminationOrder"],
+                "killFeed": state["match"]["killFeed"],
+                "teams": state["match"]["teams"],
+                "players": state["match"]["players"],
+                "leaderboards": {
+                    "currentMatchTopPlayers": _current_match_top_players()
+                }
+            },
+            "live": {
+                "activePlayers": _live_active_players(),
+                "teamKills": _live_team_kills()
+            },
+            "previous": {
+                "id": local_previous_match.get("id"),
+                "status": local_previous_match.get("status"),
+                "phase": local_previous_match.get("phase", {"standings": []}),
+                "players": local_previous_match.get("players", {}),
+                "leaderboards": local_previous_match.get("leaderboards", {"currentMatchTopPlayers": []}),
+                "live": local_previous_match.get("live", {"activePlayers": [], "teamKills": {}}),
+                "teams": local_previous_match.get("teams", {})  # Add teams to previous block
+            }
+        }
+        with open(OUTPUT_JSON, "w") as f:
+            json.dump(data, f, indent=4)
     except Exception as e:
-        logging.error(f"Error writing JSON: {e}")
+        logging.error(f"Error during JSON export: {e}")
 
 # ---------- File Processing Functions ----------
 def get_all_log_files(log_dir, exclude_live_log=True):
@@ -1182,6 +1306,10 @@ def server_only_mode():
 
 def request_finalization():
     """Thread-safe way to request finalization."""
+    # In request_finalization() and perform_finalization():
+    if state["match"]["status"] in ["live", "finished"]:
+        end_match_and_update_phase(state)  # If not already called
+        _finalize_and_persist()
     global finalization_requested
     with finalization_lock:
         finalization_requested = True
@@ -1200,6 +1328,10 @@ def should_shutdown():
 
 def perform_finalization(keep_server_running=True):
     """Perform the actual finalization logic."""
+    # In request_finalization() and perform_finalization():
+    if state["match"]["status"] in ["live", "finished"]:
+        end_match_and_update_phase(state)  # If not already called
+        _finalize_and_persist()
     global finalization_requested
     
     print_colored("\nPerforming finalization...", Fore.CYAN, Style.BRIGHT)
@@ -1326,10 +1458,12 @@ def main(test_mode=False, reprocess=False):
         while True:
             # Check for finalization request
             if should_finalize():
-                print_colored("Finalization requested", Fore.YELLOW)
+                print_colored("Finalization requested. Exiting main loop.", Fore.YELLOW)
+                _finalize_and_persist() # Perform final action before break
                 break
-            
+        
             now = time.time()
+
             
             # Find the path of the next log to process
             next_log_path = None
@@ -1357,6 +1491,9 @@ def main(test_mode=False, reprocess=False):
                         log_text = f.read()
                         # 'full' mode is only used once per new log file
                         parse_and_apply(log_text, parsed_logos=team_logos, mode="full")
+                        if state["match"]["status"] == "live" and state["match"]["id"]:  # Confirm new match
+                            state["match_state"]["status"] = "live"
+                            state["match_state"]["last_updated"] = int(time.time())
                         last_pos = f.tell()
                         state["match"]["status"] = "live" if state["match"]["id"] else "idle"
                 except FileNotFoundError:
@@ -1375,12 +1512,13 @@ def main(test_mode=False, reprocess=False):
                         log_was_updated = True
                         no_update_start_time = None  # Reset inactivity timer
 
+                        # Track inactivity for auto-finalization
             # Track inactivity for auto-finalization
             if not log_was_updated:
                 if no_update_start_time is None:
                     no_update_start_time = now
                 elif now - no_update_start_time >= INACTIVITY_TIMEOUT:
-                    print_colored(f"\nLog inactive for {INACTIVITY_TIMEOUT} seconds. Auto-finalizing and entering server-only mode...", Fore.YELLOW)
+                    print_colored(f"\nLog inactive for {INACTIVITY_TIMEOUT} seconds. Auto-finalizing...", Fore.YELLOW)
                     request_finalization()
                     continue
 
@@ -1393,10 +1531,8 @@ def main(test_mode=False, reprocess=False):
             alive_teams = [t for t in state["match"]["teams"].values() if t["liveMembers"] > 0]
             if len(alive_teams) <= 1 and state["match"]["status"] == "live":
                 logging.info(f"Match end detected. Finalizing match ID: {state['match']['id']}")
-                state["match"]["status"] = "finished"
-                end_match_and_update_phase(state)
-                state["match"]["id"] = None
-                state["match"]["status"] = "idle"
+                request_finalization()
+                continue
 
             # Periodic updates
             if now - last_json >= UPDATE_INTERVAL:
@@ -1408,6 +1544,18 @@ def main(test_mode=False, reprocess=False):
                 last_term = now
 
             time.sleep(FILE_CHECK_INTERVAL)
+            # if os.path.exists('reset_previous.flag'):
+            #     state["previous_match"] = {
+            #         "status": "idle",
+            #         "phase": {"standings": []},
+            #         "players": {},
+            #         "leaderboards": {"currentMatchTopPlayers": []},
+            #         "live": {"activePlayers": [], "teamKills": {}},
+            #         "teams": {}  # Add teams here
+            #     }
+            #     os.remove('reset_previous.flag')
+            #     logging.info("Previous match data reset via flag file.")
+
 
     except KeyboardInterrupt:
         print_colored("\nStopped by user (Ctrl+C).", Fore.YELLOW)
