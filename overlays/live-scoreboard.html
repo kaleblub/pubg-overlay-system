@@ -8,7 +8,7 @@
   <style>
     /* Inter font is a great default for a clean, modern look */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-    
+   
     /* Overall styling for the body */
     body {
       background-color: transparent;
@@ -21,7 +21,7 @@
       align-items: center;
       min-height: 100vh;
     }
-    
+   
     /* Main container for the scoreboard */
     .scoreboard-container {
       width: 600px;
@@ -31,13 +31,13 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       background-color: #23272a;
     }
-    
+   
     /* Header row styling */
     .header {
       display: grid;
-      grid-template-columns: 50px 1fr 70px 60px 100px 70px;
+      grid-template-columns: 50px 1fr 80px 120px 80px;
       align-items: center;
-      padding: 12px 20px;
+      padding: 12px 0px;
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -45,11 +45,22 @@
       border-bottom: 2px solid #23272a;
       color: #ffffff;
     }
+    
+    .header > div:first-child {
+      text-align: left;
+      padding-left: 0;
+    }
+    
+    .header .kills-cell,
+    .header .status-cell,
+    .header .points-cell {
+      text-align: center;
+    }
 
     /* Team row styling */
     .team-row {
       display: grid;
-      grid-template-columns: 50px 1fr 70px 60px 100px 70px;
+      grid-template-columns: 50px 1fr 80px 120px 80px;
       align-items: stretch;
       padding: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -64,10 +75,10 @@
     }
 
     /* Column alignment */
-    .rank-cell, .points-cell, .kills-cell, .status-cell, .wwcd-cell {
+    .rank-cell, .points-cell, .kills-cell, .status-cell {
       text-align: center;
     }
-    
+   
     .rank-cell {
       font-weight: bold;
       font-size: 1.1em;
@@ -80,7 +91,7 @@
       height: 100%;
       width: 100%;
     }
-    
+   
     .team-name-cell {
       display: flex;
       align-items: center;
@@ -92,23 +103,29 @@
       height: 35px;
       border-radius: 50%;
     }
-    
-    .kills-cell, .points-cell, .wwcd-cell {
+   
+    .kills-cell, .points-cell {
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 5px 5px;
       font-weight: bold;
+      padding-left: 10px;
     }
-    
+
+    .points-cell {
+      padding-right: 20px;
+    }
+   
     .player-status-cell {
       display: flex;
       gap: 4px;
       justify-content: center;
       align-items: center;
       padding: 5px 5px;
+      padding-left: 10px;
     }
-    
+   
     /* Player status bar and health bar styling */
     .status-bar {
       width: 10px;
@@ -127,12 +144,12 @@
       background-color: #2ecc71; /* Green for health */
       transition: height 0.3s ease;
     }
-    
+   
     /* Specific styles for low health */
     .status-bar-fill.low-health {
       background-color: #e74c3c;
     }
-    
+   
     /* Styling for eliminated players */
     .status-x {
       width: 20px;
@@ -144,7 +161,7 @@
       color: #e74c3c;
       font-size: 1em;
     }
-    
+   
     .status-text {
       text-align: center;
       padding: 10px;
@@ -158,7 +175,6 @@
   <div class="header">
     <div class="rank-cell">#</div>
     <div>Team</div>
-    <div class="wwcd-cell">WWCD</div>
     <div class="kills-cell">Kills</div>
     <div class="status-cell">Status</div>
     <div class="points-cell">Points</div>
@@ -178,21 +194,21 @@
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        
+       
         const updateScoreboard = (standings, currentTeams, currentPlayers, liveData, previousData, matchStatus) => {
             const teamsList = document.getElementById('teams-list');
             teamsList.innerHTML = '';
-            
+           
             if (standings.length === 0) {
                 teamsList.innerHTML = `<div class="status-text">No teams data available</div>`;
                 return;
             }
-            
+           
             console.log("=== DEBUG INFO ===");
             console.log("Match status:", matchStatus);
             console.log("Current teams:", Object.keys(currentTeams));
             console.log("Previous teams:", previousData ? Object.keys(previousData.teams || {}) : "None");
-            
+           
             // Loop through the standings data from the JSON
             standings.forEach((team) => {
                 const teamRow = document.createElement('div');
@@ -207,10 +223,10 @@
                 // Find the team info by matching team names - check both current and previous
                 let teamInfo = null;
                 let teamKey = null;
-                
+               
                 // First check current teams
                 for (const [key, teamData] of Object.entries(currentTeams)) {
-                    if (teamData.name === team.teamName || 
+                    if (teamData.name === team.teamName ||
                         teamData.name === team.teamId ||
                         (team.teamName && teamData.name.includes(team.teamName)) ||
                         (team.teamId && teamData.name.includes(team.teamId))) {
@@ -219,11 +235,11 @@
                         break;
                     }
                 }
-                
+               
                 // If not found in current, check previous teams
                 if (!teamInfo && previousData && previousData.teams) {
                     for (const [key, teamData] of Object.entries(previousData.teams)) {
-                        if (teamData.name === team.teamName || 
+                        if (teamData.name === team.teamName ||
                             teamData.name === team.teamId ||
                             (team.teamName && teamData.name.includes(team.teamName)) ||
                             (team.teamId && teamData.name.includes(team.teamId))) {
@@ -240,24 +256,18 @@
                 // Team Name with Logo
                 const teamNameCell = document.createElement('div');
                 teamNameCell.className = 'team-name-cell';
-                
+               
                 // Add team logo if available
                 if (teamInfo && teamInfo.logo) {
                     teamNameCell.innerHTML += `<img src="${teamInfo.logo}" alt="${team.teamName} Logo">`;
                 }
                 teamNameCell.innerHTML += `<span>${team.teamName}</span>`;
                 teamRow.appendChild(teamNameCell);
-                
-                // WWCD - Always use phase standings data (tournament total)
-                const wwcdCell = document.createElement('div');
-                wwcdCell.className = 'wwcd-cell';
-                wwcdCell.textContent = team.wwcd || 0;
-                teamRow.appendChild(wwcdCell);
-                
+               
                 // KILLS - Get from match data for live matches, phase stats for idle
                 let killsToDisplay = 0;
                 let killsSource = "None";
-                
+               
                 // For live matches with current team data
                 if (matchStatus === 'live' && teamInfo && teamInfo.kills !== undefined) {
                     killsToDisplay = teamInfo.kills;
@@ -267,44 +277,44 @@
                     killsToDisplay = team.kills || 0;
                     killsSource = "Phase Standings";
                 }
-                
+               
                 console.log(`Kills for ${team.teamName}: ${killsToDisplay} (Source: ${killsSource})`);
-                
+               
                 const killsCell = document.createElement('div');
                 killsCell.className = 'kills-cell';
                 killsCell.textContent = killsToDisplay;
                 teamRow.appendChild(killsCell);
-                
+               
                 // STATUS COLUMN - Player health bars
                 const statusCell = document.createElement('div');
                 statusCell.className = 'player-status-cell';
-                
+               
                 // Use previous data for player status if current is empty (like for idle matches)
                 let playersToUse = currentPlayers;
                 if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && previousData && previousData.players) {
                     playersToUse = previousData.players;
                 }
-                
+               
                 // Display player health bars based on status
                 if (teamInfo && teamInfo.players && teamInfo.players.length > 0) {
                     teamInfo.players.forEach(playerId => {
                         const playerInfo = playersToUse[playerId];
-                        
+                       
                         if (playerInfo && playerInfo.live && playerInfo.live.isAlive && matchStatus === 'live') {
                             // Create health bar for alive player during live match
                             const statusBar = document.createElement('div');
                             statusBar.className = 'status-bar';
                             statusBar.title = `${playerInfo.name}: ${playerInfo.live.health} HP`;
-                            
+                           
                             const statusBarFill = document.createElement('div');
                             statusBarFill.className = 'status-bar-fill';
-                            
+                           
                             const healthPercentage = (playerInfo.live.health / playerInfo.live.healthMax) * 100;
                             if (healthPercentage <= 25) {
                                 statusBarFill.classList.add('low-health');
                             }
                             statusBarFill.style.height = `${healthPercentage}%`;
-                            
+                           
                             statusBar.appendChild(statusBarFill);
                             statusCell.appendChild(statusBar);
                         } else {
@@ -331,20 +341,20 @@
                 if (matchStatus === 'live') {
                     totalPoints = team.points + killsToDisplay;
                 }
-                
+               
                 console.log(`Points for ${team.teamName}: ${totalPoints} (Base: ${team.points}, Kills: ${killsToDisplay}, Status: ${matchStatus})`);
-                
+               
                 const pointsCell = document.createElement('div');
                 pointsCell.className = 'points-cell';
                 pointsCell.textContent = totalPoints;
                 teamRow.appendChild(pointsCell);
-                
+               
                 teamsList.appendChild(teamRow);
             });
         };
 
         const matchStatus = data.match?.status || 'idle';
-        
+       
         if (data.phase?.standings) {
           let currentTeams = data.match?.teams || {};
           let currentPlayers = data.match?.players || {};
@@ -355,7 +365,7 @@
           if (matchStatus === 'idle' && previousData && previousData.players) {
             currentPlayers = { ...(previousData.players || {}), ...currentPlayers };
           }
-          
+         
           updateScoreboard(
             data.phase.standings,
             currentTeams,
