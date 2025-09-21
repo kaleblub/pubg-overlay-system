@@ -9,6 +9,7 @@ from pathlib import Path
 from config import *
 from log_simulator import SimulationManager
 import copy
+import signal
 
 try:
     from colorama import init, Fore, Back, Style
@@ -35,7 +36,23 @@ logging.basicConfig(level=getattr(logging, LOG_LEVEL), format=LOG_FORMAT)
 
 # Global simulation manager
 simulation_manager = None
-previous_match = {}
+
+# Global buffer for chunk processing
+buffer = ''
+in_archive_processing = False
+in_catchup_processing = False
+
+# Global shutdown control variables
+shutdown_event = threading.Event()
+finalization_requested = False
+complete_shutdown_requested = False
+finalization_lock = threading.Lock()
+signal_received = False
+
+# Global set to track processed files (add this at the top of your script if not already there)
+processed_files = set()
+processed_snapshot_positions = set()  # Track processed snapshot starts to avoid duplicates
+
 
 # ---------- State (normalized) ----------
 state = {
@@ -46,7 +63,7 @@ state = {
     "all_time": {
         "players": {}
     },
-    "match": {
+    "current_match": {
         "id": None,
         "status": "idle",
         "winnerTeamId": None,
@@ -56,16 +73,10 @@ state = {
         "teams": {},
         "players": {}
     },
+    "matches": [],  # List of completed matches
     "teamNameMapping": {},
-    "previous_match": {  # keep the single "last match" for convenience
-        "status": "idle",
-        "phase": {"standings": []},
-        "players": {},
-        "leaderboards": {"currentMatchTopPlayers": []},
-        "live": {"activePlayers": [], "teamKills": {}},
-        "teams": {}
-    },
-    "match_history": [],
+    "processed_matches": set(),  # Track processed GameIDs
+    "match_history": [],  # Deprecated, use "matches"
     "match_state": {
         "status": "idle",
         "last_updated": int(time.time())
@@ -85,6 +96,48 @@ def print_status_header(mode="Production"):
     print_colored(f"\n{'='*60}", Fore.BLUE)
     print_colored(f"PUBG LIVE MONITOR - {mode.upper()} MODE", status_color, Style.BRIGHT)
     print_colored(f"{'='*60}", Fore.BLUE)
+
+def print_progress_bar(current, total, bar_length=50, prefix="Progress", suffix="Complete", processing=False):
+    """Improved progress bar with better visual feedback."""
+    if total == 0:
+        return
+    
+    fraction = current / total
+    filled_length = int(bar_length * fraction)
+    
+    # Different bar styles for different states
+    if processing:
+        # Show active processing with animated character
+        spin_chars = ['|', '/', '-', '\\']
+        spin_index = int(time.time() * 8) % len(spin_chars)  # Faster spin
+        bar = "█" * filled_length + ">" + "░" * (bar_length - filled_length - 1)
+        if filled_length < bar_length:
+            bar = bar[:filled_length] + spin_chars[spin_index] + bar[filled_length + 1:]
+    else:
+        # Static bar for completed states
+        bar = "█" * filled_length + ">" + "░" * (bar_length - filled_length - 1)
+        if filled_length >= bar_length:
+            bar = "█" * bar_length + ">"
+    
+    percent = int(fraction * 100)
+    
+    # Color coding based on progress
+    if percent == 100:
+        color = Fore.GREEN
+    elif percent > 50:
+        color = Fore.CYAN
+    elif processing:
+        color = Fore.YELLOW
+    else:
+        color = Fore.WHITE
+    
+    if processing and percent < 100:
+        print_colored(f"\r{prefix}: |{bar}| {percent}% {suffix}...", color, end="")
+    else:
+        print_colored(f"\r{prefix}: |{bar}| {percent}% {suffix}", color, end="")
+        
+        if current >= total:
+            print()
 
 # ---------- Parsing Functions ----------
 INI_BLOCK = re.compile(r'\[/Script/ShadowTrackerExtra.FCustomTeamLogoAndColor](.*?)\n\n', re.DOTALL)
@@ -109,7 +162,7 @@ def _calculate_top_players(players_dict, teams_dict):
     for player in all_players[:5]:
         player_stats = player.get("stats", {})
         team_id = player.get("teamId")
-        team_name = teams_dict.get(team_id, {}).get("teamName", "Unknown Team")
+        team_name = teams_dict.get(team_id, {}).get("name", "Unknown Team")  # Fixed: use "name" not "teamName"
 
         top_players.append({
             "playerId": player["id"],
@@ -123,42 +176,28 @@ def _calculate_top_players(players_dict, teams_dict):
     return top_players
 
 def _finalize_and_persist():
-    """Finalizes match data, copies it to previous, and resets current live state."""
-    if state["match_state"]["status"] == "live" and state["match"]["id"]:
-        logging.info(f"Finalizing and persisting match ID: {state['match']['id']}")
+    """Finalizes match data and resets current live state."""
+    if state["current_match"]["id"] and state["match_state"]["status"] == "live":
+        logging.info(f"Finalizing and persisting match ID: {state['current_match']['id']}")
         
         # Deep copy the current match state
-        final_match_data = copy.deepcopy(state["match"])
+        final_match_data = copy.deepcopy(state["current_match"])
         
         # Recalculate standings for the final state
-        _end_match_and_update_phase(state, final_match_data)
+        end_match_and_update_phase(final_match_data)
         logging.info("Match standings have been updated.")
         
-        # Populate the state["previous_match"]
-        state["previous_match"] = {
-            "id": final_match_data["id"],
-            "status": "completed",
-            "winnerTeamId": final_match_data.get("winnerTeamId"),
-            "winnerTeamName": final_match_data.get("winnerTeamName"),
-            "eliminationOrder": final_match_data["eliminationOrder"],
-            "killFeed": final_match_data["killFeed"],
-            "teams": final_match_data["teams"],
-            "players": final_match_data["players"],
-            "leaderboards": {
-                "currentMatchTopPlayers": _calculate_top_players(final_match_data["players"], final_match_data["teams"])
-            },
-            "live": {
-                "activePlayers": [],
-                "teamKills": {}
-            },
-            "phase": {
-                "standings": state["phase"]["standings"]
-            }
-        }
-        logging.info("Previous match data populated. Data should now be available in JSON.")
+        # Always add to matches history in live mode (skip only during archive/catchup)
+        if not in_archive_processing and not in_catchup_processing:
+            if final_match_data["id"] not in state["processed_matches"]:
+                state["matches"].append(final_match_data)
+                state["processed_matches"].add(final_match_data["id"])
+                logging.info(f"LIVE: Added match {final_match_data['id']} to history. Total matches: {len(state['matches'])}")
+            else:
+                logging.warning(f"LIVE: Skipped duplicate match {final_match_data['id']}")
         
-        # Reset the live match state
-        state["match"] = {
+        # Full reset of live match state
+        state["current_match"] = {
             "id": None,
             "status": "idle",
             "winnerTeamId": None,
@@ -170,16 +209,26 @@ def _finalize_and_persist():
         }
         state["match_state"]["status"] = "idle"
         state["match_state"]["last_updated"] = int(time.time())
-        logging.info("Live match state has been reset to idle.")
+        logging.info("Live match state fully reset to idle.")
     else:
-        logging.warning("Finalization requested but no active match ID. Skipping.")
+        logging.warning("Finalization requested but no active match ID or in processing mode. Skipping.")
         
-        # Ensure match_state.status is idle if match.id is None
-        if not state["match"]["id"]:
+        # Ensure full reset if no ID
+        if not state["current_match"]["id"]:
+            state["current_match"] = {
+                "id": None,
+                "status": "idle",
+                "winnerTeamId": None,
+                "winnerTeamName": None,
+                "eliminationOrder": [],
+                "killFeed": [],
+                "teams": {},
+                "players": {}
+            }
             state["match_state"]["status"] = "idle"
             state["match_state"]["last_updated"] = int(time.time())
-            logging.info("Set match_state.status to idle due to no active match ID.")
-        
+            logging.info("Forced full reset due to no active match ID.")
+
 def _parse_kv_object(text):
     obj = {}
     pairs = OBJ_KV.findall(text)
@@ -241,17 +290,42 @@ def get_asset_url(full_path_from_log, default_url):
         pass
     return default_url
 
+def ensure_directories():
+    """Ensure all required directories exist."""
+    directories = [
+        CURRENT_LOG_DIR,
+        ARCHIVE_LOG_DIR,
+        TEST_LOGS_DIR,
+        LOGO_FOLDER_PATH
+    ]
+    
+    for directory in directories:
+        try:
+            if hasattr(directory, 'mkdir'):  # Path object
+                directory.mkdir(parents=True, exist_ok=True)
+            else:  # String path
+                Path(directory).mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logging.warning(f"Could not create directory {directory}: {e}")
+
+    # Also ensure the parent directory of output files exists
+    try:
+        Path(OUTPUT_JSON).parent.mkdir(parents=True, exist_ok=True)
+        Path(ALL_TIME_PLAYERS_JSON).parent.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        logging.warning(f"Could not create output directories: {e}")
+
 # ---------- Team Name Mapping Helpers ----------
 def _get_team_name_by_id(team_id):
     """Get team name for current match by team ID"""
-    current_match_id = state["match"]["id"]
+    current_match_id = state["current_match"]["id"]
     if current_match_id and current_match_id in state["teamNameMapping"]:
         return state["teamNameMapping"][current_match_id].get(team_id)
     return None
 
 def _get_team_id_by_name(team_name):
     """Get team ID for current match by team name"""
-    current_match_id = state["match"]["id"]
+    current_match_id = state["current_match"]["id"]
     if current_match_id and current_match_id in state["teamNameMapping"]:
         mapping = state["teamNameMapping"][current_match_id]
         for tid, tname in mapping.items():
@@ -261,7 +335,7 @@ def _get_team_id_by_name(team_name):
 
 def _register_team_mapping(team_id, team_name):
     """Register team ID -> name mapping for current match"""
-    current_match_id = state["match"]["id"]
+    current_match_id = state["current_match"]["id"]
     if current_match_id:
         if current_match_id not in state["teamNameMapping"]:
             state["teamNameMapping"][current_match_id] = {}
@@ -269,7 +343,7 @@ def _register_team_mapping(team_id, team_name):
 
 def _cleanup_old_team_mappings():
     """Clean up team mappings for old matches"""
-    current_match_id = state["match"]["id"]
+    current_match_id = state["current_match"]["id"]
     if current_match_id:
         state["teamNameMapping"] = {current_match_id: state["teamNameMapping"].get(current_match_id, {})}
 
@@ -327,11 +401,11 @@ def _add_or_update_team(team_data):
 
 def _update_phase_from_live_match():
     """Update phase state based on live match data."""
-    match_id = state["match"]["id"]
+    match_id = state["current_match"]["id"]
     if not match_id:
         return
     
-    for team_id, team_data in state["match"]["teams"].items():
+    for team_id, team_data in state["current_match"]["teams"].items():
         team_name = team_data.get("name", "Unknown Team")
         
         if team_name not in state["phase"]["teams"]:
@@ -348,7 +422,7 @@ def _update_phase_from_live_match():
             }
         
         for player_id in team_data.get("players", []):
-            player_data = state["match"]["players"].get(player_id)
+            player_data = state["current_match"]["players"].get(player_id)
             if player_data:
                 _add_or_update_player({
                     "id": player_id,
@@ -358,37 +432,127 @@ def _update_phase_from_live_match():
                     "teamId": team_id
                 }, is_alive=player_data["live"]["isAlive"])
 
-def parse_and_apply(log_text, parsed_logos=None, mode="chunk"):
+def extract_snapshots(log_text):
+    snapshots = []
+    pos = 0
+    while True:
+        start_match = re.search(r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] POST /totalmessage', log_text[pos:])
+        if not start_match:
+            break
+        start = pos + start_match.start()
+        
+        # Skip if this position was already processed (prevents duplicates in buffer)
+        if start in processed_snapshot_positions:
+            pos = start + 1
+            continue
+        
+        processed_snapshot_positions.add(start)
+        
+        next_start_match = re.search(r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] POST /totalmessage', log_text[start + len(start_match.group(0)):])
+        if next_start_match:
+            end = start + len(start_match.group(0)) + next_start_match.start()
+        else:
+            end = len(log_text)
+        snap_text = log_text[start:end]
+        snapshots.append(snap_text)
+        pos = end
+    return snapshots
+
+def parse_and_apply(log_text, parsed_logos=None, mode="chunk", progress_callback=None):
     """Parse log text and apply to state."""
-    gid = re.search(r"GameID:\s*['\"]?(\d+)['\"]?", log_text)
+    global buffer
     
-    new_game_id = None
-    if gid:
-        new_game_id = gid.group(1)
+    snapshots_processed = 0
+    
+    if mode == "full":
+        # Full mode - process entire text, clear any existing positions for clean run
+        global processed_snapshot_positions
+        old_positions = len(processed_snapshot_positions)
+        processed_snapshot_positions.clear()
+        logging.debug(f"FULL MODE: Cleared {old_positions} snapshot positions")
         
-    if new_game_id and state["match"]["id"] and new_game_id != state["match"]["id"]:
-        logging.info(f"NEW MATCH DETECTED: {new_game_id} (previous: {state['match']['id']})")
-        end_match_and_update_phase(state)
-        _reset_match_but_keep_id(state["match"], new_game_id)
+        snapshots = extract_snapshots(log_text)
+        total_snapshots = len(snapshots)
         
-    if not state["match"]["id"]:
-        if new_game_id:
-            logging.info(f"INITIALIZING MATCH: {new_game_id}")
-            state["match"]["id"] = new_game_id
-            state["match"]["status"] = "live"
+        for idx, snap in enumerate(snapshots):
+            process_snapshot(snap, parsed_logos)
+            snapshots_processed += 1
             
-            if mode == "full":
-                logging.info("FULL MODE: Resetting match state")
-                _reset_match_but_keep_id(state["match"], new_game_id)
+            # Update progress after every snapshot
+            if progress_callback and total_snapshots > 0:
+                processed_bytes = (idx + 1) / total_snapshots * len(log_text)
+                progress_callback(processed_bytes, len(log_text))
+                
+    else:
+        # Chunk mode - append to buffer and process new snapshots
+        if log_text:  # Only append if there's actual content
+            buffer += log_text
+        
+        snapshots = extract_snapshots(buffer)
+        new_snapshots = len(snapshots)
+        
+        for snap in snapshots:
+            process_snapshot(snap, parsed_logos)
+            snapshots_processed += 1
+        
+        # Remove processed snapshots from buffer
+        if snapshots:
+            last_end = buffer.rfind(snapshots[-1])
+            if last_end >= 0:
+                buffer = buffer[last_end + len(snapshots[-1]):]
+                logging.debug(f"Processed {new_snapshots} snapshots, buffer now {len(buffer)} bytes")
+        else:
+            logging.debug(f"No new snapshots found, buffer remains {len(buffer)} bytes")
+        
+        # Final progress update for chunk mode
+        if progress_callback and log_text:
+            progress_callback(len(log_text), len(log_text))
+    
+    logging.debug(f"parse_and_apply: processed {snapshots_processed} snapshots total")
 
-    _process_player_state_changes(log_text)
+def process_snapshot(snap_text, parsed_logos):
+    gid_match = re.search(r"GameID:\s*['\"]?(\d+)['\"]?", snap_text)
+    new_game_id = gid_match.group(1) if gid_match else None
 
-    parts = OBJ_BLOCKS.split(log_text)
+    if new_game_id and state["current_match"]["id"] and new_game_id != state["current_match"]["id"]:
+        # Finalize previous match if it exists and is active
+        if state["current_match"]["status"] in ["live", "finished"]:
+            finalization_mode = "CATCHUP" if in_catchup_processing else "ARCHIVE" if in_archive_processing else "LIVE"
+            logging.info(f"{finalization_mode}: Finalizing previous match {state['current_match']['id']} due to new ID {new_game_id}")
+            final_match_data = copy.deepcopy(state["current_match"])
+            
+            # Check for duplicate before updating phase and adding
+            if final_match_data["id"] not in state["processed_matches"]:
+                end_match_and_update_phase(final_match_data)
+                state["matches"].append(final_match_data)
+                state["processed_matches"].add(final_match_data["id"])
+                logging.info(f"{finalization_mode}: Added match {final_match_data['id']} to history")
+            else:
+                logging.warning(f"{finalization_mode}: Skipped duplicate match {final_match_data['id']}")
+            
+            # Only persist in live mode
+            if not in_archive_processing and not in_catchup_processing:
+                _finalize_and_persist()
+        else:
+            finalization_mode = "CATCHUP" if in_catchup_processing else "ARCHIVE" if in_archive_processing else "LIVE"
+            logging.debug(f"{finalization_mode}: Skipping non-active match {state['current_match']['id']}")
+        
+        # Reset for new match
+        _reset_match_but_keep_id(new_game_id)
+
+    if not state["current_match"]["id"] and new_game_id:
+        finalization_mode = "CATCHUP" if in_catchup_processing else "ARCHIVE" if in_archive_processing else "LIVE"
+        logging.info(f"{finalization_mode}: INITIALIZING MATCH: {new_game_id}")
+        _reset_match_but_keep_id(new_game_id)
+
+    _process_player_state_changes(snap_text)
+
+    parts = OBJ_BLOCKS.split(snap_text)
     for i, marker in enumerate(parts):
         if marker == "TotalPlayerList:" and i + 1 < len(parts):
             for obj_txt in re.findall(r'\{[^{}]*\}', parts[i+1]):
                 p = _parse_kv_object(obj_txt)
-                _upsert_player_from_total(p, mode=mode)
+                _upsert_player_from_total(p)
         elif marker == "TeamInfoList:" and i + 1 < len(parts):
             for obj_txt in re.findall(r'\{[^{}]*\}', parts[i+1]):
                 t = _parse_kv_object(obj_txt)
@@ -396,17 +560,21 @@ def parse_and_apply(log_text, parsed_logos=None, mode="chunk"):
 
     _recalculate_live_members()
     _update_live_eliminations()
-    _update_phase_from_live_match()
 
-    # Ensure match_state reflects the current match status after processing
-    state["match_state"]["status"] = "live" if state["match"]["id"] else "idle"
+    # Check if match has ended (only for live processing)
+    if state["current_match"]["status"] == "finished" and not in_archive_processing and not in_catchup_processing:
+        end_match_and_update_phase()
+
+    # Only update phase from live matches
+    if not in_archive_processing and not in_catchup_processing:
+        _update_phase_from_live_match()
+
+    state["match_state"]["status"] = "live" if state["current_match"]["id"] else "idle"
     state["match_state"]["last_updated"] = int(time.time())
-    
-    return state["match"]["id"]
 
-def _reset_match_but_keep_id(match, game_id):
+def _reset_match_but_keep_id(game_id):
     """Reset match state but keep the game ID"""
-    match.update({
+    state["current_match"].update({
         "id": game_id,
         "status": "live",
         "winnerTeamId": None,
@@ -418,15 +586,11 @@ def _reset_match_but_keep_id(match, game_id):
     })
 
 def _upsert_team_from_teaminfo(t, parsed_logos):
-    if "next_id" in state["match"]:
-        next_id = state["match"].pop("next_id")
-        _reset_match_but_keep_id(state["match"], next_id)
-
     tid = str(t.get("teamId") or "")
     if not tid or tid == "None":
         return
         
-    team = state["match"]["teams"].setdefault(tid, {
+    team = state["current_match"]["teams"].setdefault(tid, {
         "id": tid,
         "name": t.get("teamName") or "Unknown Team",
         "logo": DEFAULT_TEAM_LOGO,
@@ -445,17 +609,13 @@ def _upsert_team_from_teaminfo(t, parsed_logos):
         logo_info = parsed_logos[tid]
         team["logo"] = get_asset_url(logo_info["logoPath"], DEFAULT_TEAM_LOGO)
 
-def _upsert_player_from_total(p, mode="chunk"):
-    if "next_id" in state["match"]:
-        next_id = state["match"].pop("next_id")
-        _reset_match_but_keep_id(state["match"], next_id)
-
+def _upsert_player_from_total(p):
     pid = str(p.get("uId") or "")
     tid = str(p.get("teamId") or "")
     if not pid or not tid or tid == "None":
         return
 
-    team = state["match"]["teams"].setdefault(tid, {
+    team = state["current_match"]["teams"].setdefault(tid, {
         "id": tid,
         "name": "Unknown Team",
         "logo": DEFAULT_TEAM_LOGO,
@@ -469,7 +629,7 @@ def _upsert_player_from_total(p, mode="chunk"):
         team["players"].append(pid)
 
     is_alive = (p.get("liveState") != 5)
-    player = state["match"]["players"].setdefault(pid, {
+    player = state["current_match"]["players"].setdefault(pid, {
         "id": pid, "teamId": tid, "name": p.get("playerName") or "Unknown",
         "photo": p.get("picUrl") or DEFAULT_PLAYER_PHOTO,
         "live": {"isAlive": True, "health": 0, "healthMax": 100, "liveState": 0},
@@ -488,20 +648,17 @@ def _upsert_player_from_total(p, mode="chunk"):
 
     new_kills = int(p.get("killNum") or 0)
     
-    if mode == "chunk":
-        current_kills = player["stats"]["kills"]
-        if new_kills > current_kills:
-            kill_diff = new_kills - current_kills
-            player["stats"]["kills"] = new_kills
-            
-            if kill_diff > 0:
-                team_name = _get_team_name_by_id(tid) or "Unknown Team"
-                pn = player["name"]
-                for _ in range(kill_diff):
-                    state["match"]["killFeed"].append(f"Kill: {pn} ({team_name}) got a new kill!")
-                state["match"]["killFeed"] = state["match"]["killFeed"][-5:]
-    else:
+    current_kills = player["stats"]["kills"]
+    if new_kills > current_kills:
+        kill_diff = new_kills - current_kills
         player["stats"]["kills"] = new_kills
+        
+        if kill_diff > 0:
+            team_name = _get_team_name_by_id(tid) or "Unknown Team"
+            pn = player["name"]
+            for _ in range(kill_diff):
+                state["current_match"]["killFeed"].append(f"Kill: {pn} ({team_name}) got a new kill!")
+            state["current_match"]["killFeed"] = state["current_match"]["killFeed"][-5:]
 
     player["stats"]["damage"] = int(p.get("damage") or 0)
     player["stats"]["knockouts"] = int(p.get("knockouts") or 0)
@@ -520,21 +677,21 @@ def _upsert_player_from_total(p, mode="chunk"):
     _recompute_team_kills(tid)
 
 def _recompute_team_kills(tid):
-    team = state["match"]["teams"].get(tid)
+    team = state["current_match"]["teams"].get(tid)
     if not team:
         return
     total = 0
     for pid in team["players"]:
-        total += state["match"]["players"].get(pid, {}).get("stats", {}).get("kills", 0)
+        total += state["current_match"]["players"].get(pid, {}).get("stats", {}).get("kills", 0)
     team["kills"] = total
 
 def _recalculate_live_members():
     """Recalculate live members for each team."""
-    for team_id, team_data in state["match"]["teams"].items():
+    for team_id, team_data in state["current_match"]["teams"].items():
         live_count = 0
         
         for player_id in team_data.get("players", []):
-            player = state["match"]["players"].get(player_id)
+            player = state["current_match"]["players"].get(player_id)
             if player:
                 is_alive = (
                     player["live"]["isAlive"] and 
@@ -576,7 +733,7 @@ def _process_player_state_changes(log_text):
 
 def _update_player_death_status(player_name, health):
     """Update a specific player's death status by name."""
-    for p_id, p_data in state["match"]["players"].items():
+    for p_id, p_data in state["current_match"]["players"].items():
         if p_data["name"] == player_name:
             p_data["live"]["isAlive"] = False
             p_data["live"]["health"] = health
@@ -591,94 +748,150 @@ def _update_player_death_status(player_name, health):
 
 def _update_live_eliminations():
     """Update live eliminations tracking by team names."""
-    for tid, t in state["match"]["teams"].items():
+    for tid, t in state["current_match"]["teams"].items():
         team_name = t["name"]
-        if t["liveMembers"] == 0 and team_name not in state["match"]["eliminationOrder"]:
-            state["match"]["eliminationOrder"].append(team_name)
+        if t["liveMembers"] == 0 and team_name not in state["current_match"]["eliminationOrder"]:
+            state["current_match"]["eliminationOrder"].append(team_name)
             logging.info(f"Team {team_name} eliminated")
 
-    alive = [tid for tid, t in state["match"]["teams"].items() if t["liveMembers"] > 0]
-    if len(alive) == 1 and state["match"]["status"] == "live":
-        state["match"]["winnerTeamId"] = alive[0]
-        state["match"]["winnerTeamName"] = _get_team_name_by_id(alive[0])
-        state["match"]["status"] = "finished"
+    alive = [tid for tid, t in state["current_match"]["teams"].items() if t["liveMembers"] > 0]
+    if len(alive) == 1 and state["current_match"]["status"] == "live":
+        state["current_match"]["winnerTeamId"] = alive[0]
+        state["current_match"]["winnerTeamName"] = _get_team_name_by_id(alive[0])
+        state["current_match"]["status"] = "finished"
 
-def end_match_and_update_phase(state_obj):
-    global previous_match
+def end_match_and_update_phase(final_match_data=None):
+    if final_match_data is None:
+        final_match_data = copy.deepcopy(state["current_match"])
 
-    print_colored(f"\nFinalizing match {state_obj['match']['id']}", Fore.CYAN, Style.BRIGHT)
-
-    if not state_obj["match"]["id"]:
+    if not final_match_data["id"]:
         logging.warning("end_match_and_update_phase called but no match ID is set.")
         return
 
-    current_match_teams = state_obj["match"]["teams"].copy()
-    current_match_players = state_obj["match"]["players"].copy()
-    elimination_order = list(state_obj["match"]["eliminationOrder"])
+    print_colored(f"\nFinalizing match {final_match_data['id']}", Fore.CYAN, Style.BRIGHT)
 
-    # Separate and sort teams …
-    eliminated_teams_data = [t for t in current_match_teams.values() if t['name'] in elimination_order]
-    survivor_teams_data = [t for t in current_match_teams.values() if t['name'] not in elimination_order]
-    survivor_teams_data.sort(key=lambda t: t['kills'], reverse=True)
-    eliminated_teams_data.sort(key=lambda t: elimination_order.index(t['name']), reverse=True)
-
-    # Assign final ranks and placement points
-    all_teams_data = survivor_teams_data + eliminated_teams_data
+    # Make working copies of the data for processing
+    current_match_teams = final_match_data["teams"].copy()
+    current_match_players = final_match_data["players"].copy()
+    
+    # Mark this match as processed
+    state["processed_matches"].add(final_match_data["id"])
+    
+    # Find the winner team (team with live members > 0)
+    winner_team_id = None
+    for tid, team in current_match_teams.items():
+        if team.get("liveMembers", 0) > 0:
+            winner_team_id = tid
+            break
+    
+    # Get elimination order and all team names
+    elimination_order = final_match_data["eliminationOrder"]
+    all_team_names = [team["name"] for team in current_match_teams.values()]
+    
+    logging.info(f"Winner: {current_match_teams[winner_team_id]['name'] if winner_team_id else 'None'}")
+    logging.info(f"Elimination order: {elimination_order}")
+    
+    # Create placement ranking based on elimination order (reverse: last eliminated = best placement)
+    # Winner gets 1st place, then teams are ranked by reverse elimination order
+    placement_ranking = []
+    
+    # Add winner as 1st place
+    if winner_team_id:
+        winner_team = current_match_teams[winner_team_id]
+        placement_ranking.append({
+            "team_id": winner_team_id,
+            "team_name": winner_team["name"],
+            "elimination_position": 0,  # Winner not eliminated
+            "rank": 1
+        })
+        logging.info(f"Rank 1: {winner_team['name']} (Winner)")
+    
+    # Add eliminated teams in reverse elimination order (last eliminated = highest rank)
+    for elim_pos, team_name in enumerate(reversed(elimination_order), 1):
+        # Find the team ID for this team name
+        team_id = None
+        for tid, team in current_match_teams.items():
+            if team["name"] == team_name:
+                team_id = tid
+                break
+        
+        if team_id:
+            rank = len(placement_ranking) + 1  # Current rank position
+            placement_ranking.append({
+                "team_id": team_id,
+                "team_name": team_name,
+                "elimination_position": len(elimination_order) - elim_pos + 1,  # Reverse position
+                "rank": rank
+            })
+            logging.info(f"Rank {rank}: {team_name} (eliminated {elim_pos}th from end)")
+    
+    # Assign placement points based on final ranking
     final_placement = {}
-    for i, team_data in enumerate(all_teams_data):
-        rank = i + 1
+    for ranking in placement_ranking:
+        rank = ranking["rank"]
         placement_pts = PLACEMENT_POINTS.get(rank, 0)
-        final_placement[team_data["id"]] = placement_pts
-
-    # 🔑 Inject placement points into the current match teams
+        final_placement[ranking["team_id"]] = placement_pts
+        logging.info(f"Team {ranking['team_name']} ranked {rank} with {placement_pts} placement points")
+    
+    # Update the final match data with placement points
     for tid, placement_pts in final_placement.items():
-        if tid in state_obj["match"]["teams"]:
-            state_obj["match"]["teams"][tid]["placementPointsLive"] = placement_pts
-
-    # ✅ Now snapshot previous_match AFTER placement points are injected
-    previous_match = {
-        "id": state_obj["match"]["id"],
-        "status": "completed",
-        "winnerTeamId": state_obj["match"]["winnerTeamId"],
-        "winnerTeamName": state_obj["match"]["winnerTeamName"],
-        "eliminationOrder": list(state_obj["match"]["eliminationOrder"]),
-        "killFeed": list(state_obj["match"]["killFeed"]),
-        "teams": dict(state_obj["match"]["teams"]),
-        "players": dict(state_obj["match"]["players"])
-    }
-
-    state_obj["previous_match"] = copy.deepcopy(previous_match)
-
-    # Award WWCD
-    if all_teams_data and all_teams_data[0]["liveMembers"] > 0:
-        winner_name = all_teams_data[0]["name"]
-        winner_entry = state_obj["phase"]["teams"].get(winner_name)
-        if winner_entry:
-            winner_entry["totals"]["wwcd"] += 1
-
-    # Update phase totals
+        if tid in final_match_data["teams"]:
+            final_match_data["teams"][tid]["placementPointsLive"] = placement_pts
+            logging.info(f"Set {final_match_data['teams'][tid]['name']} placementPointsLive = {placement_pts}")
+    
+    # Add placement ranking to match data for debugging
+    final_match_data["placementRanking"] = placement_ranking
+    
+    # *** FIX 1: ENSURE ALL TEAMS EXIST IN PHASE BEFORE AWARDING WWCD ***
+    # First, initialize all teams in phase state (this happens BEFORE WWCD awarding)
     for team_id, team_data in current_match_teams.items():
         team_name = team_data["name"]
         
-        if team_name not in state_obj["phase"]["teams"]:
-            state_obj["phase"]["teams"][team_name] = {
-                "id": team_name,
+        # Ensure team exists in phase BEFORE any WWCD logic
+        if team_name not in state["phase"]["teams"]:
+            state["phase"]["teams"][team_name] = {
+                "id": team_id,
                 "name": team_name,
                 "logo": team_data.get("logo", DEFAULT_TEAM_LOGO),
                 "totals": {"kills": 0, "placementPoints": 0, "points": 0, "wwcd": 0}
             }
+            logging.info(f"Initialized phase team: {team_name}")
+
+    # *** FIX 2: NOW award WWCD to winner (all teams now exist in phase) ***
+    if winner_team_id:
+        winner_name = current_match_teams[winner_team_id]["name"]
+        if winner_name in state["phase"]["teams"]:
+            phase_winner_team = state["phase"]["teams"][winner_name]
+            phase_winner_team["totals"]["wwcd"] += 1
+            logging.info(f"Awarded WWCD to {winner_name} (total WWCD: {phase_winner_team['totals']['wwcd']})")
+        else:
+            logging.warning(f"WWCD winner {winner_name} not found in phase teams!")
+
+    # Update phase totals for teams - ONLY for this specific match
+    for team_id, team_data in current_match_teams.items():
+        team_name = team_data["name"]
+        phase_team = state["phase"]["teams"][team_name]  # Guaranteed to exist now
         
-        phase_team = state_obj["phase"]["teams"][team_name]
-        phase_team["totals"]["kills"] += team_data.get("kills", 0)
+        # Add this match's kills
+        match_kills = team_data.get("kills", 0)
+        phase_team["totals"]["kills"] += match_kills
+        
+        # Add this match's placement points
         placement_pts = final_placement.get(team_id, 0)
         phase_team["totals"]["placementPoints"] += placement_pts
+        
+        # Recalculate total points
+        phase_team["totals"]["points"] = phase_team["totals"]["kills"] + phase_team["totals"]["placementPoints"]
+        
+        logging.info(f"Updated {team_name}: +{match_kills} kills, +{placement_pts} placement (total: {phase_team['totals']['points']} pts)")
 
-    # Update player totals
+    # Update phase totals for players - ONLY for this specific match
     for player_id, player_data in current_match_players.items():
         team_name = _get_team_name_by_id(player_data["teamId"]) or "Unknown Team"
         
-        if player_id not in state_obj["phase"]["players"]:
-            state_obj["phase"]["players"][player_id] = {
+        # Ensure player exists in phase
+        if player_id not in state["phase"]["players"]:
+            state["phase"]["players"][player_id] = {
                 "id": player_id,
                 "name": player_data["name"],
                 "photo": player_data.get("photo", DEFAULT_PLAYER_PHOTO),
@@ -687,34 +900,35 @@ def end_match_and_update_phase(state_obj):
                 "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
             }
         
-        phase_player = state_obj["phase"]["players"][player_id]
+        phase_player = state["phase"]["players"][player_id]
+        
+        # Add this match's stats
         phase_player["totals"]["kills"] += player_data["stats"]["kills"]
         phase_player["totals"]["damage"] += player_data["stats"]["damage"]
         phase_player["totals"]["knockouts"] += player_data["stats"]["knockouts"]
         phase_player["totals"]["matches"] += 1
 
-    # Recalculate total points
-    for team_data in state_obj["phase"]["teams"].values():
-        total_kills = team_data["totals"]["kills"]
-        total_placement = team_data["totals"]["placementPoints"]
-        team_data["totals"]["points"] = total_kills + total_placement
-
-    # Reset match state - BUT DON'T RESET THE ID HERE
-    # The ID will be set when a new match is detected
-    state_obj["match"]["status"] = "idle"
-    state_obj["match"]["winnerTeamId"] = None
-    state_obj["match"]["winnerTeamName"] = None
-    state_obj["match"]["eliminationOrder"] = []
-    state_obj["match"]["killFeed"] = []
-    state_obj["match"]["teams"] = {}
-    state_obj["match"]["players"] = {}
-    # Only reset ID after everything else is cleaned up
-    state_obj["match"]["id"] = None
+    # *** FIX 3: FULL RESET OF CURRENT MATCH STATE ***
+    # Reset current match state for next match
+    state["current_match"] = {
+        "id": None,
+        "status": "idle",
+        "winnerTeamId": None,
+        "winnerTeamName": None,
+        "eliminationOrder": [],
+        "killFeed": [],
+        "teams": {},
+        "players": {}
+    }
+    state["match_state"]["status"] = "idle"
+    state["match_state"]["last_updated"] = int(time.time())
     _cleanup_old_team_mappings()
-
+    
+    logging.info(f"Match {final_match_data['id']} finalization complete. {len(current_match_teams)} teams processed.")
+    
 def _print_terminal_snapshot(test_mode=False):
     """Enhanced terminal output with colors and simulation progress."""
-    m = state["match"]
+    m = state["current_match"]
     
     # Clear screen for better visual experience
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -818,7 +1032,7 @@ def _phase_standings():
 
 def _current_match_top_players():
     players = []
-    for pid, p in state["match"]["players"].items():
+    for pid, p in state["current_match"]["players"].items():
         team_name = _get_team_name_by_id(p["teamId"]) or "Unknown Team"
         players.append({
             "playerId": pid, "teamName": team_name, "name": p["name"],
@@ -848,47 +1062,48 @@ def _all_time_top_players():
     players.sort(key=lambda x: (x["totalKills"], x["totalDamage"], x["totalKnockouts"]), reverse=True)
     return players[:5]
 
-def _live_active_players():
+def _get_active_players():
     """Returns active players with health data."""
+    if state["current_match"]["status"] != "live":
+        return []
     active_players = []
     
-    if state["match"]["status"] == "live":
-        for player_id, player_data in state["match"]["players"].items():
-            team_data = state["match"]["teams"].get(player_data["teamId"], {})
-            team_name = team_data.get("name", "Unknown Team")
-            
-            active_players.append({
-                "playerId": player_id,
-                "name": player_data["name"],
-                "teamId": player_data["teamId"],
-                "teamName": team_name,
-                "teamLogo": team_data.get("logo", DEFAULT_TEAM_LOGO),
-                "live": {
-                    "isAlive": player_data["live"]["isAlive"],
-                    "health": player_data["live"]["health"],
-                    "healthMax": player_data["live"]["healthMax"],
-                    "liveState": player_data["live"]["liveState"]
-                },
-                "stats": {
-                    "kills": player_data["stats"]["kills"],
-                    "damage": player_data["stats"]["damage"],
-                    "knockouts": player_data["stats"]["knockouts"]
-                }
-            })
+    for player_id, player_data in state["current_match"]["players"].items():
+        team_data = state["current_match"]["teams"].get(player_data["teamId"], {})
+        team_name = team_data.get("name", "Unknown Team")
+        
+        active_players.append({
+            "playerId": player_id,
+            "name": player_data["name"],
+            "teamId": player_data["teamId"],
+            "teamName": team_name,
+            "teamLogo": team_data.get("logo", DEFAULT_TEAM_LOGO),
+            "live": {
+                "isAlive": player_data["live"]["isAlive"],
+                "health": player_data["live"]["health"],
+                "healthMax": player_data["live"]["healthMax"],
+                "liveState": player_data["live"]["liveState"]
+            },
+            "stats": {
+                "kills": player_data["stats"]["kills"],
+                "damage": player_data["stats"]["damage"],
+                "knockouts": player_data["stats"]["knockouts"]
+            }
+        })
     
-    active_players.sort(key=lambda p: (
+    return sorted(active_players, key=lambda p: (
         p["teamName"],
         not p["live"]["isAlive"],
         -p["stats"]["kills"]
     ))
-    
-    return active_players
 
-def _live_team_kills():
+def _get_team_kills():
     """Returns current match team kills."""
+    if state["current_match"]["status"] != "live":
+        return {}
     team_kills = {}
     
-    for team_id, team_data in state["match"]["teams"].items():
+    for team_id, team_data in state["current_match"]["teams"].items():
         team_kills[team_id] = {
             "teamId": team_id,
             "teamName": team_data["name"],
@@ -901,41 +1116,29 @@ def _live_team_kills():
 def _export_json():
     """Exports the current state to a JSON file."""
     try:
-        # Use state["previous_match"] instead of the global previous_match variable
-        local_previous_match = state["previous_match"] if state["previous_match"] is not None else {}
-        
         data = {
             "match_state": state["match_state"],
             "phase": {
                 "standings": _phase_standings(),
                 "allTimeTopPlayers": _all_time_top_players()
             },
-            "match": {
-                "id": state["match"]["id"],
-                "status": state["match"]["status"],
-                "winnerTeamId": state["match"]["winnerTeamId"],
-                "winnerTeamName": state["match"]["winnerTeamName"],
-                "eliminationOrder": state["match"]["eliminationOrder"],
-                "killFeed": state["match"]["killFeed"],
-                "teams": state["match"]["teams"],
-                "players": state["match"]["players"],
+            "current_match": {
+                "id": state["current_match"]["id"],
+                "status": state["current_match"]["status"],
+                "winnerTeamId": state["current_match"]["winnerTeamId"],
+                "winnerTeamName": state["current_match"]["winnerTeamName"],
+                "eliminationOrder": state["current_match"]["eliminationOrder"],
+                "killFeed": state["current_match"]["killFeed"],
+                "teams": state["current_match"]["teams"],
+                "players": state["current_match"]["players"],
                 "leaderboards": {
                     "currentMatchTopPlayers": _current_match_top_players()
-                }
+                },
+                # Convenience views for frontend
+                "activePlayers": _get_active_players(),
+                "teamKills": _get_team_kills()
             },
-            "live": {
-                "activePlayers": _live_active_players(),
-                "teamKills": _live_team_kills()
-            },
-            "previous": {
-                "id": local_previous_match.get("id"),
-                "status": local_previous_match.get("status"),
-                "phase": local_previous_match.get("phase", {"standings": []}),
-                "players": local_previous_match.get("players", {}),
-                "leaderboards": local_previous_match.get("leaderboards", {"currentMatchTopPlayers": []}),
-                "live": local_previous_match.get("live", {"activePlayers": [], "teamKills": {}}),
-                "teams": local_previous_match.get("teams", {})  # Add teams to previous block
-            }
+            "matches": state["matches"]  # Complete match history
         }
         with open(OUTPUT_JSON, "w") as f:
             json.dump(data, f, indent=4)
@@ -988,12 +1191,18 @@ def save_all_time_players():
 
 def apply_archived_file_to_all_time(log_text, parsed_logos):
     """Apply archived log data to all-time statistics."""
-    temp_before = state["match"].copy()
+    global in_archive_processing
+    temp_before = state["current_match"].copy()
     temp_mapping_before = state["teamNameMapping"].copy()
-
-    parse_and_apply(log_text, parsed_logos=parsed_logos, mode="full")
-
-    for pid, pl in state["match"]["players"].items():
+    
+    in_archive_processing = True
+    try:
+        parse_and_apply(log_text, parsed_logos=parsed_logos, mode="full")
+    finally:
+        in_archive_processing = False
+    
+    # Only update all-time players from the final state, don't touch phase
+    for pid, pl in state["current_match"]["players"].items():
         team_name = _get_team_name_by_id(pl.get("teamId")) or "Unknown Team"
         
         at = state["all_time"]["players"].setdefault(pid, {
@@ -1012,7 +1221,8 @@ def apply_archived_file_to_all_time(log_text, parsed_logos):
         at["totals"]["knockouts"] += int(pl["stats"]["knockouts"])
         at["totals"]["matches"] += 1
 
-    state["match"].update(temp_before)
+    # Restore state - phase updates during processing are ignored due to flag
+    state["current_match"].update(temp_before)
     state["teamNameMapping"] = temp_mapping_before
 
 def process_archives_for_all_time(parsed_logos, force_repopulate=False):
@@ -1031,111 +1241,171 @@ def process_archives_for_all_time(parsed_logos, force_repopulate=False):
         return
 
     print_colored(f"Found {len(archived_logs)} archived logs to process.", Fore.WHITE)
-
-    for f in archived_logs:
+    
+    # Calculate total size for progress bar
+    total_file_size = sum(f.stat().st_size for f in archived_logs)
+    processed_size = 0
+    
+    for i, f in enumerate(archived_logs):
+        file_size = f.stat().st_size
+        print_colored(f"\nProcessing archive file {i+1}/{len(archived_logs)}: {f.name}", Fore.YELLOW)
+        
         try:
             with open(f, "r", encoding="utf-8") as fh:
-                apply_archived_file_to_all_time(fh.read(), parsed_logos)
+                log_text = fh.read()
+                
+                # Show progress bar for this file
+                print_progress_bar(processed_size, total_file_size, prefix=f"Archive {i+1}/{len(archived_logs)}", suffix=f"{f.name}")
+                
+                apply_archived_file_to_all_time(log_text, parsed_logos)
+                
+                # Update processed size
+                processed_size += file_size
+                
+                # Update progress bar after processing
+                print_progress_bar(processed_size, total_file_size, prefix=f"Archive {i+1}/{len(archived_logs)}", suffix=f"{f.name} complete")
+                
         except Exception as e:
             logging.warning(f"Archive error for {f}: {e}")
+            processed_size += file_size  # Still count as processed
 
+    # Final progress bar
+    print_progress_bar(total_file_size, total_file_size, prefix="Archive", suffix="PROCESSING COMPLETE")
     save_all_time_players()
     print_colored("All-time processing complete.", Fore.GREEN)
 
 def process_current_phase_files(log_files_to_process, parsed_logos):
-    """Process current phase log files."""
+    """Process current phase log files for catch-up with real-time progress tracking."""
+    global in_catchup_processing, processed_files
+    
     if not log_files_to_process:
         print_colored("No current phase logs to process.", Fore.WHITE)
         return
         
-    print_colored("Processing current-phase logs...", Fore.CYAN)
-    print_colored(f"Files to process: {len(log_files_to_process)}", Fore.WHITE)
-
-    for f in log_files_to_process:
-        try:
-            with open(f, "r", encoding="utf-8") as fh:
-                log_text = fh.read()
-                parse_and_apply(log_text, parsed_logos=parsed_logos, mode="full")
-                _add_match_to_phase_totals()
-        except Exception as e:
-            logging.warning(f"Phase file error for {f}: {e}")
-
-    print_colored("Phase processing complete.", Fore.GREEN)
-
-def _add_match_to_phase_totals():
-    """Add current match data to phase totals."""
-    if not state["match"]["id"]:
+    # Filter out already processed files
+    log_files_to_process = [f for f in log_files_to_process if f.name not in processed_files]
+    if not log_files_to_process:
+        print_colored("All files already processed.", Fore.WHITE)
         return
         
-    final_placement = _calculate_final_placement_points()
+    print_colored("Processing current-phase logs for catch-up...", Fore.CYAN)
+    print_colored(f"Files to process: {len(log_files_to_process)}", Fore.WHITE)
+
+    # Sort files by modification time (oldest first)
+    log_files_to_process.sort(key=lambda f: f.stat().st_mtime)
     
-    for tid, team in state["match"]["teams"].items():
-        team_name = team["name"]
-        
-        phase_team = state["phase"]["teams"].setdefault(team_name, {
-            "id": team_name,
-            "name": team_name,
-            "logo": team.get("logo", DEFAULT_TEAM_LOGO),
-            "totals": {"kills": 0, "placementPoints": 0, "points": 0, "wwcd": 0}
-        })
-
-        phase_team["name"] = team_name
-        phase_team["logo"] = team.get("logo", phase_team["logo"])
-        phase_team["totals"]["kills"] += int(team.get("kills", 0))
-        phase_team["totals"]["placementPoints"] += final_placement.get(tid, 0)
-        phase_team["totals"]["points"] += int(team.get("kills", 0)) + final_placement.get(tid, 0)
-        phase_team["totals"]["wwcd"] += 1 if state["match"]["winnerTeamId"] == tid else 0
-
-    for pid, player in state["match"]["players"].items():
-        team_name = _get_team_name_by_id(player["teamId"]) or "Unknown Team"
-        
-        phase_player = state["phase"]["players"].setdefault(pid, {
-            "id": pid,
-            "name": player["name"],
-            "photo": player.get("photo", DEFAULT_PLAYER_PHOTO),
-            "teamName": team_name,
-            "live": {"isAlive": False, "health": 0, "healthMax": 100},
-            "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
-        })
-        
-        phase_player["name"] = player["name"]
-        phase_player["photo"] = player.get("photo", phase_player["photo"])
-        phase_player["teamName"] = team_name
-        phase_player["totals"]["kills"] += int(player["stats"]["kills"])
-        phase_player["totals"]["damage"] += int(player["stats"]["damage"])
-        phase_player["totals"]["knockouts"] += int(player["stats"]["knockouts"])
-        phase_player["totals"]["matches"] += 1
-
-def _calculate_final_placement_points():
-    """Calculate final placement points for the match."""
-    points = {}
-    total_teams = len(state["match"]["teams"])
-    eliminated_names = state["match"]["eliminationOrder"]
+    # Calculate total size for progress tracking
+    total_file_size = sum(f.stat().st_size for f in log_files_to_process)
+    processed_size = 0
     
-    if len(eliminated_names) < total_teams - 1:
-        # Fallback: rank by live members then kills
-        all_teams_data = list(state["match"]["teams"].values())
-        all_teams_data.sort(key=lambda t: (t.get("liveMembers", 0) > 0, t.get("kills", 0)), reverse=True)
+    for i, log_file in enumerate(log_files_to_process):
+        is_last_file = (i == len(log_files_to_process) - 1)
+        file_size = log_file.stat().st_size
         
-        for i, team_data in enumerate(all_teams_data):
-            rank = i + 1
-            team_id = team_data["id"]
-            points[team_id] = PLACEMENT_POINTS.get(rank, 0)
-    else:
-        # Standard elimination order method
-        for i, team_name in enumerate(reversed(eliminated_names)):
-            rank = total_teams - i
-            team_id = _get_team_id_by_name(team_name)
-            if team_id:
-                points[team_id] = PLACEMENT_POINTS.get(rank, 0)
+        if not is_last_file:
+            print_colored(f"\nProcessing completed match file {i+1}/{len(log_files_to_process)}: {log_file.name}", Fore.YELLOW)
+        else:
+            print_colored(f"\nProcessing live file {i+1}/{len(log_files_to_process)} for catch-up: {log_file.name}", Fore.CYAN)
         
-        # WWCD winner gets first place
-        wwcd_winner = [t for t in state["match"]["teams"].values() if t.get("liveMembers", 0) > 0]
-        if len(wwcd_winner) == 1:
-            winner_team = wwcd_winner[0]
-            points[winner_team["id"]] = PLACEMENT_POINTS.get(1, 0)
+        try:
+            with open(log_file, "r", encoding="utf-8") as f:
+                log_text = f.read()
+                
+                # Log file start
+                logging.info(f"Starting processing of file: {log_file.name}")
+                
+                # Process in chunks
+                chunk_size = max(1024, file_size // 50)
+                bytes_processed_in_file = 0
+                
+                in_catchup_processing = True
+                try:
+                    # Process the file in chunks for better progress tracking
+                    for chunk_start in range(0, len(log_text), chunk_size):
+                        chunk_end = min(chunk_start + chunk_size, len(log_text))
+                        chunk = log_text[chunk_start:chunk_end]
+                        
+                        # Process chunk with progress callback
+                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
+                            processed_size + bytes_processed_in_file + processed,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        ))
+                        
+                        # Update progress
+                        bytes_processed_in_file = chunk_end
+                        print_progress_bar(
+                            processed_size + bytes_processed_in_file,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        )
+                        time.sleep(0.01)
+                    
+                    # Flush any remaining buffer without re-processing the whole file
+                    logging.info(f"Flushing remaining buffer for {log_file.name}")
+                    parse_and_apply('', parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
+                        processed_size + bytes_processed_in_file + processed,
+                        total_file_size,
+                        prefix=f"File {i+1}/{len(log_files_to_process)}",
+                        suffix=f"{log_file.name}",
+                        processing=True
+                    ))
+                    
+                    # Finalize any completed matches
+                    if state["current_match"]["id"] and state["current_match"]["status"] in ["live", "finished"]:
+                        logging.info(f"CATCHUP: Finalizing match at file end: {state['current_match']['id']}")
+                        final_match_data = copy.deepcopy(state["current_match"])
+                        
+                        # Check for duplicate before updating phase and adding
+                        if final_match_data["id"] not in state["processed_matches"]:
+                            end_match_and_update_phase(final_match_data)
+                            state["matches"].append(final_match_data)
+                            state["processed_matches"].add(final_match_data["id"])
+                            logging.info(f"CATCHUP: Added match {final_match_data['id']} to history")
+                        else:
+                            logging.warning(f"CATCHUP: Skipped duplicate match {final_match_data['id']}")
+                        
+                        # Reset only for non-last file
+                        if not is_last_file:
+                            state["current_match"] = {
+                                "id": None, "status": "idle", "winnerTeamId": None,
+                                "winnerTeamName": None, "eliminationOrder": [], "killFeed": [],
+                                "teams": {}, "players": {}
+                            }
+                        
+                finally:
+                    in_catchup_processing = False
+                    
+                # Update processed size and mark file as processed
+                processed_size += file_size
+                processed_files.add(log_file.name)
+                
+                # Show completed progress
+                print_progress_bar(
+                    processed_size,
+                    total_file_size,
+                    prefix=f"File {i+1}/{len(log_files_to_process)}",
+                    suffix=f"{log_file.name} complete"
+                )
+                        
+        except Exception as e:
+            logging.error(f"Error processing catch-up file {log_file.name}: {e}")
+            processed_size += file_size
+            processed_files.add(log_file.name)
+            print_progress_bar(
+                processed_size,
+                total_file_size,
+                prefix=f"File {i+1}/{len(log_files_to_process)}",
+                suffix=f"{log_file.name} ERROR"
+            )
 
-    return points
+    # Final progress
+    print_progress_bar(total_file_size, total_file_size, prefix="Catch-up", suffix="ALL FILES COMPLETE")
+    print_colored("✓ Current phase catch-up complete!", Fore.GREEN)
 
 def confirm_file_setup():
     """Display detected files and ask user for confirmation."""
@@ -1178,7 +1448,6 @@ def confirm_file_setup():
 
     print_colored("\n" + "-"*60, Fore.BLUE)
     print_colored("1. Continue with current setup", Fore.GREEN)
-    # print_colored("2. Reprocess all-time players", Fore.YELLOW)
     print_colored("3. Exit", Fore.RED)
     print_colored("-"*60, Fore.BLUE)
 
@@ -1186,13 +1455,11 @@ def confirm_file_setup():
         choice = input(f"{Fore.CYAN}Enter your choice (1-3): {Style.RESET_ALL}").strip()
         if choice == "1":
             return "continue"
-        elif choice == "2":
-            return "reprocess"
         elif choice == "3":
             print_colored("Exiting...", Fore.YELLOW)
             exit(0)
         else:
-            print_colored("Invalid choice. Please enter 1, 2, or 3.", Fore.RED)
+            print_colored("Invalid choice. Please enter 1 or 3.", Fore.RED)
 
 # ---------- File Monitoring Functions ----------
 def _file_size(path):
@@ -1225,38 +1492,39 @@ def _is_log_updating(log_path, min_size=0):
 finalization_requested = False
 complete_shutdown_requested = False
 finalization_lock = threading.Lock()
-previous_match = None
+
+def force_end_listener():
+    """Listen for force end commands in a background thread."""
+    while True:
+        try:
+            # Check for force end file
+            force_end_file = Path("force_end.flag")
+            if force_end_file.exists():
+                print_colored("Force end flag detected. Requesting finalization...", Fore.RED)
+                request_finalization()
+                force_end_file.unlink()  # Remove the flag file
+                break
+            
+            # Check for force shutdown file (complete exit)
+            force_shutdown_file = Path("force_shutdown.flag")
+            if force_shutdown_file.exists():
+                print_colored("Force shutdown flag detected. Requesting complete shutdown...", Fore.RED)
+                request_finalization()
+                force_shutdown_file.unlink()  # Remove the flag file
+                # Set a global flag for complete shutdown
+                global complete_shutdown_requested
+                with finalization_lock:
+                    complete_shutdown_requested = True
+                break
+                
+            time.sleep(1)
+        except Exception as e:
+            logging.error(f"Error in force end listener: {e}")
+            break
 
 def setup_force_end_thread():
     """Setup a background thread to listen for force end commands."""
-    def listen_for_commands():
-        while True:
-            try:
-                # Check for force end file
-                force_end_file = Path("force_end.flag")
-                if force_end_file.exists():
-                    print_colored("Force end flag detected. Requesting finalization...", Fore.RED)
-                    request_finalization()
-                    force_end_file.unlink()  # Remove the flag file
-                    break
-                
-                # Check for force shutdown file (complete exit)
-                force_shutdown_file = Path("force_shutdown.flag")
-                if force_shutdown_file.exists():
-                    print_colored("Force shutdown flag detected. Requesting complete shutdown...", Fore.RED)
-                    request_finalization()
-                    force_shutdown_file.unlink()  # Remove the flag file
-                    # Set a global flag for complete shutdown
-                    global complete_shutdown_requested
-                    complete_shutdown_requested = True
-                    break
-                    
-                time.sleep(1)
-            except Exception as e:
-                logging.error(f"Error in force end listener: {e}")
-                break
-    
-    thread = threading.Thread(target=listen_for_commands, daemon=True)
+    thread = threading.Thread(target=force_end_listener, daemon=True)
     thread.start()
     return thread
 
@@ -1306,9 +1574,18 @@ def server_only_mode():
 
 def request_finalization():
     """Thread-safe way to request finalization."""
-    # In request_finalization() and perform_finalization():
-    if state["match"]["status"] in ["live", "finished"]:
-        end_match_and_update_phase(state)  # If not already called
+    if state["current_match"]["status"] in ["live", "finished"]:
+        final_match_data = copy.deepcopy(state["current_match"])
+        
+        # Append to matches for live mode (like catch-up)
+        if final_match_data["id"] not in state["processed_matches"]:
+            end_match_and_update_phase(final_match_data)
+            state["matches"].append(final_match_data)
+            state["processed_matches"].add(final_match_data["id"])
+            logging.info(f"LIVE: Added match {final_match_data['id']} to history")
+        else:
+            logging.warning(f"LIVE: Skipped duplicate match {final_match_data['id']}")
+        
         _finalize_and_persist()
     global finalization_requested
     with finalization_lock:
@@ -1328,19 +1605,12 @@ def should_shutdown():
 
 def perform_finalization(keep_server_running=True):
     """Perform the actual finalization logic."""
-    # In request_finalization() and perform_finalization():
-    if state["match"]["status"] in ["live", "finished"]:
-        end_match_and_update_phase(state)  # If not already called
+    if state["current_match"]["status"] in ["live", "finished"]:
+        end_match_and_update_phase()
         _finalize_and_persist()
     global finalization_requested
     
     print_colored("\nPerforming finalization...", Fore.CYAN, Style.BRIGHT)
-    
-    # Finalize any active or finished match and update phase
-    if state["match"]["id"] and (state["match"]["status"] in ["live", "finished"]):
-        # Always finalize the match when timing out to preserve data
-        print_colored(f"Finalizing match {state['match']['id']} and updating phase standings", Fore.CYAN)
-        end_match_and_update_phase(state)
     
     # Export final state
     try:
@@ -1370,21 +1640,345 @@ def perform_finalization(keep_server_running=True):
     with finalization_lock:
         finalization_requested = False
 
-def setup_signal_handlers():
-    """Setup signal handlers for graceful shutdown."""
-    import signal
+def signal_handler(signum, frame):
+    """Enhanced signal handler for graceful shutdown."""
+    global signal_received, complete_shutdown_requested, finalization_requested
     
-    def signal_handler(signum, frame):
-        print_colored(f"\nReceived signal {signum}. Requesting complete shutdown...", Fore.YELLOW)
+    if signal_received:
+        # If we already received a signal, force exit
+        print_colored(f"\nForce exit requested (signal {signum} received again)", Fore.RED)
+        os._exit(1)
+    
+    signal_received = True
+    print_colored(f"\nReceived signal {signum}. Requesting complete shutdown...", Fore.YELLOW)
+    
+    with finalization_lock:
+        complete_shutdown_requested = True
+        finalization_requested = True
+    
+    # Set the shutdown event to wake up sleeping threads
+    shutdown_event.set()
+
+def setup_signal_handlers():
+    """Setup enhanced signal handlers for graceful shutdown."""
+    # Handle common termination signals
+    signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # Termination request
+    
+    # Handle additional signals if available
+    if hasattr(signal, 'SIGHUP'):
+        signal.signal(signal.SIGHUP, signal_handler)  # Hang up
+    if hasattr(signal, 'SIGQUIT'):
+        signal.signal(signal.SIGQUIT, signal_handler)  # Quit signal
+
+def check_shutdown_conditions():
+    """Check all possible shutdown conditions."""
+    # Check shutdown event
+    if shutdown_event.is_set():
+        return True
+    
+    # Check finalization request
+    if should_finalize():
+        return True
+    
+    # Check for force end file
+    force_end_file = Path("force_end.flag")
+    if force_end_file.exists():
+        print_colored("Force end flag detected. Requesting finalization...", Fore.RED)
+        request_finalization()
+        try:
+            force_end_file.unlink()  # Remove the flag file
+        except:
+            pass
+        return True
+    
+    # Check for force shutdown file
+    force_shutdown_file = Path("force_shutdown.flag")
+    if force_shutdown_file.exists():
+        print_colored("Force shutdown flag detected. Requesting complete shutdown...", Fore.RED)
+        request_finalization()
         global complete_shutdown_requested
         with finalization_lock:
             complete_shutdown_requested = True
+        try:
+            force_shutdown_file.unlink()  # Remove the flag file
+        except:
+            pass
+        return True
     
-    # Handle common termination signals
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    if hasattr(signal, 'SIGHUP'):
-        signal.signal(signal.SIGHUP, signal_handler)
+    return False
+
+def interruptible_sleep(duration, check_interval=0.1):
+    """Sleep that can be interrupted by shutdown signals."""
+    end_time = time.time() + duration
+    
+    while time.time() < end_time:
+        if check_shutdown_conditions():
+            return True  # Interrupted
+        
+        remaining = end_time - time.time()
+        sleep_time = min(check_interval, remaining)
+        
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+    
+    return False  # Completed normally
+
+def process_with_shutdown_check(log_files_to_process, parsed_logos):
+    """Process files with regular shutdown checks and progress updates."""
+    global in_catchup_processing, processed_files
+    
+    if not log_files_to_process:
+        print_colored("No current phase logs to process.", Fore.WHITE)
+        return
+        
+    # Filter out already processed files
+    log_files_to_process = [f for f in log_files_to_process if f.name not in processed_files]
+    if not log_files_to_process:
+        print_colored("All files already processed.", Fore.WHITE)
+        return
+        
+    print_colored("Processing current-phase logs for catch-up...", Fore.CYAN)
+    print_colored(f"Files to process: {len(log_files_to_process)}", Fore.WHITE)
+    print_colored("Press Ctrl+C to interrupt processing...", Fore.YELLOW)
+
+    # Sort files by modification time (oldest first)
+    log_files_to_process.sort(key=lambda f: f.stat().st_mtime)
+    
+    # Calculate total size for progress tracking
+    total_file_size = sum(f.stat().st_size for f in log_files_to_process)
+    processed_size = 0
+    
+    for i, log_file in enumerate(log_files_to_process):
+        # Check for shutdown before processing each file
+        if check_shutdown_conditions():
+            print_colored(f"\nShutdown requested during file processing. Stopping at file {i+1}/{len(log_files_to_process)}", Fore.YELLOW)
+            return
+        
+        is_last_file = (i == len(log_files_to_process) - 1)
+        file_size = log_file.stat().st_size
+        
+        if not is_last_file:
+            print_colored(f"\nProcessing completed match file {i+1}/{len(log_files_to_process)}: {log_file.name}", Fore.YELLOW)
+        else:
+            print_colored(f"\nProcessing live file {i+1}/{len(log_files_to_process)} for catch-up: {log_file.name}", Fore.CYAN)
+        
+        try:
+            with open(log_file, "r", encoding="utf-8") as f:
+                log_text = f.read()
+                
+                # Log file start
+                logging.info(f"Starting processing of file: {log_file.name}")
+                
+                # Process in smaller chunks with shutdown checks
+                chunk_size = max(1024, file_size // 100)
+                bytes_processed_in_file = 0
+                
+                in_catchup_processing = True
+                try:
+                    # Process the file in chunks
+                    for chunk_start in range(0, len(log_text), chunk_size):
+                        if check_shutdown_conditions():
+                            print_colored(f"\nShutdown requested during chunk processing. Stopping...", Fore.YELLOW)
+                            return
+                        
+                        chunk_end = min(chunk_start + chunk_size, len(log_text))
+                        chunk = log_text[chunk_start:chunk_end]
+                        
+                        # Process chunk with progress callback
+                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
+                            processed_size + bytes_processed_in_file + processed,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        ))
+                        
+                        # Update progress
+                        bytes_processed_in_file = chunk_end
+                        print_progress_bar(
+                            processed_size + bytes_processed_in_file,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        )
+                    
+                    # Flush any remaining buffer without re-processing the whole file
+                    if not check_shutdown_conditions():
+                        logging.info(f"Flushing remaining buffer for {log_file.name}")
+                        parse_and_apply('', parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
+                            processed_size + bytes_processed_in_file + processed,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        ))
+                        
+                        # Finalize any completed matches
+                        if state["current_match"]["id"] and state["current_match"]["status"] in ["live", "finished"]:
+                            logging.info(f"CATCHUP: Finalizing match at file end: {state['current_match']['id']}")
+                            final_match_data = copy.deepcopy(state["current_match"])
+                            
+                            # Check for duplicate before updating phase and adding
+                            if final_match_data["id"] not in state["processed_matches"]:
+                                end_match_and_update_phase(final_match_data)
+                                state["matches"].append(final_match_data)
+                                state["processed_matches"].add(final_match_data["id"])
+                                logging.info(f"CATCHUP: Added match {final_match_data['id']} to history")
+                            else:
+                                logging.warning(f"CATCHUP: Skipped duplicate match {final_match_data['id']}")
+                            
+                            # Reset only for non-last file
+                            if not is_last_file:
+                                state["current_match"] = {
+                                    "id": None, "status": "idle", "winnerTeamId": None,
+                                    "winnerTeamName": None, "eliminationOrder": [], "killFeed": [],
+                                    "teams": {}, "players": {}
+                                }
+                        
+                finally:
+                    in_catchup_processing = False
+                    
+                # Update processed size and mark file as processed
+                processed_size += file_size
+                processed_files.add(log_file.name)
+                
+                # Show completed progress
+                print_progress_bar(
+                    processed_size,
+                    total_file_size,
+                    prefix=f"File {i+1}/{len(log_files_to_process)}",
+                    suffix=f"{log_file.name} complete"
+                )
+                        
+        except Exception as e:
+            if check_shutdown_conditions():
+                print_colored(f"\nShutdown requested during error handling", Fore.YELLOW)
+                return
+            logging.error(f"Error processing catch-up file {log_file.name}: {e}")
+            processed_size += file_size
+            processed_files.add(log_file.name)
+            print_progress_bar(
+                processed_size,
+                total_file_size,
+                prefix=f"File {i+1}/{len(log_files_to_process)}",
+                suffix=f"{log_file.name} ERROR"
+            )
+
+    # Final progress
+    if not check_shutdown_conditions():
+        print_progress_bar(total_file_size, total_file_size, prefix="Catch-up", suffix="ALL FILES COMPLETE")
+        print_colored("✓ Current phase catch-up complete!", Fore.GREEN)
+
+def enhanced_main_loop(test_mode=False, team_logos=None):
+    """Enhanced main loop with proper shutdown handling."""
+    global buffer  # Declare global buffer once at the top
+    
+    current_log_path = None
+    last_pos = 0
+    last_json = 0
+    last_term = 0
+    MATCH_CHECK_INTERVAL = 0.1  # More frequent checks
+    no_data_timeout = 30  # Seconds without new data to consider EOF
+    last_data_time = time.time()
+    
+    # Get initial live file
+    current_phase_logs = get_all_log_files(CURRENT_LOG_DIR)
+    if current_phase_logs:
+        current_log_path = current_phase_logs[-1]
+        last_pos = current_log_path.stat().st_size
+        print_colored(f"✓ Live monitoring started on: {current_log_path.name}", Fore.GREEN)
+    
+    print_colored(f"\nStarting live monitoring... (Press Ctrl+C to stop)", Fore.CYAN, Style.BRIGHT)
+    
+    try:
+        while not check_shutdown_conditions():
+            now = time.time()
+            
+            # Check for match end condition
+            if state["current_match"]["status"] == "live" and state["current_match"]["id"]:
+                alive_teams = [t for t in state["current_match"]["teams"].values() if t["liveMembers"] > 0]
+                if len(alive_teams) <= 1:
+                    logging.info(f"LIVE: Match end detected. Finalizing match ID: {state['current_match']['id']}")
+                    request_finalization()
+                    continue
+            
+            # Process live log updates
+            log_was_updated = False
+            
+            if current_log_path and current_log_path.exists():
+                size = _file_size(current_log_path)
+                if size > last_pos:
+                    chunk, new_pos = _read_new(current_log_path, last_pos)
+                    if chunk:
+                        # Clear buffer before processing new chunk to prevent reprocessing
+                        old_buffer_size = len(buffer)
+                        if old_buffer_size > 0:
+                            logging.debug(f"LIVE: Flushing {old_buffer_size} bytes from buffer before new chunk")
+                        
+                        # Process the new chunk
+                        parse_and_apply(chunk, parsed_logos=team_logos, mode="chunk")
+                        last_pos = new_pos
+                        log_was_updated = True
+                        last_data_time = now
+                        logging.debug(f"LIVE: Processed {len(chunk)} bytes from {current_log_path.name} (buffer was {old_buffer_size} bytes)")
+                        
+                        # Force flush any remaining buffer to ensure complete processing
+                        if buffer:
+                            logging.debug(f"LIVE: Flushing remaining {len(buffer)} bytes from buffer")
+                            parse_and_apply('', parsed_logos=team_logos, mode="chunk")
+                else:
+                    # No new data - check for EOF timeout
+                    if now - last_data_time > no_data_timeout and state["current_match"]["status"] == "live":
+                        logging.info(f"LIVE: No new data for {no_data_timeout}s - forcing finalization of match {state['current_match']['id']}")
+                        request_finalization()
+                        last_data_time = now  # Reset timer
+            
+            # Check for new live file
+            all_current_logs = get_all_log_files(CURRENT_LOG_DIR)
+            if all_current_logs and all_current_logs[-1] != current_log_path:
+                print_colored(f"\nNew live log detected: {all_current_logs[-1].name}", Fore.YELLOW)
+                # Clear buffer when switching files to prevent carryover
+                buffer = ''
+                current_log_path = all_current_logs[-1]
+                last_pos = 0
+                log_was_updated = True
+                last_data_time = now
+            
+            # Periodic updates
+            if now - last_json >= UPDATE_INTERVAL:
+                _export_json()
+                last_json = now
+            
+            if now - last_term >= 1.0:
+                _print_terminal_snapshot(test_mode)
+                last_term = now
+            
+            # Interruptible sleep
+            if interruptible_sleep(MATCH_CHECK_INTERVAL):
+                break  # Shutdown requested during sleep
+                
+    except KeyboardInterrupt:
+        print_colored("\nKeyboard interrupt received", Fore.YELLOW)
+        # Flush any remaining buffer on exit
+        if buffer:
+            logging.info(f"LIVE: Flushing final {len(buffer)} bytes from buffer on exit")
+            parse_and_apply('', parsed_logos=team_logos, mode="chunk")
+        # Force finalization on interrupt
+        if state["current_match"]["status"] == "live":
+            request_finalization()
+    except Exception as e:
+        logging.exception(f"Live monitor error: {e}")
+        # Flush buffer on error
+        if buffer:
+            logging.info(f"LIVE: Flushing {len(buffer)} bytes from buffer due to error")
+            parse_and_apply('', parsed_logos=team_logos, mode="chunk")
+        # Force finalization on error
+        if state["current_match"]["status"] == "live":
+            request_finalization()
+    
+    print_colored("Exiting main monitoring loop...", Fore.YELLOW)
 
 def main(test_mode=False, reprocess=False):
     """Main function to run the live monitor with enhanced finalization."""
@@ -1405,7 +1999,7 @@ def main(test_mode=False, reprocess=False):
     if not team_logos:
         print_colored("Warning: Could not load team logos. Continuing without them.", Fore.YELLOW)
 
-    # Handle reprocess mode
+    # Handle reprocess mode (archives only)
     if reprocess:
         print_colored("Reprocessing all archived data...", Fore.MAGENTA, Style.BRIGHT)
         process_archives_for_all_time(team_logos, force_repopulate=True)
@@ -1415,11 +2009,23 @@ def main(test_mode=False, reprocess=False):
     # File setup confirmation
     action = confirm_file_setup()
 
-    # Process all-time players
+    # Process all-time players (archives only, no phase impact)
     if action == "reprocess":
         process_archives_for_all_time(team_logos, force_repopulate=True)
     else:
         process_archives_for_all_time(team_logos, force_repopulate=False)
+
+    # CATCH-UP: Process ALL current phase files with enhanced progress tracking
+    current_phase_logs = get_all_log_files(CURRENT_LOG_DIR, exclude_live_log=False)
+    if current_phase_logs:
+        print_colored(f"\nCatching up on {len(current_phase_logs)} current phase file(s)...", Fore.CYAN)
+        print_colored("Starting catch-up processing with progress tracking...", Fore.YELLOW)
+        
+        # Use the enhanced processing function with shutdown checks and real progress
+        process_with_shutdown_check(current_phase_logs, team_logos)
+        
+    else:
+        print_colored("No current phase logs found for catch-up.", Fore.WHITE)
 
     # Start simulation if in test mode
     if test_mode:
@@ -1439,121 +2045,22 @@ def main(test_mode=False, reprocess=False):
         except Exception as e:
             print_colored(f"Failed to start web server: {e}", Fore.RED)
 
-    # Main monitoring loop - unified for both test and production
-    current_log_path = None
-    last_pos = 0
-    last_update_time = time.time()
-    last_json = 0
-    last_term = 0
-    no_update_start_time = None
-    INACTIVITY_TIMEOUT = 60  # 1 minute
+    # Set the initial live file (newest current phase file)
+    if current_phase_logs:
+        current_log_path = current_phase_logs[-1]  # Newest file
+        print_colored(f"✓ Live monitoring started on: {current_log_path.name}", Fore.GREEN)
+    else:
+        print_colored("⚠ No live log file to monitor", Fore.YELLOW)
+        current_log_path = None
 
     try:
         print_colored(f"\nStarting {mode.lower()} monitoring...", Fore.CYAN, Style.BRIGHT)
         if test_mode:
             print_colored(f"Monitoring simulated log: {SIMULATED_LOG_FILE}", Fore.YELLOW)
         else:
-            print_colored("Monitoring for live log files...", Fore.GREEN)
+            print_colored(f"Monitoring live log: {current_log_path.name if current_log_path else 'None'}", Fore.GREEN)
 
-        while True:
-            # Check for finalization request
-            if should_finalize():
-                print_colored("Finalization requested. Exiting main loop.", Fore.YELLOW)
-                _finalize_and_persist() # Perform final action before break
-                break
-        
-            now = time.time()
-
-            
-            # Find the path of the next log to process
-            next_log_path = None
-            if test_mode:
-                if SIMULATED_LOG_FILE.exists():
-                    next_log_path = SIMULATED_LOG_FILE
-            else:
-                all_logs = get_all_log_files(CURRENT_LOG_DIR)
-                if all_logs:
-                    next_log_path = all_logs[-1]
-
-            log_was_updated = False
-
-            # If a new log file is detected, process it from the beginning
-            if next_log_path and next_log_path != current_log_path:
-                current_log_path = next_log_path
-                last_pos = 0
-                last_update_time = now
-                log_was_updated = True
-                no_update_start_time = None
-                
-                logging.info(f"New log file detected: {current_log_path}. Reading from the start.")
-                try:
-                    with open(current_log_path, "r", encoding="utf-8") as f:
-                        log_text = f.read()
-                        # 'full' mode is only used once per new log file
-                        parse_and_apply(log_text, parsed_logos=team_logos, mode="full")
-                        if state["match"]["status"] == "live" and state["match"]["id"]:
-                            state["match_state"]["status"] = "live"
-                            state["match_state"]["last_updated"] = int(time.time())
-                        last_pos = f.tell()
-                        state["match"]["status"] = "live" if state["match"]["id"] else "idle"
-                except FileNotFoundError:
-                    logging.error(f"Log not found: {current_log_path}")
-                    current_log_path = None
-            
-            # Otherwise, process new chunks
-            elif current_log_path and current_log_path.exists():
-                size = _file_size(current_log_path)
-                if size > last_pos:
-                    chunk, new_pos = _read_new(current_log_path, last_pos)
-                    if chunk:
-                        parse_and_apply(chunk, parsed_logos=team_logos, mode="chunk")
-                        last_pos = new_pos
-                        last_update_time = now
-                        log_was_updated = True
-                        no_update_start_time = None
-
-            # Track inactivity for auto-finalization
-            if not log_was_updated:
-                if no_update_start_time is None:
-                    no_update_start_time = now
-                elif now - no_update_start_time >= INACTIVITY_TIMEOUT:
-                    print_colored(f"\nLog inactive for {INACTIVITY_TIMEOUT} seconds. Auto-finalizing...", Fore.YELLOW)
-                    request_finalization()
-                    continue
-
-            if test_mode and simulation_manager and simulation_manager.is_complete():
-                print_colored("Simulation complete! Monitoring will continue...", Fore.GREEN)
-                simulation_manager.simulation_complete = False
-
-            # Check for match end condition (unified for both modes)
-            alive_teams = [t for t in state["match"]["teams"].values() if t["liveMembers"] > 0]
-            if len(alive_teams) <= 1 and state["match"]["status"] == "live":
-                logging.info(f"Match end detected. Finalizing match ID: {state['match']['id']}")
-                request_finalization()
-                continue
-
-            # Periodic updates
-            if now - last_json >= UPDATE_INTERVAL:
-                _export_json()
-                last_json = now
-            
-            if now - last_term >= 1.0:
-                _print_terminal_snapshot(test_mode)
-                last_term = now
-
-            time.sleep(FILE_CHECK_INTERVAL)
-            # if os.path.exists('reset_previous.flag'):
-            #     state["previous_match"] = {
-            #         "status": "idle",
-            #         "phase": {"standings": []},
-            #         "players": {},
-            #         "leaderboards": {"currentMatchTopPlayers": []},
-            #         "live": {"activePlayers": [], "teamKills": {}},
-            #         "teams": {}  # Add teams here
-            #     }
-            #     os.remove('reset_previous.flag')
-            #     logging.info("Previous match data reset via flag file.")
-
+        enhanced_main_loop(test_mode=test_mode, team_logos=team_logos)
 
     except KeyboardInterrupt:
         print_colored("\nStopped by user (Ctrl+C).", Fore.YELLOW)
@@ -1564,14 +2071,9 @@ def main(test_mode=False, reprocess=False):
         request_finalization()
     
     finally:
-        # Perform finalization but keep server running initially
         perform_finalization(keep_server_running=True)
-        
-        # Start the force end monitoring thread for server-only mode
         setup_force_end_thread()
-        
-        # Enter server-only mode
         server_only_mode()
-
+        
 if __name__ == "__main__":
     main()
