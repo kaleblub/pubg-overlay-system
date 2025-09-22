@@ -51,7 +51,7 @@ signal_received = False
 
 # Global set to track processed files (add this at the top of your script if not already there)
 processed_files = set()
-processed_snapshot_positions = set()  # Track processed snapshot starts to avoid duplicates
+# processed_snapshot_positions = set()  # Track processed snapshot starts to avoid duplicates
 
 
 # ---------- State (normalized) ----------
@@ -433,6 +433,7 @@ def _update_phase_from_live_match():
                 }, is_alive=player_data["live"]["isAlive"])
 
 def extract_snapshots(log_text):
+    """Extract snapshots from log text without duplicate position tracking."""
     snapshots = []
     pos = 0
     while True:
@@ -440,13 +441,6 @@ def extract_snapshots(log_text):
         if not start_match:
             break
         start = pos + start_match.start()
-        
-        # Skip if this position was already processed (prevents duplicates in buffer)
-        if start in processed_snapshot_positions:
-            pos = start + 1
-            continue
-        
-        processed_snapshot_positions.add(start)
         
         next_start_match = re.search(r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] POST /totalmessage', log_text[start + len(start_match.group(0)):])
         if next_start_match:
@@ -465,12 +459,7 @@ def parse_and_apply(log_text, parsed_logos=None, mode="chunk", progress_callback
     snapshots_processed = 0
     
     if mode == "full":
-        # Full mode - process entire text, clear any existing positions for clean run
-        global processed_snapshot_positions
-        old_positions = len(processed_snapshot_positions)
-        processed_snapshot_positions.clear()
-        logging.debug(f"FULL MODE: Cleared {old_positions} snapshot positions")
-        
+        # Full mode - process entire text, ignore buffer
         snapshots = extract_snapshots(log_text)
         total_snapshots = len(snapshots)
         
@@ -485,6 +474,7 @@ def parse_and_apply(log_text, parsed_logos=None, mode="chunk", progress_callback
                 
     else:
         # Chunk mode - append to buffer and process new snapshots
+        buffer_start_len = len(buffer)
         if log_text:  # Only append if there's actual content
             buffer += log_text
         
@@ -495,29 +485,48 @@ def parse_and_apply(log_text, parsed_logos=None, mode="chunk", progress_callback
             process_snapshot(snap, parsed_logos)
             snapshots_processed += 1
         
-        # Remove processed snapshots from buffer
+        # Aggressively clear ALL processed snapshots from buffer
         if snapshots:
-            last_end = buffer.rfind(snapshots[-1])
-            if last_end >= 0:
-                buffer = buffer[last_end + len(snapshots[-1]):]
-                logging.debug(f"Processed {new_snapshots} snapshots, buffer now {len(buffer)} bytes")
+            # Find the end of the last processed snapshot and truncate
+            last_end = 0
+            for snap in snapshots:
+                snap_start = buffer.find(snap)
+                if snap_start >= 0:
+                    last_end = max(last_end, snap_start + len(snap))
+            
+            # Truncate buffer to remove all processed content
+            if last_end > 0:
+                buffer = buffer[last_end:]
+                logging.debug(f"Processed {new_snapshots} snapshots, buffer truncated to {len(buffer)} bytes")
+            else:
+                # If no snapshots were found in buffer, clear it entirely
+                buffer = ''
+                logging.debug("No valid snapshots found; buffer cleared")
         else:
-            logging.debug(f"No new snapshots found, buffer remains {len(buffer)} bytes")
+            # No snapshots processed, clear buffer to prevent accumulation
+            buffer = ''
+            logging.debug("No snapshots; buffer cleared")
         
         # Final progress update for chunk mode
         if progress_callback and log_text:
             progress_callback(len(log_text), len(log_text))
     
-    logging.debug(f"parse_and_apply: processed {snapshots_processed} snapshots total")
+    logging.debug(f"parse_and_apply: processed {snapshots_processed} snapshots (buffer was {buffer_start_len}, now {len(buffer)})")
 
 def process_snapshot(snap_text, parsed_logos):
+    # Define mode early for consistent logging (e.g., in skips)
+    finalization_mode = "CATCHUP" if in_catchup_processing else "ARCHIVE" if in_archive_processing else "LIVE"
+    
     gid_match = re.search(r"GameID:\s*['\"]?(\d+)['\"]?", snap_text)
     new_game_id = gid_match.group(1) if gid_match else None
+
+    if new_game_id and new_game_id in state["processed_matches"]:
+        logging.info(f"{finalization_mode}: Skipping snapshot for already processed match {new_game_id}")
+        return  # Exit early, don't process this snapshot
 
     if new_game_id and state["current_match"]["id"] and new_game_id != state["current_match"]["id"]:
         # Finalize previous match if it exists and is active
         if state["current_match"]["status"] in ["live", "finished"]:
-            finalization_mode = "CATCHUP" if in_catchup_processing else "ARCHIVE" if in_archive_processing else "LIVE"
             logging.info(f"{finalization_mode}: Finalizing previous match {state['current_match']['id']} due to new ID {new_game_id}")
             final_match_data = copy.deepcopy(state["current_match"])
             
@@ -534,14 +543,12 @@ def process_snapshot(snap_text, parsed_logos):
             if not in_archive_processing and not in_catchup_processing:
                 _finalize_and_persist()
         else:
-            finalization_mode = "CATCHUP" if in_catchup_processing else "ARCHIVE" if in_archive_processing else "LIVE"
             logging.debug(f"{finalization_mode}: Skipping non-active match {state['current_match']['id']}")
         
         # Reset for new match
         _reset_match_but_keep_id(new_game_id)
 
     if not state["current_match"]["id"] and new_game_id:
-        finalization_mode = "CATCHUP" if in_catchup_processing else "ARCHIVE" if in_archive_processing else "LIVE"
         logging.info(f"{finalization_mode}: INITIALIZING MATCH: {new_game_id}")
         _reset_match_but_keep_id(new_game_id)
 
@@ -572,18 +579,37 @@ def process_snapshot(snap_text, parsed_logos):
     state["match_state"]["status"] = "live" if state["current_match"]["id"] else "idle"
     state["match_state"]["last_updated"] = int(time.time())
 
-def _reset_match_but_keep_id(game_id):
-    """Reset match state but keep the game ID"""
-    state["current_match"].update({
-        "id": game_id,
-        "status": "live",
-        "winnerTeamId": None,
-        "winnerTeamName": None,
-        "eliminationOrder": [],
-        "killFeed": [],
-        "teams": {},
-        "players": {}
-    })
+def _reset_match_but_keep_id(new_id=None):
+    """Reset match state but keep the ID if provided."""
+    if new_id:
+        # Reset everything but keep the new ID
+        state["current_match"] = {
+            "id": new_id,
+            "status": "live",
+            "winnerTeamId": None,
+            "winnerTeamName": None,
+            "eliminationOrder": [],
+            "killFeed": [],
+            "teams": {},
+            "players": {}
+        }
+        logging.info(f"Reset match state with new ID: {new_id}")
+    else:
+        # Full clean reset when no ID provided
+        state["current_match"] = {
+            "id": None,
+            "status": "idle",
+            "winnerTeamId": None,
+            "winnerTeamName": None,
+            "eliminationOrder": [],
+            "killFeed": [],
+            "teams": {},
+            "players": {}
+        }
+        logging.info("Full clean reset of match state")
+    
+    state["match_state"]["status"] = "live" if new_id else "idle"
+    state["match_state"]["last_updated"] = int(time.time())
 
 def _upsert_team_from_teaminfo(t, parsed_logos):
     tid = str(t.get("teamId") or "")
@@ -1828,14 +1854,21 @@ def process_with_shutdown_check(log_files_to_process, parsed_logos):
                                 logging.info(f"CATCHUP: Added match {final_match_data['id']} to history")
                             else:
                                 logging.warning(f"CATCHUP: Skipped duplicate match {final_match_data['id']}")
-                            
-                            # Reset only for non-last file
-                            if not is_last_file:
-                                state["current_match"] = {
-                                    "id": None, "status": "idle", "winnerTeamId": None,
-                                    "winnerTeamName": None, "eliminationOrder": [], "killFeed": [],
-                                    "teams": {}, "players": {}
-                                }
+                        
+                        # ALWAYS reset in catch-up after finalizing (fix for lingering state)
+                        state["current_match"] = {
+                            "id": None,
+                            "status": "idle",
+                            "winnerTeamId": None,
+                            "winnerTeamName": None,
+                            "eliminationOrder": [],
+                            "killFeed": [],
+                            "teams": {},
+                            "players": {}
+                        }
+                        state["match_state"]["status"] = "idle"
+                        state["match_state"]["last_updated"] = int(time.time())
+                        logging.info("CATCHUP: Reset current match state after finalization")
                         
                 finally:
                     in_catchup_processing = False
@@ -1870,20 +1903,22 @@ def process_with_shutdown_check(log_files_to_process, parsed_logos):
     if not check_shutdown_conditions():
         print_progress_bar(total_file_size, total_file_size, prefix="Catch-up", suffix="ALL FILES COMPLETE")
         print_colored("✓ Current phase catch-up complete!", Fore.GREEN)
-
+        
 def enhanced_main_loop(test_mode=False, team_logos=None):
     """Enhanced main loop with proper shutdown handling."""
-    global buffer  # Declare global buffer once at the top
+    global buffer
+    buffer = ''  # Ensure clean start
     
     current_log_path = None
     last_pos = 0
     last_json = 0
     last_term = 0
-    MATCH_CHECK_INTERVAL = 0.1  # More frequent checks
-    no_data_timeout = 30  # Seconds without new data to consider EOF
+    MATCH_CHECK_INTERVAL = 0.1
+    no_data_timeout = 5  # Reduce timeout for faster testing; set to 30 in production
     last_data_time = time.time()
+    last_warning_time = 0
+    WARNING_INTERVAL = 60
     
-    # Get initial live file
     current_phase_logs = get_all_log_files(CURRENT_LOG_DIR)
     if current_phase_logs:
         current_log_path = current_phase_logs[-1]
@@ -1896,15 +1931,17 @@ def enhanced_main_loop(test_mode=False, team_logos=None):
         while not check_shutdown_conditions():
             now = time.time()
             
-            # Check for match end condition
+            # Check for match end condition and force finalization
             if state["current_match"]["status"] == "live" and state["current_match"]["id"]:
                 alive_teams = [t for t in state["current_match"]["teams"].values() if t["liveMembers"] > 0]
                 if len(alive_teams) <= 1:
                     logging.info(f"LIVE: Match end detected. Finalizing match ID: {state['current_match']['id']}")
-                    request_finalization()
+                    end_match_and_update_phase()
+                    _finalize_and_persist()
+                    # Clear buffer after finalization
+                    buffer = ''
                     continue
             
-            # Process live log updates
             log_was_updated = False
             
             if current_log_path and current_log_path.exists():
@@ -1912,41 +1949,36 @@ def enhanced_main_loop(test_mode=False, team_logos=None):
                 if size > last_pos:
                     chunk, new_pos = _read_new(current_log_path, last_pos)
                     if chunk:
-                        # Clear buffer before processing new chunk to prevent reprocessing
-                        old_buffer_size = len(buffer)
-                        if old_buffer_size > 0:
-                            logging.debug(f"LIVE: Flushing {old_buffer_size} bytes from buffer before new chunk")
-                        
-                        # Process the new chunk
+                        old_buffer_len = len(buffer)
                         parse_and_apply(chunk, parsed_logos=team_logos, mode="chunk")
                         last_pos = new_pos
                         log_was_updated = True
                         last_data_time = now
-                        logging.debug(f"LIVE: Processed {len(chunk)} bytes from {current_log_path.name} (buffer was {old_buffer_size} bytes)")
-                        
-                        # Force flush any remaining buffer to ensure complete processing
-                        if buffer:
-                            logging.debug(f"LIVE: Flushing remaining {len(buffer)} bytes from buffer")
-                            parse_and_apply('', parsed_logos=team_logos, mode="chunk")
+                        logging.debug(f"LIVE: Processed {len(chunk)} bytes (buffer: {old_buffer_len} -> {len(buffer)})")
                 else:
                     # No new data - check for EOF timeout
                     if now - last_data_time > no_data_timeout and state["current_match"]["status"] == "live":
-                        logging.info(f"LIVE: No new data for {no_data_timeout}s - forcing finalization of match {state['current_match']['id']}")
-                        request_finalization()
-                        last_data_time = now  # Reset timer
+                        alive_teams = [t for t in state["current_match"]["teams"].values() if t["liveMembers"] > 0]
+                        if len(alive_teams) <= 1:
+                            logging.info(f"LIVE: No new data for {no_data_timeout}s and match ended - forcing finalization of match {state['current_match']['id']}")
+                            end_match_and_update_phase()
+                            _finalize_and_persist()
+                            buffer = ''
+                            last_data_time = now  # Reset timer after finalization
+                        else:
+                            if now - last_warning_time > WARNING_INTERVAL:
+                                logging.warning(f"LIVE: No new data for {now - last_data_time:.1f}s but {len(alive_teams)} teams still alive - waiting for more data to complete match {state['current_match']['id']}")
+                                last_warning_time = now
             
-            # Check for new live file
             all_current_logs = get_all_log_files(CURRENT_LOG_DIR)
             if all_current_logs and all_current_logs[-1] != current_log_path:
                 print_colored(f"\nNew live log detected: {all_current_logs[-1].name}", Fore.YELLOW)
-                # Clear buffer when switching files to prevent carryover
-                buffer = ''
+                buffer = ''  # Clear on file switch
                 current_log_path = all_current_logs[-1]
                 last_pos = 0
                 log_was_updated = True
                 last_data_time = now
             
-            # Periodic updates
             if now - last_json >= UPDATE_INTERVAL:
                 _export_json()
                 last_json = now
@@ -1955,28 +1987,33 @@ def enhanced_main_loop(test_mode=False, team_logos=None):
                 _print_terminal_snapshot(test_mode)
                 last_term = now
             
-            # Interruptible sleep
             if interruptible_sleep(MATCH_CHECK_INTERVAL):
-                break  # Shutdown requested during sleep
+                break
                 
     except KeyboardInterrupt:
         print_colored("\nKeyboard interrupt received", Fore.YELLOW)
-        # Flush any remaining buffer on exit
         if buffer:
             logging.info(f"LIVE: Flushing final {len(buffer)} bytes from buffer on exit")
             parse_and_apply('', parsed_logos=team_logos, mode="chunk")
-        # Force finalization on interrupt
-        if state["current_match"]["status"] == "live":
-            request_finalization()
+        if state["current_match"]["status"] == "live" and state["current_match"]["id"]:
+            alive_teams = [t for t in state["current_match"]["teams"].values() if t["liveMembers"] > 0]
+            if len(alive_teams) <= 1:
+                logging.info("Force finalizing on interrupt (match ended)")
+                end_match_and_update_phase()
+                _finalize_and_persist()
+            else:
+                logging.warning("Match incomplete on interrupt (multiple teams alive) - skipping finalization to avoid partial stats")
+        buffer = ''
     except Exception as e:
         logging.exception(f"Live monitor error: {e}")
-        # Flush buffer on error
         if buffer:
             logging.info(f"LIVE: Flushing {len(buffer)} bytes from buffer due to error")
             parse_and_apply('', parsed_logos=team_logos, mode="chunk")
-        # Force finalization on error
         if state["current_match"]["status"] == "live":
-            request_finalization()
+            logging.info("Force finalizing on error")
+            end_match_and_update_phase()
+            _finalize_and_persist()
+            buffer = ''
     
     print_colored("Exiting main monitoring loop...", Fore.YELLOW)
 
@@ -2071,6 +2108,15 @@ def main(test_mode=False, reprocess=False):
         request_finalization()
     
     finally:
+        # Force final cleanup on exit if there's lingering match data
+        if (state["current_match"]["id"] or 
+            state["current_match"]["teams"] or 
+            state["current_match"]["killFeed"] or 
+            state["current_match"]["eliminationOrder"]):
+            logging.info("Forcing finalization on exit for lingering match data")
+            end_match_and_update_phase()
+            _finalize_and_persist()
+        
         perform_finalization(keep_server_running=True)
         setup_force_end_thread()
         server_only_mode()
