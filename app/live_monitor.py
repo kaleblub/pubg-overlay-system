@@ -673,123 +673,165 @@ def _update_live_eliminations():
         state["current_match"]["status"] = "finished"
 
 def end_match_and_update_phase(final_match_data=None):
-    if final_match_data is None:
-        final_match_data = copy.deepcopy(state["current_match"])
-    if not final_match_data["id"]:
-        logging.warning("end_match_and_update_phase called but no match ID is set.")
-        return
-    print_colored(f"\nFinalizing match {final_match_data['id']}", Fore.CYAN, Style.BRIGHT)
-    current_match_teams = final_match_data["teams"].copy()
-    current_match_players = final_match_data["players"].copy()
-    winner_team_id = None
-    for tid, team in current_match_teams.items():
-        if team.get("liveMembers", 0) > 0:
-            winner_team_id = tid
-            break
-    elimination_order = final_match_data["eliminationOrder"]
-    all_team_names = [team["name"] for team in current_match_teams.values()]
-    logging.info(f"Winner: {current_match_teams[winner_team_id]['name'] if winner_team_id else 'None'}")
-    logging.info(f"Elimination order: {elimination_order}")
-    placement_ranking = []
-    if winner_team_id:
-        winner_team = current_match_teams[winner_team_id]
-        placement_ranking.append({
-            "team_id": winner_team_id,
-            "team_name": winner_team["name"],
-            "elimination_position": 0,
-            "rank": 1
-        })
-        logging.info(f"Rank 1: {winner_team['name']} (Winner)")
-    for elim_pos, team_name in enumerate(reversed(elimination_order), 1):
-        team_id = None
-        for tid, team in current_match_teams.items():
-            if team["name"] == team_name:
-                team_id = tid
-                break
-        if team_id:
-            rank = len(placement_ranking) + 1
-            placement_ranking.append({
-                "team_id": team_id,
-                "team_name": team_name,
-                "elimination_position": len(elimination_order) - elim_pos + 1,
-                "rank": rank
-            })
-            logging.info(f"Rank {rank}: {team_name} (eliminated {elim_pos}th from end)")
-    final_placement = {}
-    for ranking in placement_ranking:
-        rank = ranking["rank"]
-        placement_pts = PLACEMENT_POINTS.get(rank, 0)
-        final_placement[ranking["team_id"]] = placement_pts
-        logging.info(f"Team {ranking['team_name']} ranked {rank} with {placement_pts} placement points")
-    for tid, placement_pts in final_placement.items():
-        if tid in final_match_data["teams"]:
-            final_match_data["teams"][tid]["placementPointsLive"] = placement_pts
-            logging.info(f"Set {final_match_data['teams'][tid]['name']} placementPointsLive = {placement_pts}")
-    final_match_data["placementRanking"] = placement_ranking
-    for team_id, team_data in current_match_teams.items():
-        team_name = team_data["name"]
-        if team_name not in state["phase"]["teams"]:
-            state["phase"]["teams"][team_name] = {
-                "id": team_id,
-                "name": team_name,
-                "logo": team_data.get("logo", DEFAULT_TEAM_LOGO),
-                "totals": {"kills": 0, "placementPoints": 0, "points": 0, "wwcd": 0}
+    """Finalize match data and update phase standings."""
+    global state
+    try:
+        if not final_match_data:
+            final_match_data = copy.deepcopy(state["current_match"])
+        match_id = final_match_data.get("id")
+        if not match_id:
+            logging.warning("No match ID found, skipping finalization")
+            # Reset current_match even if no ID
+            state["current_match"] = {
+                "id": None,
+                "status": "idle",
+                "winnerTeamId": None,
+                "winnerTeamName": None,
+                "eliminationOrder": [],
+                "killFeed": [],
+                "teams": {},
+                "players": {}
             }
-            logging.info(f"Initialized phase team: {team_name}")
-    if winner_team_id:
-        winner_name = current_match_teams[winner_team_id]["name"]
-        if winner_name in state["phase"]["teams"]:
-            phase_winner_team = state["phase"]["teams"][winner_name]
-            phase_winner_team["totals"]["wwcd"] += 1
-            logging.info(f"Awarded WWCD to {winner_name} (total WWCD: {phase_winner_team['totals']['wwcd']})")
-        else:
-            logging.warning(f"WWCD winner {winner_name} not found in phase teams!")
-    for team_id, team_data in current_match_teams.items():
-        team_name = team_data["name"]
-        phase_team = state["phase"]["teams"][team_name]
-        match_kills = team_data.get("kills", 0)
-        phase_team["totals"]["kills"] += match_kills
-        placement_pts = final_placement.get(team_id, 0)
-        phase_team["totals"]["placementPoints"] += placement_pts
-        phase_team["totals"]["points"] = phase_team["totals"]["kills"] + phase_team["totals"]["placementPoints"]
-        logging.info(f"Updated {team_name}: +{match_kills} kills, +{placement_pts} placement (total: {phase_team['totals']['points']} pts)")
-    for player_id, player_data in current_match_players.items():
-        team_name = _get_team_name_by_id(player_data["teamId"]) or "Unknown Team"
-        if player_id not in state["phase"]["players"]:
-            state["phase"]["players"][player_id] = {
-                "id": player_id,
-                "name": player_data["name"],
-                "photo": player_data.get("photo", DEFAULT_PLAYER_PHOTO),
+            state["match_state"]["status"] = "idle"
+            state["match_state"]["last_updated"] = int(time.time())
+            _export_json()
+            return
+        if match_id in state["processed_matches"]:
+            logging.info(f"Match {match_id} already processed, skipping finalization")
+            return
+        
+        logging.info(f"Finalizing match {match_id}")
+        
+        # Calculate team totals for the match
+        team_totals = {}
+        # Create a rank map from elimination order (last eliminated = 2nd place, winner = 1st)
+        elimination_order = final_match_data.get("eliminationOrder", [])
+        total_teams = len(final_match_data["teams"])
+        rank_map = {}
+        # Reverse elimination order: last eliminated gets rank 2, second-to-last gets rank 3, etc.
+        for i, team_name in enumerate(reversed(elimination_order)):
+            rank_map[team_name] = i + 2  # Start at rank 2 (winner gets 1)
+        # Winner gets rank 1
+        winner_team = final_match_data.get("winnerTeamName")
+        if winner_team:
+            rank_map[winner_team] = 1
+        
+        for tid, team in final_match_data["teams"].items():
+            team_name = team.get("name", "Unknown Team")
+            kills = team.get("kills", 0)
+            # Assign placement points based on rank
+            rank = rank_map.get(team_name, total_teams)  # Default to last place if not in rank_map
+            placement_points = {
+                1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1
+            }.get(rank, 0)
+            team_totals[team_name] = {
+                "teamId": tid,
                 "teamName": team_name,
-                "live": {"isAlive": False, "health": 0, "healthMax": 100},
-                "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
+                "kills": kills,
+                "placementPoints": placement_points,
+                "points": kills + placement_points,
+                "wwcd": 1 if team_name == final_match_data.get("winnerTeamName") else 0,
+                "rank": rank
             }
-        phase_player = state["phase"]["players"][player_id]
-        phase_player["totals"]["kills"] += player_data["stats"]["kills"]
-        phase_player["totals"]["damage"] += player_data["stats"]["damage"]
-        phase_player["totals"]["knockouts"] += player_data["stats"]["knockouts"]
-        phase_player["totals"]["matches"] += 1
-    # Append to matches if not already processed
-    if final_match_data["id"] not in state["processed_matches"] and not in_archive_processing and not in_catchup_processing:
+            logging.debug(f"Team {team_name} ranked {rank} with {placement_points} placement points")
+        
+        # Update phase standings
+        for team_name, totals in team_totals.items():
+            if team_name not in state["phase"]["teams"]:
+                state["phase"]["teams"][team_name] = {
+                    "id": totals["teamId"],
+                    "name": team_name,
+                    "logo": final_match_data["teams"].get(totals["teamId"], {}).get("logo", DEFAULT_TEAM_LOGO),
+                    "totals": {"kills": 0, "placementPoints": 0, "points": 0, "wwcd": 0}
+                }
+            team = state["phase"]["teams"][team_name]
+            # Accumulate stats
+            team["totals"]["kills"] += totals["kills"]
+            team["totals"]["placementPoints"] += totals["placementPoints"]
+            team["totals"]["points"] += totals["points"]
+            team["totals"]["wwcd"] += totals["wwcd"]
+            logging.debug(f"Updated {team_name}: +{totals['kills']} kills, +{totals['placementPoints']} placement (total: {team['totals']['points']} pts)")
+        
+        # Update player phase stats
+        for pid, player in final_match_data["players"].items():
+            team_name = _get_team_name_by_id(player.get("teamId")) or "Unknown Team"
+            if pid not in state["phase"]["players"]:
+                state["phase"]["players"][pid] = {
+                    "id": pid,
+                    "name": player.get("name", "Unknown Player"),
+                    "photo": player.get("photo", DEFAULT_PLAYER_PHOTO),
+                    "teamName": team_name,
+                    "live": {"isAlive": False, "health": 0, "healthMax": 100},
+                    "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
+                }
+            p = state["phase"]["players"][pid]
+            # Accumulate player stats
+            p["totals"]["kills"] += int(player["stats"].get("kills", 0))
+            p["totals"]["damage"] += int(player["stats"].get("damage", 0))
+            p["totals"]["knockouts"] += int(player["stats"].get("knockouts", 0))
+            p["totals"]["matches"] += 1
+        
+        # Sort phase standings
+        state["phase"]["standings"] = [
+            {
+                "teamId": team["id"],
+                "teamName": team["name"],
+                "kills": team["totals"]["kills"],
+                "placementPoints": team["totals"]["placementPoints"],
+                "points": team["totals"]["points"],
+                "wwcd": team["totals"]["wwcd"],
+                "rank": i + 1
+            }
+            for i, team in enumerate(sorted(
+                state["phase"]["teams"].values(),
+                key=lambda x: (x["totals"]["points"], x["totals"]["kills"], x["totals"]["wwcd"]),
+                reverse=True
+            ))
+        ]
+        
+        # Update all-time top players
+        state["phase"]["allTimeTopPlayers"] = _calculate_top_players(
+            state["phase"]["players"], state["phase"]["teams"]
+        )
+        
+        # Add to matches
         state["matches"].append(final_match_data)
-        state["processed_matches"].add(final_match_data["id"])
-        logging.info(f"Added match {final_match_data['id']} to state['matches'] (Total matches: {len(state['matches'])})")
-    else:
-        logging.warning(f"Skipped adding match {final_match_data['id']} to state['matches'] (already processed or in archive/catch-up mode)")
-    state["current_match"] = {
-        "id": None,
-        "status": "idle",
-        "winnerTeamId": None,
-        "winnerTeamName": None,
-        "eliminationOrder": [],
-        "killFeed": [],
-        "teams": {},
-        "players": {}
-    }
-    state["match_state"]["status"] = "idle"
-    state["match_state"]["last_updated"] = int(time.time())
-    _cleanup_old_team_mappings()
-    logging.info(f"Match {final_match_data['id']} finalization complete. {len(current_match_teams)} teams processed.")
+        state["processed_matches"].add(match_id)
+        logging.info(f"Added match {match_id} to state['matches'] (total matches: {len(state['matches'])})")
+        
+        # Fully reset current_match
+        state["current_match"] = {
+            "id": None,
+            "status": "idle",
+            "winnerTeamId": None,
+            "winnerTeamName": None,
+            "eliminationOrder": [],
+            "killFeed": [],
+            "teams": {},
+            "players": {}
+        }
+        state["match_state"]["status"] = "idle"
+        state["match_state"]["last_updated"] = int(time.time())
+        logging.info(f"Match {match_id} finalized and current_match fully reset")
+        
+        # Force export JSON
+        _export_json()
+    except Exception as e:
+        logging.error(f"Error finalizing match {match_id}: {e}")
+        # Ensure reset on error
+        state["current_match"] = {
+            "id": None,
+            "status": "idle",
+            "winnerTeamId": None,
+            "winnerTeamName": None,
+            "eliminationOrder": [],
+            "killFeed": [],
+            "teams": {},
+            "players": {}
+        }
+        state["match_state"]["status"] = "idle"
+        state["match_state"]["last_updated"] = int(time.time())
+        _export_json()
 
 def _print_terminal_snapshot(test_mode=False):
     """Enhanced terminal output with colors and simulation progress."""
@@ -1487,7 +1529,7 @@ def interruptible_sleep(duration, check_interval=0.1):
     return False
 
 def process_with_shutdown_check(log_files_to_process, parsed_logos):
-    """Process files with regular shutdown checks and progress updates."""
+    """Process files with shutdown checks and seamless catch-up for live file."""
     global in_catchup_processing, processed_files
     if not log_files_to_process:
         print_colored("No current phase logs to process.", Fore.WHITE)
@@ -1500,18 +1542,12 @@ def process_with_shutdown_check(log_files_to_process, parsed_logos):
     print_colored(f"Files to process: {len(log_files_to_process)}", Fore.WHITE)
     print_colored("Press Ctrl+C to interrupt processing...", Fore.YELLOW)
     log_files_to_process.sort(key=lambda f: f.stat().st_mtime)
-    total_file_size = sum(f.stat().st_size for f in log_files_to_process)
-    processed_size = 0
-    for i, log_file in enumerate(log_files_to_process):
+    for i, log_file in enumerate(log_files_to_process[:-1]):  # Process all but the last (live) file
         if check_shutdown_conditions():
             print_colored(f"\nShutdown requested during file processing. Stopping at file {i+1}/{len(log_files_to_process)}", Fore.YELLOW)
             return
-        is_last_file = (i == len(log_files_to_process) - 1)
         file_size = log_file.stat().st_size
-        if not is_last_file:
-            print_colored(f"\nProcessing completed match file {i+1}/{len(log_files_to_process)}: {log_file.name}", Fore.YELLOW)
-        else:
-            print_colored(f"\nProcessing live file {i+1}/{len(log_files_to_process)} for catch-up: {log_file.name}", Fore.CYAN)
+        print_colored(f"\nProcessing completed match file {i+1}/{len(log_files_to_process)}: {log_file.name}", Fore.YELLOW)
         try:
             with open(log_file, "r", encoding="utf-8") as f:
                 log_text = f.read()
@@ -1526,59 +1562,56 @@ def process_with_shutdown_check(log_files_to_process, parsed_logos):
                             return
                         chunk_end = min(chunk_start + chunk_size, len(log_text))
                         chunk = log_text[chunk_start:chunk_end]
-                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
-                            processed_size + bytes_processed_in_file + processed,
-                            total_file_size,
-                            prefix=f"File {i+1}/{len(log_files_to_process)}",
-                            suffix=f"{log_file.name}",
-                            processing=True
-                        ))
+                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk")
                         bytes_processed_in_file = chunk_end
-                        print_progress_bar(
-                            processed_size + bytes_processed_in_file,
-                            total_file_size,
-                            prefix=f"File {i+1}/{len(log_files_to_process)}",
-                            suffix=f"{log_file.name}",
-                            processing=True
-                        )
                     if not check_shutdown_conditions():
                         logging.info(f"Flushing remaining buffer for {log_file.name}")
-                        parse_and_apply('', parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
-                            processed_size + bytes_processed_in_file + processed,
-                            total_file_size,
-                            prefix=f"File {i+1}/{len(log_files_to_process)}",
-                            suffix=f"{log_file.name}",
-                            processing=True
-                        ))
+                        parse_and_apply('', parsed_logos=parsed_logos, mode="chunk")
                         if state["current_match"]["id"] and state["current_match"]["status"] in ["live", "finished"]:
                             logging.info(f"CATCHUP: Finalizing match at file end: {state['current_match']['id']}")
                             end_match_and_update_phase()
                 finally:
                     in_catchup_processing = False
-                processed_size += file_size
                 processed_files.add(log_file.name)
-                print_progress_bar(
-                    processed_size,
-                    total_file_size,
-                    prefix=f"File {i+1}/{len(log_files_to_process)}",
-                    suffix=f"{log_file.name} complete"
-                )
         except Exception as e:
             if check_shutdown_conditions():
                 print_colored(f"\nShutdown requested during error handling", Fore.YELLOW)
                 return
             logging.error(f"Error processing catch-up file {log_file.name}: {e}")
-            processed_size += file_size
             processed_files.add(log_file.name)
-            print_progress_bar(
-                processed_size,
-                total_file_size,
-                prefix=f"File {i+1}/{len(log_files_to_process)}",
-                suffix=f"{log_file.name} ERROR"
-            )
-    if not check_shutdown_conditions():
-        print_progress_bar(total_file_size, total_file_size, prefix="Catch-up", suffix="ALL FILES COMPLETE")
-        print_colored("✓ Current phase catch-up complete!", Fore.GREEN)
+    # Handle the last file as live - incremental catch-up
+    if log_files_to_process:
+        live_file = log_files_to_process[-1]
+        print_colored(f"\nCatching up on live file: {live_file.name}", Fore.CYAN)
+        last_pos = 0
+        in_catchup_processing = True
+        try:
+            no_new_data_time = 0
+            while no_new_data_time < 1.0:  # Continue until no new data for 1s
+                if check_shutdown_conditions():
+                    print_colored("\nShutdown requested during live catch-up. Stopping...", Fore.YELLOW)
+                    return
+                size = live_file.stat().st_size
+                if size > last_pos:
+                    chunk, new_pos = _read_new(live_file, last_pos)
+                    if chunk:
+                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk")
+                    last_pos = new_pos
+                    no_new_data_time = 0
+                else:
+                    no_new_data_time += 0.1
+                time.sleep(0.1)
+            if state["current_match"]["id"] and state["current_match"]["status"] in ["live", "finished"]:
+                logging.info(f"CATCHUP: Finalizing match at live file end: {state['current_match']['id']}")
+                end_match_and_update_phase()
+        finally:
+            in_catchup_processing = False
+        processed_files.add(live_file.name)
+        print_colored("✓ Current phase catch-up complete! Transitioning to live monitoring.", Fore.GREEN)
+        # Return the live file path and current position for enhanced_main_loop
+        return live_file, last_pos
+    else:
+        return None
 
 def enhanced_main_loop(test_mode=False, team_logos=None):
     """Enhanced main loop with proper shutdown handling."""
@@ -1722,9 +1755,10 @@ def main(test_mode=False, reprocess=False):
         print_colored("Starting catch-up processing with progress tracking...", Fore.YELLOW)
         
         # Use the enhanced processing function with shutdown checks and real progress
-        process_with_shutdown_check(current_phase_logs, team_logos)
-        
+        live_log_path, start_pos = process_with_shutdown_check(current_phase_logs, team_logos) or (None, 0)
     else:
+        live_log_path = None
+        start_pos = 0
         print_colored("No current phase logs found for catch-up.", Fore.WHITE)
 
     # Start simulation if in test mode
