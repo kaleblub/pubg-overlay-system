@@ -341,21 +341,23 @@
     </div>
     
 <script>
+let lastData = null; // Cache for last successful data
 const API_URL = 'http://localhost:5000/live_scoreboard.json';
+const retryDelay = 5000; // Retry every 5s on failure
 
 const PLAYER_COLORS = [
-        '#4285F4', // Blue (Player 1)
-        '#0F9D58', // Green (Player 2)
-        '#DB4437', // Red (Player 3)
-        '#F4B400'  // Yellow/Orange (Player 4)
-    ];
-
+    '#4285F4', // Blue (Player 1)
+    '#0F9D58', // Green (Player 2)
+    '#DB4437', // Red (Player 3)
+    '#F4B400'  // Yellow/Orange (Player 4)
+];
 
 async function fetchData() {
     try {
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
+        lastData = data; // Cache successful data
 
         let standings = [];
         let teams = {};
@@ -457,13 +459,107 @@ async function fetchData() {
         console.log("Standings:", standings.map(s => `${s.teamName} (Kills: ${s.kills}, Place: ${s.placementPoints}, Total: ${s.points}, Rank: ${s.rank})`));
 
         if (standings.length > 0) {
-            renderScoreboard(standings, teams, subtitle, data);
+            renderScoreboard(standings, teams, subtitle, data, false);
         } else {
-            renderNoData();
+            renderNoData(false);
         }
     } catch (error) {
         console.error('Error fetching data:', error);
-        renderError(error.message);
+        if (lastData) {
+            let standings = [];
+            let teams = {};
+            let subtitle = "NO DATA (using cached data)";
+            const matchStatus = lastData.match_state?.status || 'idle';
+
+            if (matchStatus === 'live' && lastData.current_match?.teams && Object.keys(lastData.current_match.teams).length > 0) {
+                teams = lastData.current_match.teams;
+                subtitle = "LIVE STANDINGS (using cached data)";
+                standings = Object.values(teams).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: team.rank || 0
+                }));
+            } else if (lastData.matches?.length > 0) {
+                const latestMatch = lastData.matches[lastData.matches.length - 1];
+                teams = {
+                    ...(latestMatch?.teams || {}),
+                    ...(latestMatch?.missing_teams || []).reduce((acc, team) => {
+                        acc[team.id] = {
+                            id: team.id,
+                            name: team.name || 'Unknown Team',
+                            logo: team.logo || 'https://placehold.co/50x50/A0522D/ffffff?text=Logo',
+                            kills: team.kills || 0,
+                            placementPointsLive: team.placementPoints || team.placementPointsLive || 0,
+                            rank: team.rank || 'MISS'
+                        };
+                        return acc;
+                    }, {})
+                };
+                subtitle = "PREVIOUS MATCH (using cached data)";
+                const activeTeams = Object.values(latestMatch?.teams || {}).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: team.rank || 0
+                }));
+                const missingTeams = (latestMatch?.missing_teams || []).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPoints || team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPoints || team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: 'MISS'
+                }));
+                standings = [...activeTeams, ...missingTeams];
+            } else {
+                teams = lastData.current_match?.teams || {};
+                subtitle = "CURRENT STANDINGS (using cached data)";
+                standings = Object.values(teams).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: team.rank || 0
+                }));
+            }
+
+            standings.sort((a, b) => {
+                if (a.rank === 'MISS' && b.rank !== 'MISS') return 1;
+                if (b.rank === 'MISS' && a.rank !== 'MISS') return -1;
+                if (a.rank === 'MISS' && b.rank === 'MISS') return 0;
+                return (b.points !== a.points) ? (b.points - a.points) : (b.kills - a.kills);
+            });
+
+            standings = standings.slice(0, 25);
+
+            if (lastData.phase?.standings) {
+                standings.forEach(team => {
+                    const phaseTeam = lastData.phase.standings.find(pt => pt.teamName.toLowerCase() === team.teamName.toLowerCase());
+                    if (phaseTeam) {
+                        team.wwcd = phaseTeam.wwcd || 0;
+                    }
+                });
+            }
+
+            if (standings.length > 0) {
+                renderScoreboard(standings, teams, subtitle, lastData, true);
+            } else {
+                renderNoData(true);
+            }
+        } else {
+            renderNoData(false);
+        }
+        setTimeout(fetchData, retryDelay); // Retry after delay
     }
 }
 
@@ -509,7 +605,7 @@ function getTeamWWCD(teamName, teams, standings) {
     return teamInStandings ? (teamInStandings.wwcd || 0) : 0;
 }
 
-function renderScoreboard(standings, teams, subtitle, data) {
+function renderScoreboard(standings, teams, subtitle, data, isCached = false) {
     const winnerCard = document.getElementById('winner-card');
     const winnerTeamName = document.getElementById('winner-team-name');
     const winnerTeamLogo = document.getElementById('winner-team-logo');
@@ -574,75 +670,56 @@ function renderScoreboard(standings, teams, subtitle, data) {
             ? data.current_match 
             : data.matches?.[data.matches.length - 1];
 
-        // 2. Retrieve the *full* team object from the source using its teamId.
         const winnerTeam = sourceMatch?.teams?.[winner.teamId];
-
-        // 3. The playersData map (containing photo/name details) is correctly retrieved from the source match.
         const playersData = sourceMatch?.players || {};
 
         console.log(`Winner team ${winner.teamName} (ID: ${winner.teamId}) players array:`, winnerTeam?.players || 'None');
         console.log(`Available player IDs in playersData:`, Object.keys(playersData));
 
         if (winnerTeam && Array.isArray(winnerTeam.players) && winnerTeam.players.length > 0) {
-        let playerCount = 0;
-        
-        // Create containers for photos (row) and names (2-column grid)
-        const photosContainer = document.createElement('div');
-        photosContainer.className = 'winner-photos-row';
-        const namesContainer = document.createElement('div');
-        namesContainer.className = 'winner-names-grid';
+            let playerCount = 0;
+            
+            const photosContainer = document.createElement('div');
+            photosContainer.className = 'winner-photos-row';
+            const namesContainer = document.createElement('div');
+            namesContainer.className = 'winner-names-grid';
 
-        // Use 'index' to assign a unique color to each player
-        winnerTeam.players.forEach((playerId, index) => { 
-            const player = playersData[playerId];
+            winnerTeam.players.forEach((playerId, index) => { 
+                const player = playersData[playerId];
 
-            if (player && player.photo && player.name) {
-                
-                // Get the color based on the player's index (0, 1, 2, 3)
-                const playerColor = PLAYER_COLORS[index % PLAYER_COLORS.length];
-                
-                // 1. Create Photo Element
-                const photoItem = document.createElement('div');
-                photoItem.className = 'player-photo-item';
-                
-                // Set the custom color CSS variable on the photo item
-                photoItem.style.setProperty('--player-color', playerColor); 
-                
-                photoItem.innerHTML = `
-                    <img src="${player.photo}" 
-                          class="player-photo" 
-                          alt="${player.name} Photo"
-                          onerror="this.src='https://placehold.co/50x50/ffffff/000000?text=P'">
-                `;
-                photosContainer.appendChild(photoItem);
-                
-                // 2. Create Name Element
-                const nameItem = document.createElement('span');
-                nameItem.className = 'winner-name-item';
-                
-                // Set the custom color CSS variable on the name item
-                nameItem.style.setProperty('--player-color', playerColor);
-                
-                nameItem.textContent = player.name;
-                namesContainer.appendChild(nameItem);
-                
-                playerCount++;
+                if (player && player.photo && player.name) {
+                    const playerColor = PLAYER_COLORS[index % PLAYER_COLORS.length];
+                    
+                    const photoItem = document.createElement('div');
+                    photoItem.className = 'player-photo-item';
+                    photoItem.style.setProperty('--player-color', playerColor); 
+                    photoItem.innerHTML = `
+                        <img src="${player.photo}" 
+                             class="player-photo" 
+                             alt="${player.name} Photo"
+                             onerror="this.src='https://placehold.co/50x50/ffffff/000000?text=P'">
+                    `;
+                    photosContainer.appendChild(photoItem);
+                    
+                    const nameItem = document.createElement('span');
+                    nameItem.className = 'winner-name-item';
+                    nameItem.style.setProperty('--player-color', playerColor);
+                    nameItem.textContent = player.name;
+                    namesContainer.appendChild(nameItem);
+                    
+                    playerCount++;
+                }
+            });
+
+            if (playerCount > 0) {
+                winnerPlayersContainer.appendChild(photosContainer);
+                winnerPlayersContainer.appendChild(namesContainer);
+            } else {
+                winnerPlayersContainer.innerHTML = '<div style="color: #1d3148; font-size: 0.9em;">No player photos or names available</div>';
             }
-        });
-
-        if (playerCount > 0) {
-            // Append the photo row and name grid into the main winner-players container
-            winnerPlayersContainer.appendChild(photosContainer);
-            winnerPlayersContainer.appendChild(namesContainer);
         } else {
-            // Fallback message
-            winnerPlayersContainer.innerHTML = '<div style="color: #1d3148; font-size: 0.9em;">No player photos or names available</div>';
+            winnerPlayersContainer.innerHTML = '<div style="color: #1d3148; font-size: 0.9em;">No player data available</div>';
         }
-    } else {
-        // Fallback message
-        winnerPlayersContainer.innerHTML = '<div style="color: #1d3148; font-size: 0.9em;">No player data available</div>';
-    }
-
 
         const showWWCD = winner.wwcd > 0;
         
@@ -719,25 +796,25 @@ function renderScoreboard(standings, teams, subtitle, data) {
     rightColumnTeams.forEach((team, index) => teamListRight.appendChild(renderTeamItem(team, index, index + midPoint)));
 }
 
-function renderNoData() {
+function renderNoData(isCached = false) {
     const subtitle = document.getElementById('match-subtitle');
     const teamListLeft = document.getElementById('team-list-left');
     
-    if (subtitle) subtitle.textContent = 'No match data available';
+    if (subtitle) subtitle.textContent = isCached ? 'No match data available (using cached data)' : 'No match data available';
     if (document.getElementById('winner-card')) document.getElementById('winner-card').style.display = 'none';
     if (document.getElementById('winner-players')) document.getElementById('winner-players').innerHTML = '<div style="color: #ccc; font-size: 0.9em;">No player data available</div>';
-    if (teamListLeft) teamListLeft.innerHTML = '<li style="text-align: center; padding: 20px; color: #ccc;">Waiting for match data...</li>';
+    if (teamListLeft) teamListLeft.innerHTML = `<li style="text-align: center; padding: 20px; color: #ccc;">${isCached ? 'Waiting for match data (using cached data)...' : 'Waiting for match data...'}</li>`;
     if (document.getElementById('team-list-right')) document.getElementById('team-list-right').innerHTML = '';
 }
 
-function renderError(errorMessage) {
+function renderError(errorMessage, isCached = false) {
     const subtitle = document.getElementById('match-subtitle');
     const teamListLeft = document.getElementById('team-list-left');
     
-    if (subtitle) subtitle.textContent = 'Error loading data';
+    if (subtitle) subtitle.textContent = isCached ? 'Error loading data (using cached data)' : 'Error loading data';
     if (document.getElementById('winner-card')) document.getElementById('winner-card').style.display = 'none';
     if (document.getElementById('winner-players')) document.getElementById('winner-players').innerHTML = '<div style="color: #ccc; font-size: 0.9em;">Error loading player data</div>';
-    if (teamListLeft) teamListLeft.innerHTML = `<li style="text-align: center; padding: 20px; color: #ff6b6b;">Error: ${errorMessage}</li>`;
+    if (teamListLeft) teamListLeft.innerHTML = `<li style="text-align: center; padding: 20px; color: #ff6b6b;">Error: ${errorMessage}${isCached ? ' (using cached data)' : ''}</li>`;
     if (document.getElementById('team-list-right')) document.getElementById('team-list-right').innerHTML = '';
 }
 

@@ -97,6 +97,7 @@
       align-items: center;
       gap: 5px;
       padding: 5px 5px;
+      background-color: #5AB4D6;
     }
     .team-name-cell img {
       width: 35px;
@@ -129,9 +130,8 @@
     /* Player status bar and health bar styling */
     .status-bar {
       width: 10px;
-      height: 10px;
-      border-radius: 5px;
-      background-color: #4a4d52;
+      height: 20px;
+      background-color: #ffffff;
       border: 1px solid #3d4045;
       position: relative;
       overflow: hidden;
@@ -141,7 +141,7 @@
       bottom: 0;
       left: 0;
       width: 100%;
-      background-color: #2ecc71; /* Green for health */
+      background-color: #1e90ff;
       transition: height 0.3s ease;
     }
     
@@ -231,15 +231,26 @@
                 });
             }
             
+            // Sort standings: active teams by points then kills, missing teams at the bottom
+            standings.sort((a, b) => {
+                if (a.teamId === 'MISS' && b.teamId !== 'MISS') return 1;
+                if (b.teamId === 'MISS' && a.teamId !== 'MISS') return -1;
+                if (a.teamId === 'MISS' && b.teamId === 'MISS') return 0;
+                return (b.points !== a.points) ? (b.points - a.points) : (b.kills - a.kills);
+            });
+
+            // Cap at 25 teams
+            standings = standings.slice(0, 25);
+            
             // Loop through the standings data from the JSON
-            standings.forEach((team) => {
+            standings.forEach((team, index) => {
                 const teamRow = document.createElement('div');
                 teamRow.className = 'team-row';
 
                 // Rank
                 const rankCell = document.createElement('div');
                 rankCell.className = 'rank-cell';
-                rankCell.textContent = team.rank;
+                rankCell.textContent = team.teamId === 'MISS' ? 'MISS' : index + 1;
                 teamRow.appendChild(rankCell);
 
                 // Find the team info by matching teamId to numeric ID
