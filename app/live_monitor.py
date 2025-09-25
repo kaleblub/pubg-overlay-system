@@ -52,6 +52,8 @@ signal_received = False
 # Global set to track processed files
 processed_files = set()
 
+expected_teams = {}
+
 # ---------- State (normalized) ----------
 state = {
     "phase": {
@@ -227,13 +229,23 @@ def _parse_ini(config_string):
     return teams
 
 def get_team_logos(ini_file_path):
-    """Parse team logos and names from INI file."""
     try:
         with open(ini_file_path, "r", encoding="utf-8") as fh:
             ini_content = fh.read()
             ini_match = INI_BLOCK.search(ini_content)
             if ini_match:
-                return _parse_ini(ini_match.group(1))
+                all_teams = _parse_ini(ini_match.group(1))
+                filtered_teams = {}
+                for tid, info in all_teams.items():
+                    team_name = info["name"]
+                    if "empty_" not in info["logoPath"].lower() and not team_name.startswith("Team "):
+                        filtered_teams[team_name] = {
+                            "id": tid,
+                            "name": team_name,
+                            "logoPath": info["logoPath"]
+                        }
+                logging.info(f"Loaded {len(filtered_teams)} teams from INI: {[(name, info['logoPath']) for name, info in filtered_teams.items()]}")
+                return filtered_teams
             else:
                 logging.warning("Team logos INI block not found")
     except FileNotFoundError:
@@ -519,12 +531,13 @@ def _reset_match_but_keep_id(new_id=None):
     state["match_state"]["last_updated"] = int(time.time())
 
 def _upsert_team_from_teaminfo(t, parsed_logos):
+    """Update team in current_match, using log-provided name with case-insensitive logo matching."""
     tid = str(t.get("teamId") or "")
     if not tid or tid == "None":
         return
     team = state["current_match"]["teams"].setdefault(tid, {
         "id": tid,
-        "name": t.get("teamName") or "Unknown Team",
+        "name": "Unknown Team",
         "logo": DEFAULT_TEAM_LOGO,
         "liveMembers": 0,
         "kills": 0,
@@ -532,12 +545,20 @@ def _upsert_team_from_teaminfo(t, parsed_logos):
         "players": []
     })
     team.setdefault("placementPointsLive", 0)
-    team_name = t.get("teamName") or team["name"]
+    # Use log name
+    team_name = t.get("teamName") or "Unknown Team"
     team["name"] = team_name
     _register_team_mapping(tid, team_name)
-    if parsed_logos and tid in parsed_logos:
-        logo_info = parsed_logos[tid]
-        team["logo"] = get_asset_url(logo_info["logoPath"], DEFAULT_TEAM_LOGO)
+    # Use INI logo if team name matches expected_teams (case-insensitive)
+    if parsed_logos:
+        for info in parsed_logos.values():
+            if info["name"].lower() == team_name.lower():
+                team["logo"] = get_asset_url(info["logoPath"], DEFAULT_TEAM_LOGO)
+                logging.debug(f"Assigned INI logo {team['logo']} to team {team_name} (ID: {tid})")
+                break
+        else:
+            team["logo"] = DEFAULT_TEAM_LOGO
+            logging.warning(f"No INI logo found for team {team_name} (ID: {tid}); using default logo {DEFAULT_TEAM_LOGO}")
 
 def _upsert_player_from_total(p):
     pid = str(p.get("uId") or "")
@@ -673,8 +694,8 @@ def _update_live_eliminations():
         state["current_match"]["status"] = "finished"
 
 def end_match_and_update_phase(final_match_data=None):
-    """Finalize match data and update phase standings."""
-    global state
+    """Finalize match data, add missing teams by name (if applicable), and update phase standings."""
+    global state, expected_teams, in_archive_processing
     try:
         if not final_match_data:
             final_match_data = copy.deepcopy(state["current_match"])
@@ -690,7 +711,10 @@ def end_match_and_update_phase(final_match_data=None):
                 "eliminationOrder": [],
                 "killFeed": [],
                 "teams": {},
-                "players": {}
+                "players": {},
+                "leaderboards": {"currentMatchTopPlayers": []},
+                "activePlayers": [],
+                "teamKills": {}
             }
             state["match_state"]["status"] = "idle"
             state["match_state"]["last_updated"] = int(time.time())
@@ -702,16 +726,34 @@ def end_match_and_update_phase(final_match_data=None):
         
         logging.info(f"Finalizing match {match_id}")
         
+        # Add missing_teams by name only if not processing archives
+        if not in_archive_processing and expected_teams:
+            match_team_names = {team["name"].lower() for team in final_match_data["teams"].values()}
+            missing = []
+            for team_name, info in expected_teams.items():
+                if team_name.lower() not in match_team_names:
+                    missing.append({
+                        "id": info["id"],  # Use INI ID for reference
+                        "name": team_name,
+                        "logo": get_asset_url(info["logoPath"], DEFAULT_TEAM_LOGO),
+                        "kills": 0,
+                        "placementPoints": 0,
+                        "points": 0,
+                        "rank": "MISS",
+                        "liveMembers": 0,
+                        "players": [],
+                        "missing": True
+                    })
+            final_match_data["missing_teams"] = missing
+            logging.info(f"Match {match_id}: Added {len(missing)} missing teams: {[t['name'] for t in missing]}")
+        
         # Calculate team totals for the match
         team_totals = {}
-        # Create a rank map from elimination order (last eliminated = 2nd place, winner = 1st)
         elimination_order = final_match_data.get("eliminationOrder", [])
         total_teams = len(final_match_data["teams"])
         rank_map = {}
-        # Reverse elimination order: last eliminated gets rank 2, second-to-last gets rank 3, etc.
         for i, team_name in enumerate(reversed(elimination_order)):
             rank_map[team_name] = i + 2  # Start at rank 2 (winner gets 1)
-        # Winner gets rank 1
         winner_team = final_match_data.get("winnerTeamName")
         if winner_team:
             rank_map[winner_team] = 1
@@ -719,11 +761,8 @@ def end_match_and_update_phase(final_match_data=None):
         for tid, team in final_match_data["teams"].items():
             team_name = team.get("name", "Unknown Team")
             kills = team.get("kills", 0)
-            # Assign placement points based on rank
-            rank = rank_map.get(team_name, total_teams)  # Default to last place if not in rank_map
-            placement_points = {
-                1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1
-            }.get(rank, 0)
+            rank = rank_map.get(team_name, total_teams)  # Default to last place
+            placement_points = {1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1}.get(rank, 0)
             team_totals[team_name] = {
                 "teamId": tid,
                 "teamName": team_name,
@@ -733,7 +772,9 @@ def end_match_and_update_phase(final_match_data=None):
                 "wwcd": 1 if team_name == final_match_data.get("winnerTeamName") else 0,
                 "rank": rank
             }
-            logging.debug(f"Team {team_name} ranked {rank} with {placement_points} placement points")
+            # Update placementPointsLive in final_match_data
+            final_match_data["teams"][tid]["placementPointsLive"] = placement_points
+            logging.debug(f"Team {team_name} ranked {rank} with {placement_points} placement points, set as placementPointsLive")
         
         # Update phase standings
         for team_name, totals in team_totals.items():
@@ -745,7 +786,6 @@ def end_match_and_update_phase(final_match_data=None):
                     "totals": {"kills": 0, "placementPoints": 0, "points": 0, "wwcd": 0}
                 }
             team = state["phase"]["teams"][team_name]
-            # Accumulate stats
             team["totals"]["kills"] += totals["kills"]
             team["totals"]["placementPoints"] += totals["placementPoints"]
             team["totals"]["points"] += totals["points"]
@@ -765,7 +805,6 @@ def end_match_and_update_phase(final_match_data=None):
                     "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
                 }
             p = state["phase"]["players"][pid]
-            # Accumulate player stats
             p["totals"]["kills"] += int(player["stats"].get("kills", 0))
             p["totals"]["damage"] += int(player["stats"].get("damage", 0))
             p["totals"]["knockouts"] += int(player["stats"].get("knockouts", 0))
@@ -808,7 +847,10 @@ def end_match_and_update_phase(final_match_data=None):
             "eliminationOrder": [],
             "killFeed": [],
             "teams": {},
-            "players": {}
+            "players": {},
+            "leaderboards": {"currentMatchTopPlayers": []},
+            "activePlayers": [],
+            "teamKills": {}
         }
         state["match_state"]["status"] = "idle"
         state["match_state"]["last_updated"] = int(time.time())
@@ -827,7 +869,10 @@ def end_match_and_update_phase(final_match_data=None):
             "eliminationOrder": [],
             "killFeed": [],
             "teams": {},
-            "players": {}
+            "players": {},
+            "leaderboards": {"currentMatchTopPlayers": []},
+            "activePlayers": [],
+            "teamKills": {}
         }
         state["match_state"]["status"] = "idle"
         state["match_state"]["last_updated"] = int(time.time())
@@ -1715,7 +1760,7 @@ def enhanced_main_loop(test_mode=False, team_logos=None):
 
 def main(test_mode=False, reprocess=False):
     """Main function to run the live monitor with enhanced finalization."""
-    global simulation_manager
+    global simulation_manager, expected_teams, buffer
 
     # Setup signal handlers for graceful shutdown
     setup_signal_handlers()
@@ -1727,10 +1772,26 @@ def main(test_mode=False, reprocess=False):
     mode = "Test" if test_mode else "Production"
     print_status_header(mode)
 
-    # Load team logos
-    team_logos = get_team_logos(TEAM_CONFIG_FILE)
-    if not team_logos:
-        print_colored("Warning: Could not load team logos. Continuing without them.", Fore.YELLOW)
+    # Load team logos and expected_teams (filtered non-placeholders, keyed by name)
+    ini_path = ".\TeamLogoAndColor.ini"
+    if reprocess:
+        team_logos = {}
+        expected_teams = {}
+        logging.info("Reprocess mode: Skipping expected_teams load from INI")
+    else:
+        if os.path.exists(ini_path):
+            team_logos = get_team_logos(ini_path)
+            expected_teams = team_logos  # Keyed by name
+            logging.info(f"Loaded {len(expected_teams)} expected teams from INI: {[(name, info['logoPath']) for name, info in expected_teams.items()]}")
+            if state["current_match"]["teams"]:
+                current_team_names = {team["name"] for team in state["current_match"]["teams"].values()}
+                missing_names = set(expected_teams.keys()) - current_team_names
+                if missing_names:
+                    logging.warning(f"Teams in INI but not in current match: {missing_names}")
+        else:
+            team_logos = {}
+            expected_teams = {}
+            logging.warning("INI file not found; no expected teams loaded")
 
     # Handle reprocess mode (archives only)
     if reprocess:
@@ -1754,7 +1815,6 @@ def main(test_mode=False, reprocess=False):
         print_colored(f"\nCatching up on {len(current_phase_logs)} current phase file(s)...", Fore.CYAN)
         print_colored("Starting catch-up processing with progress tracking...", Fore.YELLOW)
         
-        # Use the enhanced processing function with shutdown checks and real progress
         live_log_path, start_pos = process_with_shutdown_check(current_phase_logs, team_logos) or (None, 0)
     else:
         live_log_path = None
@@ -1798,10 +1858,18 @@ def main(test_mode=False, reprocess=False):
 
     except KeyboardInterrupt:
         print_colored("\nStopped by user (Ctrl+C).", Fore.YELLOW)
+        if buffer:
+            logging.info(f"Flushing buffer before finalization: {len(buffer)} bytes")
+            parse_and_apply('', parsed_logos=team_logos, mode="chunk")
+            buffer = ''
         request_finalization()
         
     except Exception as e:
         logging.exception(f"Live monitor error: {e}")
+        if buffer:
+            logging.info(f"Flushing buffer before finalization: {len(buffer)} bytes")
+            parse_and_apply('', parsed_logos=team_logos, mode="chunk")
+            buffer = ''
         request_finalization()
     
     finally:
@@ -1809,7 +1877,11 @@ def main(test_mode=False, reprocess=False):
         if (state["current_match"]["id"] or 
             state["current_match"]["teams"] or 
             state["current_match"]["killFeed"] or 
-            state["current_match"]["eliminationOrder"]):
+            state["current_match"]["eliminationOrder"] or 
+            state["current_match"]["players"] or 
+            state["current_match"]["leaderboards"]["currentMatchTopPlayers"] or 
+            state["current_match"]["activePlayers"] or 
+            state["current_match"]["teamKills"]):
             logging.info("Forcing finalization on exit for lingering match data")
             end_match_and_update_phase()
             _finalize_and_persist()

@@ -146,6 +146,7 @@
 <script>
 const jsonUrl = 'http://localhost:5000/live_scoreboard.json';
 
+// Helper function to handle fetch retries (Good for stability!)
 async function retryFetch(url, options = {}, retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -167,7 +168,8 @@ async function retryFetch(url, options = {}, retries = 3) {
 function findTeamByPlayerId(playerId, teamsData) {
     if (!teamsData) return null;
     
-    for (const [teamId, team] of Object.entries(teamsData)) {
+    // teamsData is an object, so iterate through its values
+    for (const team of Object.values(teamsData)) {
         if (team.players && team.players.includes(playerId)) {
             return team;
         }
@@ -179,98 +181,98 @@ function findTeamByPlayerId(playerId, teamsData) {
 function findTeamByName(teamName, teamsData) {
     if (!teamsData || !teamName) return null;
     
-    // Try exact match first
-    for (const [teamId, team] of Object.entries(teamsData)) {
-        if (team.name && team.name === teamName) {
+    // teamsData is an object, so iterate through its values
+    for (const team of Object.values(teamsData)) {
+        if (team.name && team.name.toLowerCase() === teamName.toLowerCase()) {
             return team;
         }
     }
-    
-    // Try partial match
-    const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
-    for (const [teamId, team] of Object.entries(teamsData)) {
-        if (!team.name) continue;
-        
-        const cleanTeamName = team.name.toLowerCase().replace('esports', '').trim();
-        if (cleanTeamName.includes(cleanSearchName) || cleanSearchName.includes(cleanTeamName)) {
-            return team;
-        }
-    }
-    
     return null;
 }
 
+// --- CORE LOGIC TO PROCESS PLAYERS ---
+function processPlayers(playersMap, teamsMap) {
+    if (!playersMap || Object.keys(playersMap).length === 0) return [];
+    
+    const playersWithTeam = Object.values(playersMap).map(p => {
+        const team = findTeamByPlayerId(p.id, teamsMap);
+        
+        // Ensure stats exist, or default to an empty object
+        const stats = p.stats || {}; 
+
+        return {
+            id: p.id,
+            playerName: p.name || 'Unknown Player',
+            playerPhoto: p.photo || 'http://localhost:5000/assets/PUBG.png',
+            kills: stats.kills || 0,
+            damage: stats.damage || 0,
+            knockouts: stats.knockouts || 0,
+            teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
+            teamName: team?.name || 'Unknown Team'
+        };
+    });
+
+    // Sort by kills (desc), then damage (desc)
+    playersWithTeam.sort((a, b) => {
+        if (b.kills !== a.kills) return b.kills - a.kills;
+        return b.damage - a.damage;
+    });
+
+    return playersWithTeam.slice(0, 5);
+}
+
+// --- MAIN FETCH AND DATA SELECTION ---
 async function fetchData() {
     try {
         const res = await retryFetch(jsonUrl);
         const data = await res.json();
         
         let topPlayersData = [];
-        let subtitle = "CURRENT GAME";
-        const matchStatus = data.match_state?.status || 'idle';
-
-        if (matchStatus === 'live' && data.match?.players && Object.keys(data.match.players).length > 0) {
-            // Live match data
-            const playersWithTeam = Object.values(data.match.players).map(p => {
-                const team = findTeamByPlayerId(p.id, data.match.teams);
-                return {
-                    id: p.id,
-                    playerName: p.name,
-                    playerPhoto: p.photo || 'http://localhost:5000/assets/PUBG.png',
-                    kills: p.stats?.kills || 0,
-                    damage: p.stats?.damage || 0,
-                    knockouts: p.stats?.knockouts || 0,
-                    teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
-                    teamName: team?.name || 'Unknown Team'
-                };
-            });
-
-            // Sort by kills and damage
-            playersWithTeam.sort((a, b) => {
-                if (b.kills !== a.kills) return b.kills - a.kills;
-                return b.damage - a.damage;
-            });
+        let subtitle = "NO DATA";
+        let matchStatus = data.match_state?.status || 'idle';
+        
+        // 1. Check for LIVE data
+        if (matchStatus === 'live' && data.current_match) {
             
-            topPlayersData = playersWithTeam.slice(0, 5);
-            subtitle = "LIVE MATCH";
-
-        } else if (data.previous?.leaderboards?.currentMatchTopPlayers && 
-                  data.previous.leaderboards.currentMatchTopPlayers.length > 0) {
-            // Previous match data from leaderboards
-            topPlayersData = data.previous.leaderboards.currentMatchTopPlayers.map(player => {
-                const team = findTeamByName(player.teamName, data.previous.teams);
-                return {
-                    ...player,
-                    teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
-                    playerPhoto: player.playerPhoto || 'http://localhost:5000/assets/PUBG.png',
-                    teamName: team?.name || player.teamName || 'Unknown Team'
-                };
-            });
-            subtitle = "PREVIOUS MATCH";
+            // Check if there is meaningful data beyond default values (kills/damage > 0)
+            const hasStats = Object.values(data.current_match.players || {}).some(p => (p.stats?.kills || 0) > 0 || (p.stats?.damage || 0) > 0);
             
-        } else if (data.previous?.players && Object.keys(data.previous.players).length > 0) {
-            // Fallback: generate top players from previous match players
-            const players = Object.values(data.previous.players);
-            const playersWithStats = players.map(p => {
-                const team = findTeamByPlayerId(p.id, data.previous.teams);
-                return {
-                    playerName: p.name,
-                    playerPhoto: p.photo || 'http://localhost:5000/assets/PUBG.png',
-                    kills: p.stats?.kills || 0,
-                    damage: p.stats?.damage || 0,
-                    knockouts: p.stats?.knockouts || 0,
-                    teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
-                    teamName: team?.name || 'Unknown Team'
-                };
-            });
+            // Use live data if status is 'live' AND we have stats
+            if (hasStats) {
+                topPlayersData = processPlayers(data.current_match.players, data.current_match.teams);
+                subtitle = "LIVE MATCH";
+            }
+        } 
+        
+        // 2. If no live data found (status is idle OR live data is empty/default), check previous match
+        if (topPlayersData.length === 0 && data.matches?.length > 0) {
             
-            playersWithStats.sort((a, b) => {
-                if (b.kills !== a.kills) return b.kills - a.kills;
-                return b.damage - a.damage;
-            });
+            const lastMatch = data.matches[data.matches.length - 1];
             
-            topPlayersData = playersWithStats.slice(0, 5);
-            subtitle = "PREVIOUS MATCH";
+            // Priority A: Use pre-calculated leaderboard from previous match data if available
+            if (lastMatch.leaderboards?.currentMatchTopPlayers?.length > 0) {
+                 topPlayersData = lastMatch.leaderboards.currentMatchTopPlayers.map(player => {
+                    // Try to find full team info (logo, name) using the teamName
+                    const team = findTeamByName(player.teamName, lastMatch.teams);
+                    return {
+                        ...player,
+                        teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
+                        playerPhoto: player.playerPhoto || 'http://localhost:5000/assets/PUBG.png',
+                        teamName: team?.name || player.teamName || 'Unknown Team'
+                    };
+                }).slice(0, 5);
+                subtitle = "PREVIOUS MATCH LEADERBOARD";
+                
+            } else {
+                // Priority B: Generate leaderboard from raw players/teams data in the previous match
+                topPlayersData = processPlayers(lastMatch.players, lastMatch.teams);
+                subtitle = "PREVIOUS MATCH SUMMARY";
+            }
+        }
+        
+        // 3. Final Fallback if still no players found (e.g., initial load before first match)
+        if (topPlayersData.length === 0) {
+             subtitle = "WAITING FOR DATA";
         }
 
         document.querySelector('.overlay-subtitle').textContent = subtitle;
@@ -278,41 +280,43 @@ async function fetchData() {
         
     } catch (error) {
         console.error('Error fetching data:', error);
+        document.querySelector('.overlay-subtitle').textContent = 'ERROR LOADING DATA';
         updateTopPlayers([]);
     }
 }
 
+// --- RENDER FUNCTION ---
 function updateTopPlayers(players) {
-  const container = document.getElementById('top-players-container');
-  container.innerHTML = '';
+    const container = document.getElementById('top-players-container');
+    container.innerHTML = '';
 
-  if (!players.length) {
-    container.innerHTML = `<p style="color:red; text-align:center;">No player data available.</p>`;
-    return;
-  }
+    if (!players.length) {
+        container.innerHTML = `<p style="color:red; text-align:center;">No player data available.</p>`;
+        return;
+    }
 
-  players.forEach((player, index) => {
-    const playerCard = document.createElement('div');
-    playerCard.className = 'player-card';
-    playerCard.innerHTML = `
-      <div class="player-rank">#${index + 1}</div>
-      <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='http://localhost:5000/assets/default-team-logo.jpg'">
-      <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='http://localhost:5000/assets/PUBG.png'">
-      <div class="player-name-bg">
-        <div class="player-name">${player.playerName}</div>
-        <div class="team-name">${player.teamName}</div>
-      </div>
-      <div class="elimination-count">Eliminations: ${player.kills}</div>
-      <div class="damage-count">Damage: ${player.damage}</div>
-      <div class="knockout-count">Knockouts: ${player.knockouts}</div>
-    `;
-    container.appendChild(playerCard);
-  });
+    players.forEach((player, index) => {
+        const playerCard = document.createElement('div');
+        playerCard.className = 'player-card';
+        playerCard.innerHTML = `
+            <div class="player-rank">#${index + 1}</div>
+            <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='http://localhost:5000/assets/default-team-logo.jpg'">
+            <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='http://localhost:5000/assets/PUBG.png'">
+            <div class="player-name-bg">
+                <div class="player-name">${player.playerName}</div>
+                <div class="team-name">${player.teamName}</div>
+            </div>
+            <div class="elimination-count">Eliminations: ${player.kills}</div>
+            <div class="damage-count">Damage: ${player.damage.toFixed(0)}</div>
+            <div class="knockout-count">Knockouts: ${player.knockouts}</div>
+        `;
+        container.appendChild(playerCard);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetchData();
-  setInterval(fetchData, 2000);
+    fetchData();
+    setInterval(fetchData, 2000);
 });
 </script>
 
