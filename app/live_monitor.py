@@ -1578,21 +1578,43 @@ def process_with_shutdown_check(log_files_to_process, parsed_logos):
     global in_catchup_processing, processed_files
     if not log_files_to_process:
         print_colored("No current phase logs to process.", Fore.WHITE)
-        return
+        return None
     log_files_to_process = [f for f in log_files_to_process if f.name not in processed_files]
     if not log_files_to_process:
         print_colored("All files already processed.", Fore.WHITE)
-        return
+        return None
     print_colored("Processing current-phase logs for catch-up...", Fore.CYAN)
     print_colored(f"Files to process: {len(log_files_to_process)}", Fore.WHITE)
     print_colored("Press Ctrl+C to interrupt processing...", Fore.YELLOW)
     log_files_to_process.sort(key=lambda f: f.stat().st_mtime)
-    for i, log_file in enumerate(log_files_to_process[:-1]):  # Process all but the last (live) file
+    
+    # Calculate total size for overall progress
+    total_file_size = sum(f.stat().st_size for f in log_files_to_process if f.stat().st_size > 0)
+    processed_size = 0
+    
+    # Determine if the last file is actively updating
+    live_file = None
+    if log_files_to_process:
+        last_file = log_files_to_process[-1]
+        if _is_log_updating(last_file, min_size=1024):  # Check if file is actively updating
+            live_file = last_file
+            print_colored(f"Detected live file: {live_file.name}", Fore.GREEN)
+        else:
+            print_colored(f"Last file {last_file.name} is not updating; treating as completed match file", Fore.YELLOW)
+    
+    # Process all files (including last file if not live)
+    for i, log_file in enumerate(log_files_to_process):
         if check_shutdown_conditions():
             print_colored(f"\nShutdown requested during file processing. Stopping at file {i+1}/{len(log_files_to_process)}", Fore.YELLOW)
-            return
+            return None
         file_size = log_file.stat().st_size
-        print_colored(f"\nProcessing completed match file {i+1}/{len(log_files_to_process)}: {log_file.name}", Fore.YELLOW)
+        if file_size == 0:
+            print_colored(f"\nSkipping empty file {i+1}/{len(log_files_to_process)}: {log_file.name}", Fore.YELLOW)
+            processed_files.add(log_file.name)
+            continue
+        is_live_file = (log_file == live_file)
+        file_type = "live" if is_live_file else "completed match"
+        print_colored(f"\nProcessing {file_type} file {i+1}/{len(log_files_to_process)}: {log_file.name}", Fore.CYAN if is_live_file else Fore.YELLOW)
         try:
             with open(log_file, "r", encoding="utf-8") as f:
                 log_text = f.read()
@@ -1604,59 +1626,120 @@ def process_with_shutdown_check(log_files_to_process, parsed_logos):
                     for chunk_start in range(0, len(log_text), chunk_size):
                         if check_shutdown_conditions():
                             print_colored(f"\nShutdown requested during chunk processing. Stopping...", Fore.YELLOW)
-                            return
+                            return None
                         chunk_end = min(chunk_start + chunk_size, len(log_text))
                         chunk = log_text[chunk_start:chunk_end]
-                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk")
+                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
+                            processed_size + bytes_processed_in_file + processed,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        ))
                         bytes_processed_in_file = chunk_end
+                        print_progress_bar(
+                            processed_size + bytes_processed_in_file,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        )
+                        time.sleep(0.01)  # Small delay to prevent overwhelming the terminal
                     if not check_shutdown_conditions():
                         logging.info(f"Flushing remaining buffer for {log_file.name}")
-                        parse_and_apply('', parsed_logos=parsed_logos, mode="chunk")
+                        parse_and_apply('', parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
+                            processed_size + bytes_processed_in_file + processed,
+                            total_file_size,
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        ))
                         if state["current_match"]["id"] and state["current_match"]["status"] in ["live", "finished"]:
                             logging.info(f"CATCHUP: Finalizing match at file end: {state['current_match']['id']}")
                             end_match_and_update_phase()
                 finally:
                     in_catchup_processing = False
+                processed_size += file_size
                 processed_files.add(log_file.name)
+                print_progress_bar(
+                    processed_size,
+                    total_file_size,
+                    prefix=f"File {i+1}/{len(log_files_to_process)}",
+                    suffix=f"{log_file.name} complete"
+                )
         except Exception as e:
             if check_shutdown_conditions():
                 print_colored(f"\nShutdown requested during error handling", Fore.YELLOW)
-                return
+                return None
             logging.error(f"Error processing catch-up file {log_file.name}: {e}")
+            processed_size += file_size
             processed_files.add(log_file.name)
-    # Handle the last file as live - incremental catch-up
-    if log_files_to_process:
-        live_file = log_files_to_process[-1]
-        print_colored(f"\nCatching up on live file: {live_file.name}", Fore.CYAN)
-        last_pos = 0
-        in_catchup_processing = True
-        try:
-            no_new_data_time = 0
-            while no_new_data_time < 1.0:  # Continue until no new data for 1s
-                if check_shutdown_conditions():
-                    print_colored("\nShutdown requested during live catch-up. Stopping...", Fore.YELLOW)
-                    return
-                size = live_file.stat().st_size
-                if size > last_pos:
-                    chunk, new_pos = _read_new(live_file, last_pos)
-                    if chunk:
-                        parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk")
-                    last_pos = new_pos
-                    no_new_data_time = 0
-                else:
-                    no_new_data_time += 0.1
-                time.sleep(0.1)
-            if state["current_match"]["id"] and state["current_match"]["status"] in ["live", "finished"]:
-                logging.info(f"CATCHUP: Finalizing match at live file end: {state['current_match']['id']}")
-                end_match_and_update_phase()
-        finally:
-            in_catchup_processing = False
-        processed_files.add(live_file.name)
-        print_colored("✓ Current phase catch-up complete! Transitioning to live monitoring.", Fore.GREEN)
-        # Return the live file path and current position for enhanced_main_loop
-        return live_file, last_pos
-    else:
-        return None
+            print_progress_bar(
+                processed_size,
+                total_file_size,
+                prefix=f"File {i+1}/{len(log_files_to_process)}",
+                suffix=f"{log_file.name} ERROR"
+            )
+        
+        # Handle live file separately if it exists
+        if is_live_file:
+            print_colored(f"\nCatching up on live file: {log_file.name}", Fore.CYAN)
+            last_pos = file_size
+            in_catchup_processing = True
+            try:
+                no_new_data_time = 0
+                while no_new_data_time < 1.0:  # Continue until no new data for 1s
+                    if check_shutdown_conditions():
+                        print_colored("\nShutdown requested during live catch-up. Stopping...", Fore.YELLOW)
+                        return None
+                    size = log_file.stat().st_size
+                    if size > last_pos:
+                        chunk, new_pos = _read_new(log_file, last_pos)
+                        if chunk:
+                            parse_and_apply(chunk, parsed_logos=parsed_logos, mode="chunk", progress_callback=lambda processed, total: print_progress_bar(
+                                processed_size + (size - file_size) + processed,
+                                total_file_size + (size - file_size),
+                                prefix=f"File {i+1}/{len(log_files_to_process)}",
+                                suffix=f"{log_file.name}",
+                                processing=True
+                            ))
+                        last_pos = new_pos
+                        no_new_data_time = 0
+                        print_progress_bar(
+                            processed_size + (size - file_size),
+                            total_file_size + (size - file_size),
+                            prefix=f"File {i+1}/{len(log_files_to_process)}",
+                            suffix=f"{log_file.name}",
+                            processing=True
+                        )
+                    else:
+                        no_new_data_time += 0.1
+                    time.sleep(0.1)
+                if state["current_match"]["id"] and state["current_match"]["status"] in ["live", "finished"]:
+                    logging.info(f"CATCHUP: Finalizing match at live file end: {state['current_match']['id']}")
+                    end_match_and_update_phase()
+            finally:
+                in_catchup_processing = False
+            processed_size += (log_file.stat().st_size - file_size)
+            processed_files.add(log_file.name)
+            print_progress_bar(
+                processed_size,
+                total_file_size + (log_file.stat().st_size - file_size),
+                prefix=f"File {i+1}/{len(log_files_to_process)}",
+                suffix=f"{log_file.name} complete"
+            )
+            print_colored("✓ Current phase catch-up complete! Transitioning to live monitoring.", Fore.GREEN)
+            print_progress_bar(
+                processed_size,
+                total_file_size + (log_file.stat().st_size - file_size),
+                prefix="Catch-up",
+                suffix="ALL FILES COMPLETE"
+            )
+            return log_file, last_pos
+    
+    print_colored("✓ Current phase catch-up complete! No live file detected.", Fore.GREEN)
+    print_progress_bar(total_file_size, total_file_size, prefix="Catch-up", suffix="ALL FILES COMPLETE")
+    return None
 
 def enhanced_main_loop(test_mode=False, team_logos=None):
     """Enhanced main loop with proper shutdown handling."""
