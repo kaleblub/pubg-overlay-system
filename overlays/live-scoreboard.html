@@ -196,21 +196,39 @@
 </div>
 
 <script>
+    let lastData = null; // Cache for last successful data
+    const jsonUrl = "http://localhost:5000/live_scoreboard.json";
+    const defaultLogo = "http://localhost:5000/assets/default-team-logo.jpg";
+    const retryDelay = 5000; // Retry every 5s on failure
+
     const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:5000/live_scoreboard.json");
+        const response = await fetch(jsonUrl);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        lastData = data; // Cache successful data
         
-        const updateScoreboard = (standings, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus) => {
+        const updateScoreboard = (standings, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus, isCached = false) => {
             const teamsList = document.getElementById('teams-list');
             teamsList.innerHTML = '';
             
             if (standings.length === 0) {
-                teamsList.innerHTML = `<div class="status-text">No teams data available</div>`;
+                teamsList.innerHTML = `<div class="status-text">No teams data available${isCached ? ' (using cached data)' : ''}</div>`;
                 return;
+            }
+            
+            // Create mapping of team names to numeric IDs
+            const teamNameToId = {};
+            if (matchStatus === 'live' && currentMatchTeams) {
+                Object.values(currentMatchTeams).forEach(team => {
+                    teamNameToId[team.name] = team.id;
+                });
+            } else if (lastMatchTeams) {
+                Object.values(lastMatchTeams).forEach(team => {
+                    teamNameToId[team.name] = team.id;
+                });
             }
             
             // Loop through the standings data from the JSON
@@ -224,48 +242,51 @@
                 rankCell.textContent = team.rank;
                 teamRow.appendChild(rankCell);
 
-                // Find the team info by matching teamId
+                // Find the team info by matching teamId to numeric ID
                 let teamInfo = null;
-                // Prioritize live match data first if available
-                if (currentMatchTeams[team.teamId]) {
-                    teamInfo = currentMatchTeams[team.teamId];
-                } else if (lastMatchTeams && lastMatchTeams[team.teamId]) {
-                    // Fall back to the last completed match data if current is not available
-                    teamInfo = lastMatchTeams[team.teamId];
+                const numericId = teamNameToId[team.teamId]; // Map "IVS ESPORTS" to "13"
+                if (matchStatus === 'live' && numericId && currentMatchTeams[numericId]) {
+                    teamInfo = currentMatchTeams[numericId];
+                } else if (numericId && lastMatchTeams && lastMatchTeams[numericId]) {
+                    teamInfo = lastMatchTeams[numericId];
                 }
+
+                // Debug logging (optional - can be removed once confirmed working)
+                console.log({
+                    teamId: team.teamId,
+                    teamName: team.teamName,
+                    phaseKills: team.kills,
+                    numericId: numericId,
+                    teamInfo: teamInfo,
+                    currentMatchTeams: numericId ? currentMatchTeams[numericId] : null,
+                    lastMatchTeams: numericId && lastMatchTeams ? lastMatchTeams[numericId] : null,
+                    matchStatus: matchStatus,
+                    selectedKills: teamInfo?.kills ?? team.kills ?? 0
+                });
 
                 // Team Name with Logo
                 const teamNameCell = document.createElement('div');
                 teamNameCell.className = 'team-name-cell';
 
                 // Add team logo if available from either standing or teamInfo
-                const teamLogo = teamInfo?.logo || team.teamLogo;
-                let teamAbbreviation = null;
+                const teamLogo = teamInfo?.logo || team.teamLogo || defaultLogo;
+                let teamAbbreviation = team.teamName;
 
-                if (teamLogo) {
-                  teamNameCell.innerHTML += `<img src="${teamLogo}" onerror="this.src='http://localhost:5000/assets/default-team-logo.jpg'" alt="${team.teamName} Logo">`;
-
-                  const logoFilename = teamLogo.split('/').pop(); // e.g. "hv.png"
+                if (teamLogo && teamLogo !== defaultLogo) {
+                  teamNameCell.innerHTML += `<img src="${teamLogo}" onerror="this.src='${defaultLogo}'" alt="${team.teamName} Logo">`;
+                  const logoFilename = teamLogo.split('/').pop();
                   if (logoFilename) {
-                    teamAbbreviation = logoFilename.split('.')[0]; // "hv"
+                    teamAbbreviation = logoFilename.split('.')[0].toUpperCase();
                   }
+                } else {
+                  teamNameCell.innerHTML += `<img src="${defaultLogo}" alt="${team.teamName} Logo">`;
                 }
 
-                teamNameCell.innerHTML += `<span>${(teamAbbreviation || team.teamName).toUpperCase()}</span>`;
-
+                teamNameCell.innerHTML += `<span>${teamAbbreviation}</span>`;
                 teamRow.appendChild(teamNameCell);
                 
-                // KILLS - Prioritize live kills, then last match kills, then phase standings
-                let killsToDisplay = null;
-
-                if (currentMatchTeams[team.teamId]?.teamStats?.totalKills !== undefined) {
-                  killsToDisplay = currentMatchTeams[team.teamId].teamStats.totalKills;
-                } else if (lastMatchTeams?.[team.teamId]?.teamStats?.totalKills !== undefined) {
-                  killsToDisplay = lastMatchTeams[team.teamId].teamStats.totalKills;
-                } else if (team.kills !== undefined) {
-                  killsToDisplay = team.kills; // standings fallback
-                }
-
+                // KILLS - Prioritize match-specific kills
+                let killsToDisplay = teamInfo?.kills ?? team.kills ?? 0;
 
                 const killsCell = document.createElement('div');
                 killsCell.className = 'kills-cell';
@@ -285,18 +306,15 @@
                 } else {
                     // Display player health bars based on status
                     let playersToUse = currentPlayers;
-                    // Fallback to previous match player data if current is empty
                     if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && lastMatchTeams) {
-                        playersToUse = lastMatchTeams[team.teamId]?.players || [];
+                        playersToUse = lastMatchTeams[numericId]?.players || [];
                     }
 
                     if (teamInfo && teamInfo.players && teamInfo.players.length > 0) {
                         teamInfo.players.forEach(playerId => {
-                            // Find player info from the current or last match data
                             const playerInfo = playersToUse[playerId];
                             
                             if (playerInfo && playerInfo.live && playerInfo.live.isAlive && matchStatus === 'live') {
-                                // Create health bar for alive player during live match
                                 const statusBar = document.createElement('div');
                                 statusBar.className = 'status-bar';
                                 statusBar.title = `${playerInfo.name}: ${playerInfo.live.health} HP`;
@@ -306,14 +324,13 @@
                                 
                                 const healthPercentage = (playerInfo.live.health / playerInfo.live.healthMax) * 100;
                                 if (healthPercentage <= 25) {
-                                    statusBarFill.classList.add('low-health');
+                                    statusBarFill.className += ' low-health';
                                 }
                                 statusBarFill.style.height = `${healthPercentage}%`;
                                 
                                 statusBar.appendChild(statusBarFill);
                                 statusCell.appendChild(statusBar);
                             } else {
-                                // Create X for dead/unknown player or when match is idle
                                 const statusX = document.createElement('div');
                                 statusX.className = 'status-x';
                                 statusX.textContent = 'X';
@@ -321,7 +338,6 @@
                             }
                         });
                     } else {
-                        // Add unknown status indicators if no player data
                         for (let i = 0; i < 4; i++) {
                             const statusX = document.createElement('div');
                             statusX.className = 'status-x';
@@ -332,8 +348,8 @@
                 }
                 teamRow.appendChild(statusCell);
 
-                // POINTS - Use phase total points when idle; add current match kills when live
-                const totalPoints = team.points + (teamInfo?.kills || 0);
+                // POINTS - Use phase total points
+                const totalPoints = team.points || 0;
                 
                 const pointsCell = document.createElement('div');
                 pointsCell.className = 'points-cell';
@@ -344,12 +360,11 @@
             });
         };
 
-        const matchStatus = data.match?.status || 'idle';
-        let currentMatchTeams = data.match?.teams || {};
-        let currentPlayers = data.match?.players || {};
+        const matchStatus = data.match_state?.status || 'idle';
+        let currentMatchTeams = data.current_match?.teams || {};
+        let currentPlayers = data.current_match?.players || {};
         let lastMatchTeams = null;
         
-        // Find the last completed match to use its team data
         if (data.matches && data.matches.length > 0) {
             const lastMatch = data.matches[data.matches.length - 1];
             if (lastMatch && lastMatch.teams) {
@@ -366,17 +381,43 @@
             matchStatus
           );
         } else {
-          document.getElementById("teams-list").innerHTML = `<div class="status-text">No standings data available</div>`;
+          document.getElementById("teams-list").innerHTML = `<div class="status-text">No standings data available${isCached ? ' (using cached data)' : ''}</div>`;
         }
       } catch (error) {
         console.error("Failed to fetch or parse JSON:", error);
-        document.getElementById("teams-list").innerHTML = `<div class="status-text" style="color:#ff6b6b;">Error loading data</div>`;
+        if (lastData) {
+            const matchStatus = lastData.match_state?.status || 'idle';
+            let currentMatchTeams = lastData.current_match?.teams || {};
+            let currentPlayers = lastData.current_match?.players || {};
+            let lastMatchTeams = null;
+            if (lastData.matches && lastData.matches.length > 0) {
+                const lastMatch = lastData.matches[lastData.matches.length - 1];
+                if (lastMatch && lastMatch.teams) {
+                    lastMatchTeams = lastMatch.teams;
+                }
+            }
+            if (lastData.phase?.standings) {
+                updateScoreboard(
+                    lastData.phase.standings,
+                    currentMatchTeams,
+                    currentPlayers,
+                    lastMatchTeams,
+                    matchStatus,
+                    true
+                );
+            } else {
+                document.getElementById("teams-list").innerHTML = `<div class="status-text">No standings data available (using cached data)</div>`;
+            }
+        } else {
+            document.getElementById("teams-list").innerHTML = `<div class="status-text">Waiting for server data...</div>`;
+        }
+        setTimeout(fetchData, retryDelay);
       }
     };
 
     document.addEventListener("DOMContentLoaded", () => {
       fetchData();
-      setInterval(fetchData, 2000);
+      setInterval(fetchData, 5000);
     });
 </script>
 
