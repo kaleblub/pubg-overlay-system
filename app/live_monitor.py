@@ -1752,7 +1752,8 @@ def main(test_mode=False, reprocess=False):
             print_colored(f"Failed to start web server: {e}", Fore.RED)
 
     # Load team logos and expected_teams (filtered non-placeholders, keyed by name)
-    ini_path = ".\TeamLogoAndColor.ini"
+    ini_path = "C:\Users\Baghila\AppData\Local\ShadowTrackerExtra\Saved\TeamLogoAndColor.ini"
+    # ini_path = ".\TeamLogoAndColor.ini"
     if reprocess:
         team_logos = {}
         expected_teams = {}
