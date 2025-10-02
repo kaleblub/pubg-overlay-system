@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUBG Match Standings</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+        
+        body {
+            background-color: transparent; 
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            margin: 0;
+            padding: 0;
+            font-weight: bold;
+        }
+
+        .overlay-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay-title {
+            text-align: center;
+            font-size: 3em;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: midnightblue;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .overlay-subtitle {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 400;
+            text-transform: uppercase;
+            margin-top: -10px;
+            color: #1d3148;
+        }
+        
+        .scoreboard-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            width: 90%;
+            max-width: 1200px;
+        }
+        
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 50%;
+        }
+
+        .team-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .list-header {
+            background-color: #b5a420;
+            padding: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .list-header-rank {
+            padding-left: 10px;
+            width: 40px;
+            text-align: left;
+        }
+        
+        .list-header-name {
+            flex-grow: 1;
+        }
+
+        .list-header-stats {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .team-item {
+            background-color: transparent;
+            padding: 0;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            font-size: 1.1em;
+            overflow: hidden;
+            border-radius: 5px;
+        }
+
+        .team-rank {
+            width: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #b5a420;
+            font-weight: bold;
+            color: black;
+        }
+
+        .team-name-column {
+            background-color: #5ab4d6;
+            flex-grow: 1;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .team-logo {
+            height: 25px;
+            width: 25px;
+            object-fit: contain;
+            padding-right: 10px;
+        }
+        
+        .team-stats {
+            display: flex;
+            gap: 20px;
+            font-weight: bold;
+            background-color: rgba(158, 202, 247, 0.2);
+            padding: 10px;
+            align-items: center;
+            color: white;
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 165, 0, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="match-standings" class="overlay-container">
+        <h1 class="overlay-title">Match Standings</h1>
+        <h2 class="overlay-subtitle" id="match-subtitle"></h2>
+        <div class="scoreboard-grid" id="scoreboard-grid">
+            <div class="left-column">
+                <ul class="team-list" id="team-list-left"></ul>
+            </div>
+            
+            <div class="right-column">
+                <ul class="team-list" id="team-list-right"></ul>
+            </div>
+        </div>
+    </div>
+    
+<script>
+let lastData = null;
+const API_URL = 'http://localhost:5000/live_scoreboard.json';
+const retryDelay = 5000;
+
+async function fetchData() {
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        lastData = data;
+
+        let standings = [];
+        let teams = {};
+        let subtitle = "NO DATA";
+        const matchStatus = data.match_state?.status || 'idle';
+
+        console.log("Match status:", matchStatus);
+
+        if (matchStatus === 'live' && data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
+            teams = data.current_match.teams;
+            subtitle = "LIVE STANDINGS";
+            console.log("Using live match data for kills/logos", Object.keys(teams));
+            standings = Object.values(teams).map(team => ({
+                teamId: team.id,
+                teamName: team.name || 'Unknown Team',
+                kills: team.kills || 0,
+                placementPoints: team.placementPointsLive || 0,
+                points: (team.kills || 0) + (team.placementPointsLive || 0),
+                wwcd: 0,
+                rank: team.rank || 0
+            }));
+        } else if (data.matches?.length > 0) {
+            const latestMatch = data.matches[data.matches.length - 1];
+            console.log("Using latest match (index: " + (data.matches.length - 1) + ", last_updated: " + (latestMatch.last_updated || 'unknown') + ")");
+            teams = {
+                ...(latestMatch?.teams || {}),
+                ...(latestMatch?.missing_teams || []).reduce((acc, team) => {
+                    acc[team.id] = {
+                        id: team.id,
+                        name: team.name || 'Unknown Team',
+                        logo: team.logo || 'https://placehold.co/50x50/A0522D/ffffff?text=Logo',
+                        kills: team.kills || 0,
+                        placementPointsLive: team.placementPoints || team.placementPointsLive || 0,
+                        rank: team.rank || 'MISS'
+                    };
+                    return acc;
+                }, {})
+            };
+            subtitle = "PREVIOUS MATCH";
+            console.log("Using latest match data for kills/logos", Object.keys(teams));
+            const activeTeams = Object.values(latestMatch?.teams || {}).map(team => ({
+                teamId: team.id,
+                teamName: team.name || 'Unknown Team',
+                kills: team.kills || 0,
+                placementPoints: team.placementPointsLive || 0,
+                points: (team.kills || 0) + (team.placementPointsLive || 0),
+                wwcd: 0,
+                rank: team.rank || 0
+            }));
+            const missingTeams = (latestMatch?.missing_teams || []).map(team => ({
+                teamId: team.id,
+                teamName: team.name || 'Unknown Team',
+                kills: team.kills || 0,
+                placementPoints: team.placementPoints || team.placementPointsLive || 0,
+                points: (team.kills || 0) + (team.placementPoints || team.placementPointsLive || 0),
+                wwcd: 0,
+                rank: 'MISS'
+            }));
+            standings = [...activeTeams, ...missingTeams];
+        } else {
+            teams = data.current_match?.teams || {};
+            subtitle = "CURRENT STANDINGS";
+            console.log("Using fallback team data", Object.keys(teams));
+            standings = Object.values(teams).map(team => ({
+                teamId: team.id,
+                teamName: team.name || 'Unknown Team',
+                kills: team.kills || 0,
+                placementPoints: team.placementPointsLive || 0,
+                points: (team.kills || 0) + (team.placementPointsLive || 0),
+                wwcd: 0,
+                rank: team.rank || 0
+            }));
+        }
+
+        standings.sort((a, b) => {
+            if (a.rank === 'MISS' && b.rank !== 'MISS') return 1;
+            if (b.rank === 'MISS' && a.rank !== 'MISS') return -1;
+            if (a.rank === 'MISS' && b.rank === 'MISS') return 0;
+            return (b.points !== a.points) ? (b.points - a.points) : (b.kills - a.kills);
+        });
+
+        standings = standings.slice(0, 25);
+
+        if (data.phase?.standings) {
+            standings.forEach(team => {
+                const phaseTeam = data.phase.standings.find(pt => pt.teamName.toLowerCase() === team.teamName.toLowerCase());
+                if (phaseTeam) {
+                    team.wwcd = phaseTeam.wwcd || 0;
+                }
+            });
+            console.log("Updated WWCD from phase.standings", standings.map(s => `${s.teamName}: ${s.wwcd}`));
+        }
+
+        console.log("Teams data available:", Object.keys(teams).length);
+        console.log("Standings:", standings.map(s => `${s.teamName} (Kills: ${s.kills}, Place: ${s.placementPoints}, Total: ${s.points}, Rank: ${s.rank})`));
+
+        if (standings.length > 0) {
+            renderScoreboard(standings, teams, subtitle, data, false);
+        } else {
+            renderNoData(false);
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        if (lastData) {
+            let standings = [];
+            let teams = {};
+            let subtitle = "NO DATA (using cached data)";
+            const matchStatus = lastData.match_state?.status || 'idle';
+
+            if (matchStatus === 'live' && lastData.current_match?.teams && Object.keys(lastData.current_match.teams).length > 0) {
+                teams = lastData.current_match.teams;
+                subtitle = "LIVE STANDINGS (using cached data)";
+                standings = Object.values(teams).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: team.rank || 0
+                }));
+            } else if (lastData.matches?.length > 0) {
+                const latestMatch = lastData.matches[lastData.matches.length - 1];
+                teams = {
+                    ...(latestMatch?.teams || {}),
+                    ...(latestMatch?.missing_teams || []).reduce((acc, team) => {
+                        acc[team.id] = {
+                            id: team.id,
+                            name: team.name || 'Unknown Team',
+                            logo: team.logo || 'https://placehold.co/50x50/A0522D/ffffff?text=Logo',
+                            kills: team.kills || 0,
+                            placementPointsLive: team.placementPoints || team.placementPointsLive || 0,
+                            rank: team.rank || 'MISS'
+                        };
+                        return acc;
+                    }, {})
+                };
+                subtitle = "PREVIOUS MATCH (using cached data)";
+                const activeTeams = Object.values(latestMatch?.teams || {}).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: team.rank || 0
+                }));
+                const missingTeams = (latestMatch?.missing_teams || []).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPoints || team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPoints || team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: 'MISS'
+                }));
+                standings = [...activeTeams, ...missingTeams];
+            } else {
+                teams = lastData.current_match?.teams || {};
+                subtitle = "CURRENT STANDINGS (using cached data)";
+                standings = Object.values(teams).map(team => ({
+                    teamId: team.id,
+                    teamName: team.name || 'Unknown Team',
+                    kills: team.kills || 0,
+                    placementPoints: team.placementPointsLive || 0,
+                    points: (team.kills || 0) + (team.placementPointsLive || 0),
+                    wwcd: 0,
+                    rank: team.rank || 0
+                }));
+            }
+
+            standings.sort((a, b) => {
+                if (a.rank === 'MISS' && b.rank !== 'MISS') return 1;
+                if (b.rank === 'MISS' && a.rank !== 'MISS') return -1;
+                if (a.rank === 'MISS' && b.rank === 'MISS') return 0;
+                return (b.points !== a.points) ? (b.points - a.points) : (b.kills - a.kills);
+            });
+
+            standings = standings.slice(0, 25);
+
+            if (lastData.phase?.standings) {
+                standings.forEach(team => {
+                    const phaseTeam = lastData.phase.standings.find(pt => pt.teamName.toLowerCase() === team.teamName.toLowerCase());
+                    if (phaseTeam) {
+                        team.wwcd = phaseTeam.wwcd || 0;
+                    }
+                });
+            }
+
+            if (standings.length > 0) {
+                renderScoreboard(standings, teams, subtitle, lastData, true);
+            } else {
+                renderNoData(true);
+            }
+        } else {
+            renderNoData(false);
+        }
+        setTimeout(fetchData, retryDelay);
+    }
+}
+
+function findTeamByName(teams, teamName) {
+    if (!teams || !teamName) {
+        console.warn(`findTeamByName: Invalid input - teams: ${!!teams}, teamName: ${teamName}`);
+        return null;
+    }
+    
+    for (const [teamId, teamData] of Object.entries(teams)) {
+        if (teamData.name && teamData.name.toLowerCase() === teamName.toLowerCase()) {
+            return teamData;
+        }
+    }
+    
+    console.warn(`No team found for name: ${teamName}`);
+    return null;
+}
+
+function getTeamLogo(teamName, teams) {
+    const teamData = findTeamByName(teams, teamName);
+    return teamData?.logo || 'https://placehold.co/50x50/A0522D/ffffff?text=Logo';
+}
+
+function renderScoreboard(standings, teams, subtitle, data, isCached = false) {
+    const teamListLeft = document.getElementById('team-list-left');
+    const teamListRight = document.getElementById('team-list-right');
+    const subtitleElement = document.getElementById('match-subtitle');
+
+    if (!subtitleElement) {
+        console.error("subtitleElement not found");
+        return;
+    }
+    if (!teamListLeft || !teamListRight) {
+        console.error("Team list elements not found");
+        return;
+    }
+
+    subtitleElement.textContent = subtitle;
+
+    teamListLeft.innerHTML = '';
+    teamListRight.innerHTML = '';
+
+    const teamsWithMatchTotals = standings.map(team => ({
+        ...team,
+        matchKills: team.kills,
+        placementPoints: team.placementPoints,
+        matchTotal: team.points,
+        wwcd: team.wwcd
+    }));
+
+    const sortedStandings = [...teamsWithMatchTotals].sort((a, b) => {
+        if (a.rank === 'MISS' && b.rank !== 'MISS') return 1;
+        if (b.rank === 'MISS' && a.rank !== 'MISS') return -1;
+        if (a.rank === 'MISS' && b.rank === 'MISS') return 0;
+        if (b.matchTotal !== a.matchTotal) return b.matchTotal - a.matchTotal;
+        return b.matchKills - a.matchKills;
+    });
+
+    const headerHtml = `
+      <li class="list-header">
+        <div class="list-header-rank">#</div>
+        <div class="list-header-name">TEAM</div>
+        <div class="list-header-stats">
+          <div style="width:50px; text-align:center;">ELIM</div>
+          <div style="width:70px; text-align:center;">PLACE</div>
+          <div style="width:50px; text-align:center;">TOTAL</div>
+        </div>
+      </li>
+    `;
+    
+    teamListLeft.innerHTML = headerHtml;
+    teamListRight.innerHTML = headerHtml;
+
+    const midPoint = Math.ceil(sortedStandings.length / 2);
+    const leftColumnTeams = sortedStandings.slice(0, midPoint);
+    const rightColumnTeams = sortedStandings.slice(midPoint);
+
+    const renderTeamItem = (team, overallIndex) => {
+        const li = document.createElement('li');
+        li.className = 'team-item';
+        
+        console.log(`Team ${team.teamName}: Match kills=${team.matchKills}, Placement points=${team.placementPoints}, Total=${team.matchTotal}, Rank=${team.rank}`);
+        
+        li.innerHTML = `
+          <div class="team-rank">${team.rank === 'MISS' ? 'MISS' : `#${overallIndex + 1}`}</div>
+          <div class="team-name-column">
+            <img src="${getTeamLogo(team.teamName, teams)}" class="team-logo" 
+                 onerror="this.src='https://placehold.co/25x25/A0522D/ffffff?text=L'">
+            <span>${team.teamName}</span>
+          </div>
+          <div class="team-stats">
+            <span style="width:50px;text-align:center;">${team.matchKills}</span>
+            <span style="width:70px;text-align:center;">${team.placementPoints}</span>
+            <span style="width:50px;text-align:center;">${team.matchTotal}</span>
+          </div>
+        `;
+        return li;
+    };
+
+    leftColumnTeams.forEach((team, index) => teamListLeft.appendChild(renderTeamItem(team, index)));
+    rightColumnTeams.forEach((team, index) => teamListRight.appendChild(renderTeamItem(team, index + midPoint)));
+}
+
+function renderNoData(isCached = false) {
+    const subtitle = document.getElementById('match-subtitle');
+    const teamListLeft = document.getElementById('team-list-left');
+    
+    if (subtitle) subtitle.textContent = isCached ? 'No match data available (using cached data)' : 'No match data available';
+    if (teamListLeft) teamListLeft.innerHTML = `<li style="text-align: center; padding: 20px; color: #ccc;">${isCached ? 'Waiting for match data (using cached data)...' : 'Waiting for match data...'}</li>`;
+    if (document.getElementById('team-list-right')) document.getElementById('team-list-right').innerHTML = '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetchData();
+    setInterval(fetchData, 2000);
+});
+</script>
+
+</body>
+</html>
