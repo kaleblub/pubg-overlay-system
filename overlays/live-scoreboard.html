@@ -9,6 +9,10 @@
     /* Inter font is a great default for a clean, modern look */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
    
+    /* html {
+      font-size: 16px;
+    } */
+
     /* Overall styling for the body */
     body {
       background-color: transparent;
@@ -24,7 +28,7 @@
    
     /* Main container for the scoreboard */
     .scoreboard-container {
-      width: 600px;
+      width: 500px;
       max-width: 95%;
       border-radius: 12px;
       overflow: hidden;
@@ -35,7 +39,7 @@
     /* Header row styling */
     .header {
       display: grid;
-      grid-template-columns: 50px 1fr 80px 120px 80px;
+      grid-template-columns: 30px 1fr 70px 100px 70px;
       align-items: center;
       padding: 12px 0px;
       font-weight: bold;
@@ -60,7 +64,7 @@
     /* Team row styling */
     .team-row {
       display: grid;
-      grid-template-columns: 50px 1fr 80px 120px 80px;
+      grid-template-columns: 30px 1fr 70px 100px 70px;
       align-items: stretch;
       padding: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -81,7 +85,7 @@
     
     .rank-cell {
       font-weight: bold;
-      font-size: 1.1em;
+      font-size: 1em;
       text-align: center;
       background-color: #b5a420;
       color: #ffffff;
@@ -109,9 +113,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 5px;
+      /* padding: 5px 5px; */
       font-weight: bold;
-      padding-left: 10px;
+      /* padding-left: 10px; */
     }
 
     .points-cell {
@@ -124,7 +128,7 @@
       justify-content: center;
       align-items: center;
       padding: 5px 5px;
-      padding-left: 10px;
+      /* padding-left: 10px; */
     }
     
     /* Player status bar and health bar styling */
@@ -159,7 +163,7 @@
       align-items: center;
       font-weight: bold;
       color: #e74c3c;
-      font-size: 1em;
+      font-size: 0.9em;
     }
     
     .status-text {
@@ -174,7 +178,7 @@
         color: #e74c3c;
         font-weight: bold;
         white-space: nowrap;
-        font-size: 0.9em;
+        font-size: 0.8em;
     }
   </style>
 </head>
