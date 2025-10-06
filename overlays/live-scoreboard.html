@@ -33,7 +33,7 @@
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      background-color: #23272a;
+      background-color: rgba(158, 202, 247, 0.2);
     }
    
     /* Header row styling */
@@ -124,7 +124,7 @@
     
     .player-status-cell {
       display: flex;
-      /* gap: 4px; */
+      gap: 2px;
       justify-content: center;
       align-items: center;
       padding: 5px 5px;
@@ -136,7 +136,7 @@
       width: 10px;
       height: 20px;
       background-color: #ffffff;
-      border: 1px solid #3d4045;
+      /* border: 1px solid #3d4045; */
       position: relative;
       overflow: hidden;
     }
@@ -200,10 +200,11 @@
 </div>
 
 <script>
-    let lastData = null; // Cache for last successful data
-    const jsonUrl = "/api/live_data"; // Relative URL for Flask endpoint
-    const defaultLogo = "/assets/default-team-logo.jpg"; // Relative URL for logo
-    const retryDelay = 5000; // Retry every 5s on failure
+    let lastData = null;
+    let currentStandings = [];
+    const jsonUrl = "/api/live_data";
+    const defaultLogo = "/assets/default-team-logo.jpg";
+    const retryDelay = 5000;
 
     const fetchData = async () => {
         try {
@@ -212,171 +213,9 @@
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            lastData = data; // Cache successful data
+            lastData = data;
 
-            // Debugging: Log the fetched data
             console.log('Fetched data:', JSON.stringify(data, null, 2));
-
-            const updateScoreboard = (standings, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus, isCached = false) => {
-                const teamsList = document.getElementById('teams-list');
-                teamsList.innerHTML = '';
-
-                if (!standings || standings.length === 0) {
-                    teamsList.innerHTML = `<div class="status-text">No teams data available${isCached ? ' (using cached data)' : ''}</div>`;
-                    return;
-                }
-
-                // Create mapping of team names to numeric IDs
-                const teamNameToId = {};
-                if (matchStatus === 'live' && currentMatchTeams) {
-                    Object.values(currentMatchTeams).forEach(team => {
-                        teamNameToId[team.name] = team.id;
-                    });
-                } else if (lastMatchTeams) {
-                    Object.values(lastMatchTeams).forEach(team => {
-                        teamNameToId[team.name] = team.id;
-                    });
-                }
-
-                // Sort standings: active teams by points then kills, missing teams at the bottom
-                standings.sort((a, b) => {
-                    if (a.teamId === 'MISS' && b.teamId !== 'MISS') return 1;
-                    if (b.teamId === 'MISS' && a.teamId !== 'MISS') return -1;
-                    if (a.teamId === 'MISS' && b.teamId === 'MISS') return 0;
-                    return (b.points !== a.points) ? (b.points - a.points) : (b.kills - a.kills);
-                });
-
-                // Cap at 25 teams
-                standings = standings.slice(0, 25);
-
-                // Loop through the standings data from the JSON
-                standings.forEach((team, index) => {
-                    const teamRow = document.createElement('div');
-                    teamRow.className = 'team-row';
-
-                    // Rank
-                    const rankCell = document.createElement('div');
-                    rankCell.className = 'rank-cell';
-                    rankCell.textContent = team.teamId === 'MISS' ? 'MISS' : index + 1;
-                    teamRow.appendChild(rankCell);
-
-                    // Find the team info by matching teamId to numeric ID
-                    let teamInfo = null;
-                    const numericId = teamNameToId[team.teamId]; // Map "IVS ESPORTS" to "13"
-                    if (matchStatus === 'live' && numericId && currentMatchTeams[numericId]) {
-                        teamInfo = currentMatchTeams[numericId];
-                    } else if (numericId && lastMatchTeams && lastMatchTeams[numericId]) {
-                        teamInfo = lastMatchTeams[numericId];
-                    }
-
-                    // Debug logging
-                    console.log({
-                        teamId: team.teamId,
-                        teamName: team.teamName,
-                        phaseKills: team.kills,
-                        numericId: numericId,
-                        teamInfo: teamInfo,
-                        currentMatchTeams: numericId ? currentMatchTeams[numericId] : null,
-                        lastMatchTeams: numericId && lastMatchTeams ? lastMatchTeams[numericId] : null,
-                        matchStatus: matchStatus,
-                        selectedKills: teamInfo?.kills ?? team.kills ?? 0
-                    });
-
-                    // Team Name with Logo
-                    const teamNameCell = document.createElement('div');
-                    teamNameCell.className = 'team-name-cell';
-
-                    // Add team logo if available from either standing or teamInfo
-                    const teamLogo = teamInfo?.logo || team.teamLogo || defaultLogo;
-                    let teamAbbreviation = team.teamName;
-
-                    if (teamLogo && teamLogo !== defaultLogo) {
-                        teamNameCell.innerHTML += `<img src="${teamLogo}" onerror="this.src='${defaultLogo}'" alt="${team.teamName} Logo">`;
-                        const logoFilename = teamLogo.split('/').pop();
-                        if (logoFilename) {
-                            teamAbbreviation = logoFilename.split('.')[0].toUpperCase();
-                        }
-                    } else {
-                        teamNameCell.innerHTML += `<img src="${defaultLogo}" alt="${team.teamName} Logo">`;
-                    }
-
-                    teamNameCell.innerHTML += `<span>${teamAbbreviation}</span>`;
-                    teamRow.appendChild(teamNameCell);
-
-                    // KILLS - Prioritize match-specific kills
-                    let killsToDisplay = teamInfo?.kills ?? team.kills ?? 0;
-
-                    const killsCell = document.createElement('div');
-                    killsCell.className = 'kills-cell';
-                    killsCell.textContent = killsToDisplay;
-                    teamRow.appendChild(killsCell);
-
-                    // STATUS COLUMN - Player health bars or "MISS"
-                    const statusCell = document.createElement('div');
-                    statusCell.className = 'player-status-cell';
-
-                    // Check if the team is missing
-                    if (teamInfo && teamInfo.missing) {
-                        const missingText = document.createElement('div');
-                        missingText.className = 'missing-text';
-                        missingText.textContent = 'M I S S';
-                        statusCell.appendChild(missingText);
-                    } else {
-                        // Display player health bars based on status
-                        let playersToUse = currentPlayers;
-                        if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && lastMatchTeams) {
-                            playersToUse = lastMatchTeams[numericId]?.players || [];
-                        }
-
-                        if (teamInfo && teamInfo.players && teamInfo.players.length > 0) {
-                            teamInfo.players.forEach(playerId => {
-                                const playerInfo = playersToUse[playerId];
-
-                                if (playerInfo && playerInfo.live && playerInfo.live.isAlive && matchStatus === 'live') {
-                                    const statusBar = document.createElement('div');
-                                    statusBar.className = 'status-bar';
-                                    statusBar.title = `${playerInfo.name}: ${playerInfo.live.health} HP`;
-
-                                    const statusBarFill = document.createElement('div');
-                                    statusBarFill.className = 'status-bar-fill';
-
-                                    const healthPercentage = (playerInfo.live.health / playerInfo.live.healthMax) * 100;
-                                    if (healthPercentage <= 25) {
-                                        statusBarFill.className += ' low-health';
-                                    }
-                                    statusBarFill.style.height = `${healthPercentage}%`;
-
-                                    statusBar.appendChild(statusBarFill);
-                                    statusCell.appendChild(statusBar);
-                                } else {
-                                    const statusX = document.createElement('div');
-                                    statusX.className = 'status-x';
-                                    statusX.textContent = 'X';
-                                    statusCell.appendChild(statusX);
-                                }
-                            });
-                        } else {
-                            for (let i = 0; i < 4; i++) {
-                                const statusX = document.createElement('div');
-                                statusX.className = 'status-x';
-                                statusX.textContent = 'X';
-                                statusCell.appendChild(statusX);
-                            }
-                        }
-                    }
-                    teamRow.appendChild(statusCell);
-
-                    // POINTS - Use phase total points
-                    const totalPoints = team.points || 0;
-
-                    const pointsCell = document.createElement('div');
-                    pointsCell.className = 'points-cell';
-                    pointsCell.textContent = totalPoints;
-                    teamRow.appendChild(pointsCell);
-
-                    teamsList.appendChild(teamRow);
-                });
-            };
 
             const matchStatus = data.match_state?.status || 'idle';
             let currentMatchTeams = data.current_match?.teams || {};
@@ -399,7 +238,10 @@
                     matchStatus
                 );
             } else {
-                document.getElementById("teams-list").innerHTML = `<div class="status-text">No standings data available${isCached ? ' (using cached data)' : ''}</div>`;
+                const teamsList = document.getElementById("teams-list");
+                if (!teamsList.querySelector('.status-text')) {
+                    teamsList.innerHTML = `<div class="status-text">No standings data available</div>`;
+                }
             }
         } catch (error) {
             console.error("Failed to fetch or parse JSON:", error);
@@ -423,20 +265,237 @@
                         matchStatus,
                         true
                     );
-                } else {
-                    document.getElementById("teams-list").innerHTML = `<div class="status-text">No standings data available (using cached data)</div>`;
                 }
             } else {
-                document.getElementById("teams-list").innerHTML = `<div class="status-text">Waiting for server data...</div>`;
+                const teamsList = document.getElementById("teams-list");
+                if (!teamsList.querySelector('.status-text')) {
+                    teamsList.innerHTML = `<div class="status-text">Waiting for server data...</div>`;
+                }
             }
             setTimeout(fetchData, retryDelay);
         }
     };
 
+    const updateScoreboard = (standings, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus, isCached = false) => {
+        const teamsList = document.getElementById('teams-list');
+
+        if (!standings || standings.length === 0) {
+            if (!teamsList.querySelector('.status-text')) {
+                teamsList.innerHTML = `<div class="status-text">No teams data available${isCached ? ' (using cached data)' : ''}</div>`;
+            }
+            return;
+        }
+
+        const teamNameToId = {};
+        if (matchStatus === 'live' && currentMatchTeams) {
+            Object.values(currentMatchTeams).forEach(team => {
+                teamNameToId[team.name] = team.id;
+            });
+        } else if (lastMatchTeams) {
+            Object.values(lastMatchTeams).forEach(team => {
+                teamNameToId[team.name] = team.id;
+            });
+        }
+
+        standings.sort((a, b) => {
+            if (a.teamId === 'MISS' && b.teamId !== 'MISS') return 1;
+            if (b.teamId === 'MISS' && a.teamId !== 'MISS') return -1;
+            if (a.teamId === 'MISS' && b.teamId === 'MISS') return 0;
+            return (b.points !== a.points) ? (b.points - a.points) : (b.kills - a.kills);
+        });
+
+        standings = standings.slice(0, 25);
+
+        // Check if standings order changed
+        const standingsChanged = currentStandings.length !== standings.length || 
+            standings.some((team, idx) => currentStandings[idx]?.teamId !== team.teamId);
+
+        if (standingsChanged) {
+            // Full rebuild only when order changes
+            teamsList.innerHTML = '';
+            standings.forEach((team, index) => {
+                const teamRow = buildTeamRow(team, index, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus);
+                teamsList.appendChild(teamRow);
+            });
+            currentStandings = standings;
+        } else {
+            // Update only changed values - keeps images in place
+            standings.forEach((team, index) => {
+                const existingRow = teamsList.children[index];
+                if (existingRow) {
+                    updateTeamRow(existingRow, team, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus);
+                }
+            });
+        }
+    };
+
+    function buildTeamRow(team, index, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus) {
+        const teamRow = document.createElement('div');
+        teamRow.className = 'team-row';
+        teamRow.dataset.teamId = team.teamId;
+
+        const rankCell = document.createElement('div');
+        rankCell.className = 'rank-cell';
+        rankCell.textContent = team.teamId === 'MISS' ? 'MISS' : index + 1;
+        teamRow.appendChild(rankCell);
+
+        let teamInfo = null;
+        const numericId = teamNameToId[team.teamId];
+        if (matchStatus === 'live' && numericId && currentMatchTeams[numericId]) {
+            teamInfo = currentMatchTeams[numericId];
+        } else if (numericId && lastMatchTeams && lastMatchTeams[numericId]) {
+            teamInfo = lastMatchTeams[numericId];
+        }
+
+        const teamNameCell = document.createElement('div');
+        teamNameCell.className = 'team-name-cell';
+
+        const teamLogo = teamInfo?.logo || team.teamLogo || defaultLogo;
+        let teamAbbreviation = team.teamName;
+
+        const logoImg = document.createElement('img');
+        logoImg.src = teamLogo;
+        logoImg.alt = `${team.teamName} Logo`;
+        logoImg.onerror = function() { this.src = defaultLogo; };
+        teamNameCell.appendChild(logoImg);
+
+        if (teamLogo && teamLogo !== defaultLogo) {
+            const logoFilename = teamLogo.split('/').pop();
+            if (logoFilename) {
+                teamAbbreviation = logoFilename.split('.')[0].toUpperCase();
+            }
+        }
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = teamAbbreviation;
+        teamNameCell.appendChild(nameSpan);
+        teamRow.appendChild(teamNameCell);
+
+        let killsToDisplay = teamInfo?.kills ?? team.kills ?? 0;
+
+        const killsCell = document.createElement('div');
+        killsCell.className = 'kills-cell';
+        killsCell.textContent = killsToDisplay;
+        teamRow.appendChild(killsCell);
+
+        const statusCell = document.createElement('div');
+        statusCell.className = 'player-status-cell';
+
+        if (teamInfo && teamInfo.missing) {
+            const missingText = document.createElement('div');
+            missingText.className = 'missing-text';
+            missingText.textContent = 'M I S S';
+            statusCell.appendChild(missingText);
+        } else {
+            let playersToUse = currentPlayers;
+            if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && lastMatchTeams) {
+                playersToUse = lastMatchTeams[numericId]?.players || [];
+            }
+
+            if (teamInfo && teamInfo.players && teamInfo.players.length > 0) {
+                teamInfo.players.forEach(playerId => {
+                    const playerInfo = playersToUse[playerId];
+
+                    if (playerInfo && playerInfo.live && playerInfo.live.isAlive && matchStatus === 'live') {
+                        const statusBar = document.createElement('div');
+                        statusBar.className = 'status-bar';
+                        statusBar.title = `${playerInfo.name}: ${playerInfo.live.health} HP`;
+
+                        const statusBarFill = document.createElement('div');
+                        statusBarFill.className = 'status-bar-fill';
+
+                        const healthPercentage = (playerInfo.live.health / playerInfo.live.healthMax) * 100;
+                        if (healthPercentage <= 25) {
+                            statusBarFill.className += ' low-health';
+                        }
+                        statusBarFill.style.height = `${healthPercentage}%`;
+
+                        statusBar.appendChild(statusBarFill);
+                        statusCell.appendChild(statusBar);
+                    } else {
+                        const statusX = document.createElement('div');
+                        statusX.className = 'status-x';
+                        statusX.textContent = 'X';
+                        statusCell.appendChild(statusX);
+                    }
+                });
+            } else {
+                for (let i = 0; i < 4; i++) {
+                    const statusX = document.createElement('div');
+                    statusX.className = 'status-x';
+                    statusX.textContent = 'X';
+                    statusCell.appendChild(statusX);
+                }
+            }
+        }
+        teamRow.appendChild(statusCell);
+
+        const totalPoints = team.points || 0;
+
+        const pointsCell = document.createElement('div');
+        pointsCell.className = 'points-cell';
+        pointsCell.textContent = totalPoints;
+        teamRow.appendChild(pointsCell);
+
+        return teamRow;
+    }
+
+    function updateTeamRow(teamRow, team, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus) {
+        let teamInfo = null;
+        const numericId = teamNameToId[team.teamId];
+        if (matchStatus === 'live' && numericId && currentMatchTeams[numericId]) {
+            teamInfo = currentMatchTeams[numericId];
+        } else if (numericId && lastMatchTeams && lastMatchTeams[numericId]) {
+            teamInfo = lastMatchTeams[numericId];
+        }
+
+        const killsCell = teamRow.querySelector('.kills-cell');
+        const pointsCell = teamRow.querySelector('.points-cell');
+        const statusCell = teamRow.querySelector('.player-status-cell');
+
+        const killsToDisplay = teamInfo?.kills ?? team.kills ?? 0;
+        if (killsCell && killsCell.textContent !== killsToDisplay.toString()) {
+            killsCell.textContent = killsToDisplay;
+        }
+
+        const totalPoints = team.points || 0;
+        if (pointsCell && pointsCell.textContent !== totalPoints.toString()) {
+            pointsCell.textContent = totalPoints;
+        }
+
+        // Update health bars for live matches
+        if (statusCell && matchStatus === 'live' && teamInfo && !teamInfo.missing) {
+            let playersToUse = currentPlayers;
+            if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && lastMatchTeams) {
+                playersToUse = lastMatchTeams[numericId]?.players || [];
+            }
+
+            if (teamInfo.players && teamInfo.players.length > 0) {
+                const statusBars = statusCell.querySelectorAll('.status-bar');
+                teamInfo.players.forEach((playerId, idx) => {
+                    const playerInfo = playersToUse[playerId];
+                    if (statusBars[idx] && playerInfo && playerInfo.live && playerInfo.live.isAlive) {
+                        const fill = statusBars[idx].querySelector('.status-bar-fill');
+                        if (fill) {
+                            const healthPercentage = (playerInfo.live.health / playerInfo.live.healthMax) * 100;
+                            fill.style.height = `${healthPercentage}%`;
+                            if (healthPercentage <= 25) {
+                                fill.classList.add('low-health');
+                            } else {
+                                fill.classList.remove('low-health');
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         fetchData();
-        setInterval(fetchData, 5000); // Poll every 5 seconds
+        setInterval(fetchData, 5000);
     });
 </script>
+
 </body>
 </html>

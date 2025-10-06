@@ -8,7 +8,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
         body {
-            /* The background color is transparent to allow this to be used as an overlay */
             background-color: transparent; 
             font-family: 'Roboto', sans-serif;
             color: white;
@@ -45,7 +44,6 @@
             color: #1d3148;
         }
         
-        /* Top Players specific styles */
         .players-container {
             display: flex;
             justify-content: center;
@@ -134,19 +132,16 @@
 </head>
 <body>
 
-    <!-- Live Match Top Players Overlay -->
     <div id="top-players" class="overlay-container">
         <h1 class="overlay-title">Live Match Top Players</h1>
         <h2 class="overlay-subtitle">CURRENT GAME</h2>
-        <div class="players-container" id="top-players-container">
-            <!-- Data will be populated here -->
-        </div>
+        <div class="players-container" id="top-players-container"></div>
     </div>
     
 <script>
-const jsonUrl = 'http://localhost:5000/live_scoreboard.json';
+const jsonUrl = '/api/live_data';
+let currentPlayers = [];
 
-// Helper function to handle fetch retries (Good for stability!)
 async function retryFetch(url, options = {}, retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
@@ -164,11 +159,8 @@ async function retryFetch(url, options = {}, retries = 3) {
     }
 }
 
-// Function to find team by player ID
 function findTeamByPlayerId(playerId, teamsData) {
     if (!teamsData) return null;
-    
-    // teamsData is an object, so iterate through its values
     for (const team of Object.values(teamsData)) {
         if (team.players && team.players.includes(playerId)) {
             return team;
@@ -177,11 +169,8 @@ function findTeamByPlayerId(playerId, teamsData) {
     return null;
 }
 
-// Function to find team by name (for previous match data)
 function findTeamByName(teamName, teamsData) {
     if (!teamsData || !teamName) return null;
-    
-    // teamsData is an object, so iterate through its values
     for (const team of Object.values(teamsData)) {
         if (team.name && team.name.toLowerCase() === teamName.toLowerCase()) {
             return team;
@@ -190,14 +179,11 @@ function findTeamByName(teamName, teamsData) {
     return null;
 }
 
-// --- CORE LOGIC TO PROCESS PLAYERS ---
 function processPlayers(playersMap, teamsMap) {
     if (!playersMap || Object.keys(playersMap).length === 0) return [];
     
     const playersWithTeam = Object.values(playersMap).map(p => {
         const team = findTeamByPlayerId(p.id, teamsMap);
-        
-        // Ensure stats exist, or default to an empty object
         const stats = p.stats || {}; 
 
         return {
@@ -212,7 +198,6 @@ function processPlayers(playersMap, teamsMap) {
         };
     });
 
-    // Sort by kills (desc), then damage (desc)
     playersWithTeam.sort((a, b) => {
         if (b.kills !== a.kills) return b.kills - a.kills;
         return b.damage - a.damage;
@@ -221,7 +206,6 @@ function processPlayers(playersMap, teamsMap) {
     return playersWithTeam.slice(0, 5);
 }
 
-// --- MAIN FETCH AND DATA SELECTION ---
 async function fetchData() {
     try {
         const res = await retryFetch(jsonUrl);
@@ -231,87 +215,115 @@ async function fetchData() {
         let subtitle = "NO DATA";
         let matchStatus = data.match_state?.status || 'idle';
         
-        // 1. Check for LIVE data
-        if (matchStatus === 'live' && data.current_match) {
-            
-            // Check if there is meaningful data beyond default values (kills/damage > 0)
-            const hasStats = Object.values(data.current_match.players || {}).some(p => (p.stats?.kills || 0) > 0 || (p.stats?.damage || 0) > 0);
-            
-            // Use live data if status is 'live' AND we have stats
-            if (hasStats) {
+        if (matchStatus === 'live' && data.current_match && data.current_match.players) {
+            if (Object.keys(data.current_match.players).length > 0) {
                 topPlayersData = processPlayers(data.current_match.players, data.current_match.teams);
                 subtitle = "LIVE MATCH";
             }
         } 
         
-        // 2. If no live data found (status is idle OR live data is empty/default), check previous match
         if (topPlayersData.length === 0 && data.matches?.length > 0) {
-            
             const lastMatch = data.matches[data.matches.length - 1];
             
-            // Priority A: Use pre-calculated leaderboard from previous match data if available
             if (lastMatch.leaderboards?.currentMatchTopPlayers?.length > 0) {
                  topPlayersData = lastMatch.leaderboards.currentMatchTopPlayers.map(player => {
-                    // Try to find full team info (logo, name) using the teamName
                     const team = findTeamByName(player.teamName, lastMatch.teams);
                     return {
                         ...player,
-                        teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
-                        playerPhoto: player.playerPhoto || 'http://localhost:5000/assets/PUBG.png',
+                        teamLogo: team?.logo || '/assets/default-team-logo.jpg',
+                        playerPhoto: player.playerPhoto || '/assets/PUBG.png',
                         teamName: team?.name || player.teamName || 'Unknown Team'
                     };
                 }).slice(0, 5);
                 subtitle = "PREVIOUS MATCH LEADERBOARD";
-                
             } else {
-                // Priority B: Generate leaderboard from raw players/teams data in the previous match
                 topPlayersData = processPlayers(lastMatch.players, lastMatch.teams);
                 subtitle = "PREVIOUS MATCH SUMMARY";
             }
         }
         
-        // 3. Final Fallback if still no players found (e.g., initial load before first match)
         if (topPlayersData.length === 0) {
              subtitle = "WAITING FOR DATA";
         }
 
-        document.querySelector('.overlay-subtitle').textContent = subtitle;
+        const subtitleEl = document.querySelector('.overlay-subtitle');
+        if (subtitleEl.textContent !== subtitle) {
+            subtitleEl.textContent = subtitle;
+        }
+        
         updateTopPlayers(topPlayersData);
         
     } catch (error) {
         console.error('Error fetching data:', error);
-        document.querySelector('.overlay-subtitle').textContent = 'ERROR LOADING DATA';
-        updateTopPlayers([]);
+        const subtitleEl = document.querySelector('.overlay-subtitle');
+        if (subtitleEl.textContent !== 'ERROR LOADING DATA') {
+            subtitleEl.textContent = 'ERROR LOADING DATA';
+        }
     }
 }
 
-// --- RENDER FUNCTION ---
 function updateTopPlayers(players) {
     const container = document.getElementById('top-players-container');
-    container.innerHTML = '';
-
+    
     if (!players.length) {
-        container.innerHTML = `<p style="color:red; text-align:center;">No player data available.</p>`;
+        if (container.children.length !== 1 || !container.querySelector('p')) {
+            container.innerHTML = `<p style="color:red; text-align:center;">No player data available.</p>`;
+        }
         return;
     }
 
-    players.forEach((player, index) => {
-        const playerCard = document.createElement('div');
-        playerCard.className = 'player-card';
-        playerCard.innerHTML = `
-            <div class="player-rank">#${index + 1}</div>
-            <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='http://localhost:5000/assets/default-team-logo.jpg'">
-            <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='http://localhost:5000/assets/PUBG.png'">
-            <div class="player-name-bg">
-                <div class="player-name">${player.playerName}</div>
-                <div class="team-name">${player.teamName}</div>
-            </div>
-            <div class="elimination-count">Eliminations: ${player.kills}</div>
-            <div class="damage-count">Damage: ${player.damage.toFixed(0)}</div>
-            <div class="knockout-count">Knockouts: ${player.knockouts}</div>
-        `;
-        container.appendChild(playerCard);
-    });
+    // Check if we need to rebuild the entire structure
+    const needsRebuild = currentPlayers.length !== players.length || 
+        players.some((player, idx) => currentPlayers[idx]?.id !== player.id);
+
+    if (needsRebuild) {
+        // Full rebuild only when player order/count changes
+        container.innerHTML = '';
+        players.forEach((player, index) => {
+            const playerCard = document.createElement('div');
+            playerCard.className = 'player-card';
+            playerCard.dataset.playerId = player.id;
+            playerCard.innerHTML = `
+                <div class="player-rank">#${index + 1}</div>
+                <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='http://localhost:5000/assets/default-team-logo.jpg'">
+                <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='http://localhost:5000/assets/PUBG.png'">
+                <div class="player-name-bg">
+                    <div class="player-name">${player.playerName}</div>
+                    <div class="team-name">${player.teamName}</div>
+                </div>
+                <div class="elimination-count">Eliminations: ${player.kills}</div>
+                <div class="damage-count">Damage: ${player.damage.toFixed(0)}</div>
+                <div class="knockout-count">Knockouts: ${player.knockouts}</div>
+            `;
+            container.appendChild(playerCard);
+        });
+        currentPlayers = players;
+    } else {
+        // Only update stats, keeping images intact
+        players.forEach((player, index) => {
+            const card = container.children[index];
+            if (!card) return;
+            
+            const eliminationCount = card.querySelector('.elimination-count');
+            const damageCount = card.querySelector('.damage-count');
+            const knockoutCount = card.querySelector('.knockout-count');
+            
+            const newElimText = `Eliminations: ${player.kills}`;
+            const newDamageText = `Damage: ${player.damage.toFixed(0)}`;
+            const newKnockoutText = `Knockouts: ${player.knockouts}`;
+            
+            if (eliminationCount && eliminationCount.textContent !== newElimText) {
+                eliminationCount.textContent = newElimText;
+            }
+            if (damageCount && damageCount.textContent !== newDamageText) {
+                damageCount.textContent = newDamageText;
+            }
+            if (knockoutCount && knockoutCount.textContent !== newKnockoutText) {
+                knockoutCount.textContent = newKnockoutText;
+            }
+        });
+        currentPlayers = players;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

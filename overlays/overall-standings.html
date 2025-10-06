@@ -8,7 +8,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
         body {
-            /* Transparent background for use as an overlay */
             background-color: transparent; 
             font-family: 'Roboto', sans-serif;
             color: white;
@@ -56,7 +55,6 @@
             max-width: 1200px;
         }
         
-        /* Styles for the two main columns */
         .left-column, .right-column {
             display: flex;
             flex-direction: column;
@@ -64,7 +62,6 @@
             width: 50%;
         }
 
-        /* Styles for the rest of the teams list */
         .team-list {
             list-style: none;
             padding: 0;
@@ -162,7 +159,9 @@
     </div>
     
 <script>
-const API_URL = 'http://localhost:5000/live_scoreboard.json';
+const API_URL = '/api/live_data';
+const defaultLogo = "/assets/default-team-logo.jpg";
+let currentStandings = [];
 
 async function fetchData() {
   try {
@@ -176,7 +175,6 @@ async function fetchData() {
     let teamsData = {};
     let subtitle = "TOURNAMENT STANDINGS";
     
-    // Determine which team data to use
     if (matchStatus === 'live' && data.match?.teams && Object.keys(data.match.teams).length > 0) {
       teamsData = data.match.teams;
       subtitle = "LIVE STANDINGS";
@@ -185,10 +183,11 @@ async function fetchData() {
       subtitle = "PREVIOUS MATCH";
     }
     
-    // Update subtitle
-    document.getElementById('match-subtitle').textContent = subtitle;
+    const subtitleEl = document.getElementById('match-subtitle');
+    if (subtitleEl && subtitleEl.textContent !== subtitle) {
+      subtitleEl.textContent = subtitle;
+    }
 
-    // Function to find team by name
     const findTeamByName = (teamName) => {
       for (const [teamId, teamData] of Object.entries(teamsData)) {
         if (teamData.name && teamData.name === teamName) {
@@ -196,7 +195,6 @@ async function fetchData() {
         }
       }
       
-      // Try partial match if exact match fails
       const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
       for (const [teamId, teamData] of Object.entries(teamsData)) {
         if (!teamData.name) continue;
@@ -210,16 +208,14 @@ async function fetchData() {
       return null;
     };
 
-    // Merge team info with standings
     const standings = standingsRaw.map(teamStanding => {
       const teamInfo = findTeamByName(teamStanding.teamName) || {};
       return {
         ...teamStanding,
-        teamLogo: teamInfo.logo || 'https://placehold.co/50x50/A0522D/ffffff?text=Logo'
+        teamLogo: teamInfo.logo || defaultLogo
       };
     });
 
-    // Sort by points then kills
     standings.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       return (b.kills || 0) - (a.kills || 0);
@@ -234,9 +230,7 @@ async function fetchData() {
 function renderScoreboard(teams) {
   const teamListLeft = document.getElementById('team-list-left');
   const teamListRight = document.getElementById('team-list-right');
-  teamListLeft.innerHTML = '';
-  teamListRight.innerHTML = '';
-
+  
   const headerHtml = `
     <li class="list-header">
       <div class="list-header-rank">#</div>
@@ -249,39 +243,78 @@ function renderScoreboard(teams) {
       </div>
     </li>
   `;
-  teamListLeft.innerHTML = headerHtml;
-  teamListRight.innerHTML = headerHtml;
 
-  const mid = Math.ceil(teams.length / 2);
-  const left = teams.slice(0, mid);
-  const right = teams.slice(mid);
+  const standingsChanged = currentStandings.length !== teams.length || 
+    teams.some((team, idx) => currentStandings[idx]?.teamName !== team.teamName);
 
-  const renderTeamItem = (team, i) => {
-    const li = document.createElement('li');
-    li.className = 'team-item';
-    li.innerHTML = `
-      <div class="team-rank">#${i}</div>
-      <div class="team-name-column">
-        <img src="${team.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='https://placehold.co/25x25/A0522D/ffffff?text=L'">
-        <span>${team.teamName}</span>
-      </div>
-      <div class="team-stats">
-        <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
-        <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
-        <span style="width:50px;text-align:center;">${team.kills || 0}</span>
-        <span style="width:50px;text-align:center;">${team.points || 0}</span>
-      </div>
-    `;
-    return li;
-  };
+  if (standingsChanged) {
+    // Full rebuild
+    teamListLeft.innerHTML = headerHtml;
+    teamListRight.innerHTML = headerHtml;
+
+    const mid = Math.ceil(teams.length / 2);
+    const left = teams.slice(0, mid);
+    const right = teams.slice(mid);
+
+    left.forEach((team, i) => {
+      teamListLeft.appendChild(renderTeamItem(team, i + 1));
+    });
+
+    right.forEach((team, i) => {
+      teamListRight.appendChild(renderTeamItem(team, mid + i + 1));
+    });
+    
+    currentStandings = teams;
+  } else {
+    // Update only stats
+    const mid = Math.ceil(teams.length / 2);
+    
+    teams.forEach((team, index) => {
+      const list = index < mid ? teamListLeft : teamListRight;
+      const listIndex = index < mid ? index + 1 : (index - mid + 1);
+      const teamItem = list.children[listIndex];
+      if (teamItem) {
+        updateTeamItem(teamItem, team);
+      }
+    });
+  }
+}
+
+function renderTeamItem(team, rank) {
+  const li = document.createElement('li');
+  li.className = 'team-item';
+  li.dataset.teamName = team.teamName;
   
-  left.forEach((team, i) => {
-    teamListLeft.appendChild(renderTeamItem(team, i + 1));
-  });
+  li.innerHTML = `
+    <div class="team-rank">#${rank}</div>
+    <div class="team-name-column">
+      <img src="${team.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='https://placehold.co/25x25/A0522D/ffffff?text=L'">
+      <span>${team.teamName}</span>
+    </div>
+    <div class="team-stats">
+      <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
+      <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
+      <span style="width:50px;text-align:center;">${team.kills || 0}</span>
+      <span style="width:50px;text-align:center;">${team.points || 0}</span>
+    </div>
+  `;
+  return li;
+}
 
-  right.forEach((team, i) => {
-    teamListRight.appendChild(renderTeamItem(team, mid + i + 1));
-  });
+function updateTeamItem(teamItem, team) {
+  const stats = teamItem.querySelectorAll('.team-stats span');
+  if (stats[0] && stats[0].textContent !== (team.wwcd || 0).toString()) {
+    stats[0].textContent = team.wwcd || 0;
+  }
+  if (stats[1] && stats[1].textContent !== (team.placementPoints || 0).toString()) {
+    stats[1].textContent = team.placementPoints || 0;
+  }
+  if (stats[2] && stats[2].textContent !== (team.kills || 0).toString()) {
+    stats[2].textContent = team.kills || 0;
+  }
+  if (stats[3] && stats[3].textContent !== (team.points || 0).toString()) {
+    stats[3].textContent = team.points || 0;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -8,7 +8,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
         body {
-            /* The background color is transparent to allow this to be used as an overlay */
             background-color: transparent; 
             font-family: 'Roboto', sans-serif;
             color: white;
@@ -45,7 +44,6 @@
             color: #1d3148;
         }
         
-        /* Top Players specific styles */
         .players-container {
             display: flex;
             justify-content: center;
@@ -135,19 +133,17 @@
 </head>
 <body>
 
-    <!-- Top Players Overlay -->
     <div id="top-players" class="overlay-container">
         <h1 class="overlay-title">Overall Top Players</h1>
         <h2 class="overlay-subtitle" id="tournament-subtitle">SEMI FINAL B</h2>
-        <div class="players-container" id="top-players-container">
-            <!-- Data will be populated here -->
-        </div>
+        <div class="players-container" id="top-players-container"></div>
     </div>
     
 <script>
-const API_URL = 'http://localhost:5000/live_scoreboard.json';
+const API_URL = '/api/live_data';
+const defaultLogo = "/assets/default-team-logo.jpg";
+let currentPlayers = [];
 
-// Function to find team by player ID
 function findTeamByPlayerId(playerId, teamsData) {
     if (!teamsData) return null;
     
@@ -159,18 +155,15 @@ function findTeamByPlayerId(playerId, teamsData) {
     return null;
 }
 
-// Function to find team by name (for previous match data)
 function findTeamByName(teamName, teamsData) {
     if (!teamsData || !teamName) return null;
     
-    // Try exact match first
     for (const [teamId, team] of Object.entries(teamsData)) {
         if (team.name && team.name === teamName) {
             return team;
         }
     }
     
-    // Try partial match
     const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
     for (const [teamId, team] of Object.entries(teamsData)) {
         if (!team.name) continue;
@@ -190,18 +183,13 @@ async function fetchOverallTopPlayers() {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    console.log("JSON data received:", data); // Debug log
-
     let topPlayers = [];
     let subtitle = "TOURNAMENT LEADERS";
 
-    // Check the correct location for allTimeTopPlayers
     if (data.phase?.allTimeTopPlayers && data.phase.allTimeTopPlayers.length > 0) {
       topPlayers = data.phase.allTimeTopPlayers;
       subtitle = "ALL-TIME LEADERS";
-      console.log("Found allTimeTopPlayers in phase:", topPlayers);
     } 
-    // If no allTimeTopPlayers found, try to generate from current match data
     else if (data.match?.players && Object.keys(data.match.players).length > 0) {
       const allPlayers = Object.values(data.match.players);
       topPlayers = allPlayers.map(p => ({
@@ -214,9 +202,7 @@ async function fetchOverallTopPlayers() {
         teamId: p.teamId
       }));
       subtitle = "CURRENT MATCH";
-      console.log("Generated from match players:", topPlayers);
     }
-    // If no current match data, try previous match data
     else if (data.previous?.players && Object.keys(data.previous.players).length > 0) {
       const allPlayers = Object.values(data.previous.players);
       topPlayers = allPlayers.map(p => ({
@@ -229,30 +215,23 @@ async function fetchOverallTopPlayers() {
         teamId: p.teamId
       }));
       subtitle = "PREVIOUS MATCH";
-      console.log("Generated from previous players:", topPlayers);
     }
 
-    // Safely update subtitle
     const subtitleElement = document.getElementById('tournament-subtitle');
-    if (subtitleElement) {
+    if (subtitleElement && subtitleElement.textContent !== subtitle) {
       subtitleElement.textContent = subtitle;
-    } else {
-      console.error("Subtitle element not found");
     }
 
     if (topPlayers.length === 0) {
-      console.warn("No player data found in any location");
       updateTopPlayers([]);
       return;
     }
 
-    // Sort by kills (highest first)
     topPlayers.sort((a, b) => {
       if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
       return b.totalDamage - a.totalDamage;
     });
 
-    // Get teams data for logos
     const teams = data.match?.teams || data.previous?.teams || {};
     const players = data.match?.players || data.previous?.players || {};
 
@@ -260,15 +239,12 @@ async function fetchOverallTopPlayers() {
       const playerData = players[player.playerId] || {};
       const teamId = player.teamId || playerData.teamId;
       
-      // Try to find team by ID first
       let team = teams[teamId] || null;
       
-      // If team not found by ID, try to find by name
       if (!team && player.teamName) {
         team = findTeamByName(player.teamName, teams);
       }
       
-      // If team still not found, try to find by player ID
       if (!team) {
         team = findTeamByPlayerId(player.playerId || playerData.id, teams);
       }
@@ -276,14 +252,13 @@ async function fetchOverallTopPlayers() {
       return {
         ...player,
         rank: index + 1,
-        teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
-        playerPhoto: playerData.photo || 'http://localhost:5000/assets/PUBG.png',
+        teamLogo: team?.logo || defaultLogo,
+        playerPhoto: playerData.photo || '/assets/PUBG.png',
         playerName: player.name || playerData.name || 'Unknown Player',
         teamName: team?.name || player.teamName || 'Unknown Team'
       };
     });
 
-    console.log("Final players with team data:", playersWithTeam);
     updateTopPlayers(playersWithTeam);
     
   } catch (error) {
@@ -294,54 +269,65 @@ async function fetchOverallTopPlayers() {
 
 function updateTopPlayers(players) {
   const container = document.getElementById('top-players-container');
-  if (!container) {
-    console.error("Top players container not found");
-    return;
-  }
+  if (!container) return;
   
-  container.innerHTML = '';
-
   if (!players.length) {
-    container.innerHTML = `<p style="color:red; text-align:center; padding: 20px;">No overall top player data available.</p>`;
+    if (!container.querySelector('p')) {
+      container.innerHTML = `<p style="color:red; text-align:center; padding: 20px;">No overall top player data available.</p>`;
+    }
     return;
   }
 
-  players.forEach((player) => {
-    const playerCard = document.createElement('div');
-    playerCard.className = 'player-card';
-    playerCard.innerHTML = `
-      <div class="player-rank">#${player.rank}</div>
-      <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='http://localhost:5000/assets/default-team-logo.jpg'">
-      <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='http://localhost:5000/assets/PUBG.png'">
-      <div class="player-name-bg">
-        <div class="player-name">${player.playerName}</div>
-        <div class="team-name">${player.teamName}</div>
-      </div>
-      <div class="elimination-count">Eliminations: ${player.totalKills || 0}</div>
-      <div class="damage-count">Damage: ${player.totalDamage || 0}</div>
-      <div class="knockout-count">Knockouts: ${player.totalKnockouts || 0}</div>
-      ${player.totalMatches ? `<div class="matches-count">Matches: ${player.totalMatches}</div>` : ''}
-    `;
-    container.appendChild(playerCard);
-  });
-}
+  const playersChanged = currentPlayers.length !== players.length || 
+    players.some((player, idx) => currentPlayers[idx]?.playerId !== player.playerId);
 
-// Add retry mechanism for fetch
-async function retryFetch(url, retries = 3, delay = 1000) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return response;
-      throw new Error(`HTTP error! status: ${response.status}`);
-    } catch (error) {
-      console.warn(`Fetch attempt ${i + 1} failed:`, error.message);
-      if (i < retries - 1) {
-        await new Promise(res => setTimeout(res, delay));
-        delay *= 2;
-      } else {
-        throw error;
+  if (playersChanged) {
+    // Full rebuild
+    container.innerHTML = '';
+    players.forEach((player) => {
+      const playerCard = document.createElement('div');
+      playerCard.className = 'player-card';
+      playerCard.dataset.playerId = player.playerId;
+      playerCard.innerHTML = `
+        <div class="player-rank">#${player.rank}</div>
+        <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src=defaultLogo">
+        <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='/assets/PUBG.png'">
+        <div class="player-name-bg">
+          <div class="player-name">${player.playerName}</div>
+          <div class="team-name">${player.teamName}</div>
+        </div>
+        <div class="elimination-count">Eliminations: ${player.totalKills || 0}</div>
+        <div class="damage-count">Damage: ${player.totalDamage || 0}</div>
+        <div class="knockout-count">Knockouts: ${player.totalKnockouts || 0}</div>
+        ${player.totalMatches ? `<div class="matches-count">Matches: ${player.totalMatches}</div>` : ''}
+      `;
+      container.appendChild(playerCard);
+    });
+    currentPlayers = players;
+  } else {
+    // Update only stats
+    players.forEach((player, index) => {
+      const card = container.children[index];
+      if (!card) return;
+      
+      const elimCount = card.querySelector('.elimination-count');
+      const damageCount = card.querySelector('.damage-count');
+      const knockoutCount = card.querySelector('.knockout-count');
+      
+      const newElimText = `Eliminations: ${player.totalKills || 0}`;
+      const newDamageText = `Damage: ${player.totalDamage || 0}`;
+      const newKnockoutText = `Knockouts: ${player.totalKnockouts || 0}`;
+      
+      if (elimCount && elimCount.textContent !== newElimText) {
+        elimCount.textContent = newElimText;
       }
-    }
+      if (damageCount && damageCount.textContent !== newDamageText) {
+        damageCount.textContent = newDamageText;
+      }
+      if (knockoutCount && knockoutCount.textContent !== newKnockoutText) {
+        knockoutCount.textContent = newKnockoutText;
+      }
+    });
   }
 }
 
