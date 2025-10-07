@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PUBG Top Players Overlay</title>
+    <link rel="stylesheet" href="./styles.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
@@ -31,7 +32,7 @@
             font-size: 3em;
             font-weight: 700;
             text-transform: uppercase;
-            color: midnightblue;
+            color: var(--background-neutral-color);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
@@ -55,7 +56,7 @@
         .player-card {
             width: 215px;
             text-align: center;
-            background-color: #b5a420;
+            background-color: var(--main-color);
             padding-bottom: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             margin-bottom: 20px;
@@ -73,23 +74,23 @@
         }
         
         .player-name-bg {
-            background-color: #5ab4d6;
+            background-color: var(--accent-color);
             padding: 5px;
         }
 
         .player-name {
-            background-color: #5ab4d6;
+            background-color: var(--accent-color);
             font-size: 1.2em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: midnightblue;
+            color: var(--background-neutral-color);
             font-weight: bold;
             padding: 5px;
         }
 
         .team-name {
-            background-color: #5ab4d6;
+            background-color: var(--accent-color);
             font-size: 0.9em;
             white-space: nowrap;
             overflow: hidden;

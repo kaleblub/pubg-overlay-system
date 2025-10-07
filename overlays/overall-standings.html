@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PUBG Match Standings</title>
+    <link rel="stylesheet" href="./styles.css">
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
@@ -33,7 +34,7 @@
             font-size: 3em;
             font-weight: 700;
             text-transform: uppercase;
-            color: midnightblue;
+            color: var(--background-neutral-color);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
@@ -43,7 +44,7 @@
             font-weight: 400;
             text-transform: uppercase;
             margin-top: -10px;
-            color: #1d3148;
+            color: var(--background-neutral-color);
         }
         
         .scoreboard-grid {
@@ -70,7 +71,7 @@
         }
 
         .list-header {
-            background-color: #b5a420;
+            background-color: var(--main-color);
             padding: 10px;
             margin-bottom: 5px;
             display: flex;
@@ -96,7 +97,7 @@
         .team-item {
             background-color: transparent;
             padding: 0;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             display: flex;
             justify-content: space-between;
             align-items: stretch;
@@ -110,13 +111,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #b5a420;
+            background-color: var(--main-color);
             font-weight: bold;
             color: black;
         }
 
         .team-name-column {
-            background-color: #5ab4d6;
+            background-color: var(--accent-color);
             flex-grow: 1;
             padding: 10px;
             display: flex;
@@ -135,7 +136,7 @@
             display: flex;
             gap: 20px;
             font-weight: bold;
-            background-color: rgba(158, 202, 247, 0.2);
+            background-color: var(--background-neutral-color);
             padding: 10px;
             align-items: center;
         }

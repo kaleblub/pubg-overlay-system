@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PUBG Live Match Top Players</title>
+    <link rel="stylesheet" href="./styles.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
@@ -31,7 +32,7 @@
             font-size: 3em;
             font-weight: 700;
             text-transform: uppercase;
-            color: midnightblue;
+            color: var(--background-neutral-color);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
@@ -41,7 +42,7 @@
             font-weight: 400;
             text-transform: uppercase;
             margin-top: -10px;
-            color: #1d3148;
+            color: var(--main-color);
         }
         
         .players-container {
@@ -55,7 +56,7 @@
         .player-card {
             width: 215px;
             text-align: center;
-            background-color: #b5a420;
+            background-color: var(--main-color);
             padding-bottom: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             margin-bottom: 20px;
@@ -73,28 +74,28 @@
         }
         
         .player-name-bg {
-            background-color: #5ab4d6;
+            background-color: var(--accent-color);
             padding: 5px;
         }
 
         .player-name {
-            background-color: #5ab4d6;
+            background-color: var(--accent-color);
             font-size: 1.2em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: midnightblue;
+            color: var(--background-neutral-color);
             font-weight: bold;
             padding: 5px;
         }
 
         .team-name {
-            background-color: #5ab4d6;
+            background-color: var(--accent-color);
             font-size: 0.9em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: #1d3148;
+            color: var(--background-neutral-color);
             font-weight: normal;
             padding: 0 5px 5px 5px;
             margin-top: -5px;
@@ -139,197 +140,206 @@
     </div>
     
 <script>
-const jsonUrl = '/api/live_data';
-let currentPlayers = [];
+    const jsonUrl = '/api/live_data';
+    let currentPlayers = [];
+    let playerCards = new Map(); // Cache player cards by player ID
 
-async function retryFetch(url, options = {}, retries = 3) {
-    for (let i = 0; i < retries; i++) {
+    async function retryFetch(url, options = {}, retries = 3) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response;
+            } catch (error) {
+                console.warn(`Fetch attempt ${i + 1} failed:`, error.message);
+                if (i < retries - 1) {
+                    await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+                } else {
+                    throw error;
+                }
+            }
+        }
+    }
+
+    function findTeamByPlayerId(playerId, teamsData) {
+        if (!teamsData) return null;
+        for (const team of Object.values(teamsData)) {
+            if (team.players && team.players.includes(playerId)) {
+                return team;
+            }
+        }
+        return null;
+    }
+
+    function findTeamByName(teamName, teamsData) {
+        if (!teamsData || !teamName) return null;
+        for (const team of Object.values(teamsData)) {
+            if (team.name && team.name.toLowerCase() === teamName.toLowerCase()) {
+                return team;
+            }
+        }
+        return null;
+    }
+
+    function processPlayers(playersMap, teamsMap) {
+        if (!playersMap || Object.keys(playersMap).length === 0) return [];
+        
+        const playersWithTeam = Object.values(playersMap).map(p => {
+            const team = findTeamByPlayerId(p.id, teamsMap);
+            const stats = p.stats || {}; 
+
+            return {
+                id: p.id,
+                playerName: p.name || 'Unknown Player',
+                playerPhoto: p.photo || '/assets/PUBG.png',
+                kills: stats.kills || 0,
+                damage: stats.damage || 0,
+                knockouts: stats.knockouts || 0,
+                teamLogo: team?.logo || '/assets/default-team-logo.jpg',
+                teamName: team?.name || 'Unknown Team'
+            };
+        });
+
+        playersWithTeam.sort((a, b) => {
+            if (b.kills !== a.kills) return b.kills - a.kills;
+            return b.damage - a.damage;
+        });
+
+        return playersWithTeam.slice(0, 5);
+    }
+
+    async function fetchData() {
         try {
-            const response = await fetch(url, options);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            return response;
+            const res = await retryFetch(jsonUrl);
+            const data = await res.json();
+            
+            let topPlayersData = [];
+            let subtitle = "NO DATA";
+            let matchStatus = data.match_state?.status || 'idle';
+            
+            if (matchStatus === 'live' && data.current_match && data.current_match.players) {
+                if (Object.keys(data.current_match.players).length > 0) {
+                    topPlayersData = processPlayers(data.current_match.players, data.current_match.teams);
+                    subtitle = "LIVE MATCH";
+                }
+            } 
+            
+            if (topPlayersData.length === 0 && data.matches?.length > 0) {
+                const lastMatch = data.matches[data.matches.length - 1];
+                
+                if (lastMatch.leaderboards?.currentMatchTopPlayers?.length > 0) {
+                    topPlayersData = lastMatch.leaderboards.currentMatchTopPlayers.map(player => {
+                        const team = findTeamByName(player.teamName, lastMatch.teams);
+                        return {
+                            ...player,
+                            teamLogo: team?.logo || '/assets/default-team-logo.jpg',
+                            playerPhoto: player.playerPhoto || '/assets/PUBG.png',
+                            teamName: team?.name || player.teamName || 'Unknown Team'
+                        };
+                    }).slice(0, 5);
+                    subtitle = "PREVIOUS MATCH LEADERBOARD";
+                } else {
+                    topPlayersData = processPlayers(lastMatch.players, lastMatch.teams);
+                    subtitle = "PREVIOUS MATCH SUMMARY";
+                }
+            }
+            
+            if (topPlayersData.length === 0) {
+                subtitle = "WAITING FOR DATA";
+            }
+
+            const subtitleEl = document.querySelector('.overlay-subtitle');
+            if (subtitleEl.textContent !== subtitle) {
+                subtitleEl.textContent = subtitle;
+            }
+            
+            updateTopPlayers(topPlayersData);
+            
         } catch (error) {
-            console.warn(`Fetch attempt ${i + 1} failed:`, error.message);
-            if (i < retries - 1) {
-                await new Promise(res => setTimeout(res, 1000 * (i + 1)));
-            } else {
-                throw error;
+            console.error('Error fetching data:', error);
+            const subtitleEl = document.querySelector('.overlay-subtitle');
+            if (subtitleEl.textContent !== 'ERROR LOADING DATA') {
+                subtitleEl.textContent = 'ERROR LOADING DATA';
             }
         }
     }
-}
 
-function findTeamByPlayerId(playerId, teamsData) {
-    if (!teamsData) return null;
-    for (const team of Object.values(teamsData)) {
-        if (team.players && team.players.includes(playerId)) {
-            return team;
+    function updateTopPlayers(players) {
+        const container = document.getElementById('top-players-container');
+        
+        if (!players.length) {
+            if (container.children.length !== 1 || !container.querySelector('p')) {
+                container.innerHTML = `<p style="color:red; text-align:center;">No player data available.</p>`;
+            }
+            return;
+        }
+
+        // Check if we need to rebuild or update
+        const needsRebuild = players.length !== currentPlayers.length || 
+            players.some((player, idx) => !currentPlayers[idx] || currentPlayers[idx].id !== player.id);
+
+        if (needsRebuild) {
+            // Clear existing cards and rebuild only if structure changes
+            container.innerHTML = '';
+            playerCards.clear();
+            players.forEach((player, index) => {
+                const playerCard = document.createElement('div');
+                playerCard.className = 'player-card';
+                playerCard.dataset.playerId = player.id;
+                playerCard.innerHTML = `
+                    <div class="player-rank">#${index + 1}</div>
+                    <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.onerror=null; this.src='/assets/default-team-logo.jpg'">
+                    <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.onerror=null; this.src='/assets/PUBG.png'">
+                    <div class="player-name-bg">
+                        <div class="player-name">${player.playerName}</div>
+                        <div class="team-name">${player.teamName}</div>
+                    </div>
+                    <div class="elimination-count">Eliminations: ${player.kills}</div>
+                    <div class="damage-count">Damage: ${player.damage.toFixed(0)}</div>
+                    <div class="knockout-count">Knockouts: ${player.knockouts}</div>
+                `;
+                container.appendChild(playerCard);
+                playerCards.set(player.id, playerCard);
+            });
+            currentPlayers = [...players];
+        } else {
+            // Update existing cards without rebuilding images
+            players.forEach((player, index) => {
+                const card = playerCards.get(player.id);
+                if (!card) return;
+
+                const rank = card.querySelector('.player-rank');
+                const eliminationCount = card.querySelector('.elimination-count');
+                const damageCount = card.querySelector('.damage-count');
+                const knockoutCount = card.querySelector('.knockout-count');
+                const playerName = card.querySelector('.player-name');
+                const teamName = card.querySelector('.team-name');
+
+                if (rank) rank.textContent = `#${index + 1}`;
+                if (eliminationCount && eliminationCount.textContent !== `Eliminations: ${player.kills}`) {
+                    eliminationCount.textContent = `Eliminations: ${player.kills}`;
+                }
+                if (damageCount && damageCount.textContent !== `Damage: ${player.damage.toFixed(0)}`) {
+                    damageCount.textContent = `Damage: ${player.damage.toFixed(0)}`;
+                }
+                if (knockoutCount && knockoutCount.textContent !== `Knockouts: ${player.knockouts}`) {
+                    knockoutCount.textContent = `Knockouts: ${player.knockouts}`;
+                }
+                if (playerName && playerName.textContent !== player.playerName) {
+                    playerName.textContent = player.playerName;
+                }
+                if (teamName && teamName.textContent !== player.teamName) {
+                    teamName.textContent = player.teamName;
+                }
+            });
+            currentPlayers = [...players];
         }
     }
-    return null;
-}
 
-function findTeamByName(teamName, teamsData) {
-    if (!teamsData || !teamName) return null;
-    for (const team of Object.values(teamsData)) {
-        if (team.name && team.name.toLowerCase() === teamName.toLowerCase()) {
-            return team;
-        }
-    }
-    return null;
-}
-
-function processPlayers(playersMap, teamsMap) {
-    if (!playersMap || Object.keys(playersMap).length === 0) return [];
-    
-    const playersWithTeam = Object.values(playersMap).map(p => {
-        const team = findTeamByPlayerId(p.id, teamsMap);
-        const stats = p.stats || {}; 
-
-        return {
-            id: p.id,
-            playerName: p.name || 'Unknown Player',
-            playerPhoto: p.photo || 'http://localhost:5000/assets/PUBG.png',
-            kills: stats.kills || 0,
-            damage: stats.damage || 0,
-            knockouts: stats.knockouts || 0,
-            teamLogo: team?.logo || 'http://localhost:5000/assets/default-team-logo.jpg',
-            teamName: team?.name || 'Unknown Team'
-        };
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchData();
+        setInterval(fetchData, 5000); // Adjusted to 5 seconds to match stable overlay
     });
-
-    playersWithTeam.sort((a, b) => {
-        if (b.kills !== a.kills) return b.kills - a.kills;
-        return b.damage - a.damage;
-    });
-
-    return playersWithTeam.slice(0, 5);
-}
-
-async function fetchData() {
-    try {
-        const res = await retryFetch(jsonUrl);
-        const data = await res.json();
-        
-        let topPlayersData = [];
-        let subtitle = "NO DATA";
-        let matchStatus = data.match_state?.status || 'idle';
-        
-        if (matchStatus === 'live' && data.current_match && data.current_match.players) {
-            if (Object.keys(data.current_match.players).length > 0) {
-                topPlayersData = processPlayers(data.current_match.players, data.current_match.teams);
-                subtitle = "LIVE MATCH";
-            }
-        } 
-        
-        if (topPlayersData.length === 0 && data.matches?.length > 0) {
-            const lastMatch = data.matches[data.matches.length - 1];
-            
-            if (lastMatch.leaderboards?.currentMatchTopPlayers?.length > 0) {
-                 topPlayersData = lastMatch.leaderboards.currentMatchTopPlayers.map(player => {
-                    const team = findTeamByName(player.teamName, lastMatch.teams);
-                    return {
-                        ...player,
-                        teamLogo: team?.logo || '/assets/default-team-logo.jpg',
-                        playerPhoto: player.playerPhoto || '/assets/PUBG.png',
-                        teamName: team?.name || player.teamName || 'Unknown Team'
-                    };
-                }).slice(0, 5);
-                subtitle = "PREVIOUS MATCH LEADERBOARD";
-            } else {
-                topPlayersData = processPlayers(lastMatch.players, lastMatch.teams);
-                subtitle = "PREVIOUS MATCH SUMMARY";
-            }
-        }
-        
-        if (topPlayersData.length === 0) {
-             subtitle = "WAITING FOR DATA";
-        }
-
-        const subtitleEl = document.querySelector('.overlay-subtitle');
-        if (subtitleEl.textContent !== subtitle) {
-            subtitleEl.textContent = subtitle;
-        }
-        
-        updateTopPlayers(topPlayersData);
-        
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        const subtitleEl = document.querySelector('.overlay-subtitle');
-        if (subtitleEl.textContent !== 'ERROR LOADING DATA') {
-            subtitleEl.textContent = 'ERROR LOADING DATA';
-        }
-    }
-}
-
-function updateTopPlayers(players) {
-    const container = document.getElementById('top-players-container');
-    
-    if (!players.length) {
-        if (container.children.length !== 1 || !container.querySelector('p')) {
-            container.innerHTML = `<p style="color:red; text-align:center;">No player data available.</p>`;
-        }
-        return;
-    }
-
-    // Check if we need to rebuild the entire structure
-    const needsRebuild = currentPlayers.length !== players.length || 
-        players.some((player, idx) => currentPlayers[idx]?.id !== player.id);
-
-    if (needsRebuild) {
-        // Full rebuild only when player order/count changes
-        container.innerHTML = '';
-        players.forEach((player, index) => {
-            const playerCard = document.createElement('div');
-            playerCard.className = 'player-card';
-            playerCard.dataset.playerId = player.id;
-            playerCard.innerHTML = `
-                <div class="player-rank">#${index + 1}</div>
-                <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='http://localhost:5000/assets/default-team-logo.jpg'">
-                <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='http://localhost:5000/assets/PUBG.png'">
-                <div class="player-name-bg">
-                    <div class="player-name">${player.playerName}</div>
-                    <div class="team-name">${player.teamName}</div>
-                </div>
-                <div class="elimination-count">Eliminations: ${player.kills}</div>
-                <div class="damage-count">Damage: ${player.damage.toFixed(0)}</div>
-                <div class="knockout-count">Knockouts: ${player.knockouts}</div>
-            `;
-            container.appendChild(playerCard);
-        });
-        currentPlayers = players;
-    } else {
-        // Only update stats, keeping images intact
-        players.forEach((player, index) => {
-            const card = container.children[index];
-            if (!card) return;
-            
-            const eliminationCount = card.querySelector('.elimination-count');
-            const damageCount = card.querySelector('.damage-count');
-            const knockoutCount = card.querySelector('.knockout-count');
-            
-            const newElimText = `Eliminations: ${player.kills}`;
-            const newDamageText = `Damage: ${player.damage.toFixed(0)}`;
-            const newKnockoutText = `Knockouts: ${player.knockouts}`;
-            
-            if (eliminationCount && eliminationCount.textContent !== newElimText) {
-                eliminationCount.textContent = newElimText;
-            }
-            if (damageCount && damageCount.textContent !== newDamageText) {
-                damageCount.textContent = newDamageText;
-            }
-            if (knockoutCount && knockoutCount.textContent !== newKnockoutText) {
-                knockoutCount.textContent = newKnockoutText;
-            }
-        });
-        currentPlayers = players;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    fetchData();
-    setInterval(fetchData, 2000);
-});
 </script>
 
 </body>
