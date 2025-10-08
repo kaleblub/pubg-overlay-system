@@ -694,55 +694,34 @@ def _update_live_eliminations():
         state["current_match"]["status"] = "finished"
 
 def end_match_and_update_phase(final_match_data=None):
-    """Finalize match data, add missing teams by name (if applicable), and update phase and all-time standings."""
+    """
+    Finalize match data, update all-time (only once per match), append matches (no duplicates),
+    and rebuild phase standings from the canonical state['matches'] list.
+    """
     global state, expected_teams, in_archive_processing
     try:
         if not final_match_data:
             final_match_data = copy.deepcopy(state["current_match"])
+
         match_id = final_match_data.get("id")
         if not match_id:
             logging.warning("No match ID found, skipping finalization")
-            state["current_match"] = {
-                "id": None,
-                "status": "idle",
-                "winnerTeamId": None,
-                "winnerTeamName": None,
-                "eliminationOrder": [],
-                "killFeed": [],
-                "teams": {},
-                "players": {},
-                "leaderboards": {"currentMatchTopPlayers": []},
-                "activePlayers": [],
-                "teamKills": {}
-            }
-            state["match_state"]["status"] = "idle"
-            state["match_state"]["last_updated"] = int(time.time())
+            _reset_current_match()
             _export_json()
             return
-        # Skip only if already processed AND we're reading archived logs
-        if (
-            in_archive_processing
-            and match_id in state["all_time"].get("processed_game_ids", set())
-        ):
-            logging.info(f"Archived match {match_id} already processed, skipping re-finalization")
-            return
-
-        # Skip if it's already in memory (this run only)
-        if match_id in state["processed_matches"]:
-            logging.info(f"Match {match_id} already processed in this session, skipping")
-            return
-
 
         logging.info(f"Finalizing match {match_id}")
 
-        # Ensure processed_game_ids exists
-        if "processed_game_ids" not in state["all_time"]:
-            state["all_time"]["processed_game_ids"] = set()
+        # Ensure processed_game_ids exists and is a set
+        state["all_time"].setdefault("processed_game_ids", set())
+        if not isinstance(state["all_time"]["processed_game_ids"], set):
+            state["all_time"]["processed_game_ids"] = set(state["all_time"].get("processed_game_ids", []))
 
+        already_processed = match_id in state["all_time"]["processed_game_ids"] or match_id in state.get("processed_matches", set())
 
-        # Add missing_teams by name only if not processing archives
+        # Add missing teams (only if not processing archive)
         if not in_archive_processing and expected_teams:
-            match_team_names = {team["name"].lower() for team in final_match_data["teams"].values()}
+            match_team_names = {t.get("name", "").lower() for t in final_match_data.get("teams", {}).values()}
             missing = []
             for team_name, info in expected_teams.items():
                 if team_name.lower() not in match_team_names:
@@ -759,183 +738,219 @@ def end_match_and_update_phase(final_match_data=None):
                         "missing": True
                     })
             final_match_data["missing_teams"] = missing
-            logging.info(f"Match {match_id}: Added {len(missing)} missing teams: {[t['name'] for t in missing]}")
+            logging.debug(f"Match {match_id}: Added {len(missing)} missing teams")
 
-        # Calculate team totals for the match
-        team_totals = {}
+        # --- Calculate and assign placementPointsLive per team ---
         elimination_order = final_match_data.get("eliminationOrder", [])
-        total_teams = len(final_match_data["teams"])
-        rank_map = {}
-        for i, team_name in enumerate(reversed(elimination_order)):
-            rank_map[team_name] = i + 2  # Start at rank 2 (winner gets 1)
-        winner_team = final_match_data.get("winnerTeamName")
-        if winner_team:
-            rank_map[winner_team] = 1
+        total_teams = len(final_match_data.get("teams", {}))
+        rank_map = {t: i + 2 for i, t in enumerate(reversed(elimination_order))}
+        winner_name = final_match_data.get("winnerTeamName")
+        if winner_name:
+            rank_map[winner_name] = 1
 
-        for tid, team in final_match_data["teams"].items():
+        placement_points_map = {1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1}
+
+        for tid, team in final_match_data.get("teams", {}).items():
             team_name = team.get("name", "Unknown Team")
-            kills = team.get("kills", 0)
-            rank = rank_map.get(team_name, total_teams)  # Default to last place
-            placement_points = {1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1}.get(rank, 0)
-            team_totals[team_name] = {
-                "teamId": tid,
-                "teamName": team_name,
-                "kills": kills,
-                "placementPoints": placement_points,
-                "points": kills + placement_points,
-                "wwcd": 1 if team_name == final_match_data.get("winnerTeamName") else 0,
-                "rank": rank
-            }
+            rank = rank_map.get(team_name, total_teams)
+            placement_points = placement_points_map.get(rank, 0)
             final_match_data["teams"][tid]["placementPointsLive"] = placement_points
-            logging.debug(f"Team {team_name} ranked {rank} with {placement_points} placement points, set as placementPointsLive")
+            logging.debug(f"Set {team_name} placementPointsLive={placement_points} (rank={rank})")
 
-        # Update phase standings
-        for team_name, totals in team_totals.items():
+
+        # --- Update all-time players only if this match was not already processed ---
+        if not already_processed:
+            player_count = 0
+            for pid, player in final_match_data.get("players", {}).items():
+                if not pid or pid == "None":
+                    continue
+                team_name = _get_team_name_by_id(player.get("teamId")) or player.get("teamName", "Unknown Team")
+                # All-time player
+                if pid not in state["all_time"]["players"]:
+                    state["all_time"]["players"][pid] = {
+                        "id": pid,
+                        "name": player.get("name", "Unknown Player"),
+                        "photo": player.get("photo", DEFAULT_PLAYER_PHOTO),
+                        "teamName": team_name,
+                        "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
+                    }
+                ap = state["all_time"]["players"][pid]
+                ap["name"] = player.get("name", ap.get("name"))
+                ap["photo"] = player.get("photo", ap.get("photo"))
+                ap["teamName"] = team_name
+                ap["totals"]["kills"] += int(player.get("stats", {}).get("kills", 0))
+                ap["totals"]["damage"] += int(player.get("stats", {}).get("damage", 0))
+                ap["totals"]["knockouts"] += int(player.get("stats", {}).get("knockouts", 0))
+                ap["totals"]["matches"] += 1
+                player_count += 1
+
+            # record processed game id and persist all-time players
+            state["all_time"]["processed_game_ids"].add(match_id)
+            try:
+                save_all_time_players()
+                logging.info(f"Saved all-time players after match {match_id} (updated {player_count} players)")
+            except Exception as e:
+                logging.error(f"Failed saving all-time players for {match_id}: {e}")
+        else:
+            logging.info(f"Match {match_id} already in all_time processed list; skipping all-time update")
+
+        # --- Append to state['matches'] only if not already present ---
+        if not any(m.get("id") == match_id for m in state.get("matches", [])):
+            state.setdefault("matches", []).append(final_match_data)
+            logging.info(f"Appended match {match_id} to state['matches'] (now {len(state['matches'])} matches)")
+        else:
+            logging.debug(f"Match {match_id} already exists in state['matches'] — not appending")
+
+        # mark processed_matches for in-memory check
+        state.setdefault("processed_matches", set()).add(match_id)
+
+        # --- Rebuild phase from canonical matches list so we never double-count ---
+        rebuild_phase_from_matches()
+
+        # Force export JSON
+        _export_json()
+
+        # Reset current match state (keeps matches list intact)
+        _reset_current_match()
+        state["match_state"]["status"] = "idle"
+        state["match_state"]["last_updated"] = int(time.time())
+        logging.info(f"Match {match_id} finalized and current match reset")
+
+    except Exception as e:
+        logging.error(f"Error finalizing match {match_id}: {e}")
+        _reset_current_match()
+        _export_json()
+
+def rebuild_phase_from_matches():
+    """
+    Rebuild state['phase']['teams'] and state['phase']['players'] from state['matches'].
+    - Deduplicates matches by id (preserves first occurrence).
+    - Computes placementPoints using placementPointsLive if present, otherwise falls back to rank heuristic.
+    - Recomputes phase standings and top players.
+    """
+    global state
+    logging.info("Rebuilding phase data from state['matches']")
+    # Deduplicate matches by id, preserving first occurrence
+    seen = set()
+    unique_matches = []
+    for m in state.get("matches", []):
+        mid = m.get("id")
+        if not mid:
+            continue
+        if mid in seen:
+            logging.debug(f"Skipping duplicate match id in rebuild: {mid}")
+            continue
+        seen.add(mid)
+        unique_matches.append(m)
+    state["matches"] = unique_matches
+
+    # Reset phase
+    state["phase"]["teams"] = {}
+    state["phase"]["players"] = {}
+
+    # Helper for placement points fallback
+    placement_points_map = {1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1}
+
+    for match in state["matches"]:
+        # compute elimination/ranks fallback only if needed
+        elimination_order = match.get("eliminationOrder", [])
+        total_teams = len(match.get("teams", {})) or 0
+        rank_map = {t: i + 2 for i, t in enumerate(reversed(elimination_order))}
+        winner_name = match.get("winnerTeamName")
+        if winner_name:
+            rank_map[winner_name] = 1
+
+        # Per-team accumulation for this match
+        for tid, team in match.get("teams", {}).items():
+            team_name = team.get("name", "Unknown Team")
+            kills = int(team.get("kills", 0))
+            # prefer placementPointsLive if present (set at finalization), otherwise compute via rank_map / fallback map
+            if "placementPointsLive" in team:
+                placement_points = int(team.get("placementPointsLive", 0))
+            else:
+                rank = rank_map.get(team_name, total_teams or 0)
+                placement_points = placement_points_map.get(rank, 0)
+            points = kills + placement_points
             if team_name not in state["phase"]["teams"]:
                 state["phase"]["teams"][team_name] = {
-                    "id": totals["teamId"],
+                    "id": team.get("id", tid),
                     "name": team_name,
-                    "logo": final_match_data["teams"].get(totals["teamId"], {}).get("logo", DEFAULT_TEAM_LOGO),
+                    "logo": team.get("logo", DEFAULT_TEAM_LOGO),
                     "totals": {"kills": 0, "placementPoints": 0, "points": 0, "wwcd": 0}
                 }
-            team = state["phase"]["teams"][team_name]
-            team["totals"]["kills"] += totals["kills"]
-            team["totals"]["placementPoints"] += totals["placementPoints"]
-            team["totals"]["points"] += totals["points"]
-            team["totals"]["wwcd"] += totals["wwcd"]
-            logging.debug(f"Updated {team_name}: +{totals['kills']} kills, +{totals['placementPoints']} placement (total: {team['totals']['points']} pts)")
+            tt = state["phase"]["teams"][team_name]["totals"]
+            tt["kills"] += kills
+            tt["placementPoints"] += placement_points
+            tt["points"] += points
+            if team_name == winner_name:
+                tt["wwcd"] += 1
 
-        # ✅ Prevent duplicate stat additions for matches already finalized
-        if match_id in state["all_time"].get("processed_game_ids", set()):
-            logging.info(f"Match {match_id} already finalized previously. Skipping stat accumulation.")
-            return
-
-        # Update player phase and all-time stats
-        player_count = 0
-        for pid, player in final_match_data["players"].items():
-            team_name = _get_team_name_by_id(player.get("teamId")) or "Unknown Team"
-            # Update phase players
+        # Per-player accumulation for this match
+        for pid, p in match.get("players", {}).items():
+            # determine team name (prefer mapping helper)
+            team_name = _get_team_name_by_id(p.get("teamId")) or p.get("teamName") or "Unknown Team"
             if pid not in state["phase"]["players"]:
                 state["phase"]["players"][pid] = {
                     "id": pid,
-                    "name": player.get("name", "Unknown Player"),
-                    "photo": player.get("photo", DEFAULT_PLAYER_PHOTO),
+                    "name": p.get("name", "Unknown Player"),
+                    "photo": p.get("photo", DEFAULT_PLAYER_PHOTO),
                     "teamName": team_name,
                     "live": {"isAlive": False, "health": 0, "healthMax": 100},
                     "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
                 }
-            p = state["phase"]["players"][pid]
-            p["totals"]["kills"] += int(player["stats"].get("kills", 0))
-            p["totals"]["damage"] += int(player["stats"].get("damage", 0))
-            p["totals"]["knockouts"] += int(player["stats"].get("knockouts", 0))
-            p["totals"]["matches"] += 1
-            # Update all-time players
-            if pid not in state["all_time"]["players"]:
-                state["all_time"]["players"][pid] = {
-                    "id": pid,
-                    "name": player.get("name", "Unknown Player"),
-                    "photo": player.get("photo", DEFAULT_PLAYER_PHOTO),
-                    "teamName": team_name,
-                    "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
-                }
-            ap = state["all_time"]["players"][pid]
-            ap["name"] = player.get("name", ap["name"])
-            ap["photo"] = player.get("photo", ap["photo"])
-            ap["teamName"] = team_name
-            ap["totals"]["kills"] += int(player["stats"].get("kills", 0))
-            ap["totals"]["damage"] += int(player["stats"].get("damage", 0))
-            ap["totals"]["knockouts"] += int(player["stats"].get("knockouts", 0))
-            ap["totals"]["matches"] += 1
-            player_count += 1
-            logging.debug(f"Updated all-time stats for player {pid} ({ap['name']}): kills={ap['totals']['kills']}, matches={ap['totals']['matches']}")
+            pp = state["phase"]["players"][pid]["totals"]
+            pp["kills"] += int(p.get("stats", {}).get("kills", 0))
+            pp["damage"] += int(p.get("stats", {}).get("damage", 0))
+            pp["knockouts"] += int(p.get("stats", {}).get("knockouts", 0))
+            pp["matches"] += 1
 
-        logging.info(f"Processed {player_count} players for match {match_id}")
-        logging.debug(f"State before saving: {json.dumps(state['all_time']['players'], indent=2)}")
+    # Recompute derived lists
+    try:
+        state["phase"]["standings"] = _phase_standings()
+    except Exception:
+        # fallback: make standings by manual sort if helper misbehaves
+        teams = []
+        for team_name, t in state["phase"]["teams"].items():
+            tot = t["totals"]
+            teams.append({
+                "teamId": team_name,
+                "teamName": t["name"],
+                "kills": tot["kills"],
+                "placementPoints": tot["placementPoints"],
+                "points": tot["points"],
+                "wwcd": tot.get("wwcd", 0),
+                "rank": None
+            })
+        teams.sort(key=lambda x: (x["points"], x["kills"]), reverse=True)
+        for i, row in enumerate(teams, 1):
+            row["rank"] = i
+        state["phase"]["standings"] = teams
 
-        # Save all-time player data
-        save_all_time_players()
-        logging.info(f"Attempted to save all-time player data after match {match_id}")
+    # Update all-time top players view for the phase
+    try:
+        state["phase"]["allTimeTopPlayers"] = _calculate_top_players(state["phase"]["players"], state["phase"]["teams"])
+    except Exception:
+        state["phase"]["allTimeTopPlayers"] = []
+    logging.info("Rebuild finished: %d teams, %d players", len(state["phase"]["teams"]), len(state["phase"]["players"]))
 
-        # Sort phase standings
-        state["phase"]["standings"] = [
-            {
-                "teamId": team["id"],
-                "teamName": team["name"],
-                "kills": team["totals"]["kills"],
-                "placementPoints": team["totals"]["placementPoints"],
-                "points": team["totals"]["points"],
-                "wwcd": team["totals"]["wwcd"],
-                "rank": i + 1
-            }
-            for i, team in enumerate(sorted(
-                state["phase"]["teams"].values(),
-                key=lambda x: (x["totals"]["points"], x["totals"]["kills"], x["totals"]["wwcd"]),
-                reverse=True
-            ))
-        ]
 
-        # Update all-time top players
-        state["phase"]["allTimeTopPlayers"] = _calculate_top_players(
-            state["phase"]["players"], state["phase"]["teams"]
-        )
-
-        # Add to matches
-        if not any(m.get("id") == match_id for m in state["matches"]):
-            state["matches"].append(final_match_data)
-            logging.info(f"Added match {match_id} to state['matches'] (total matches: {len(state['matches'])})")
-        else:
-            logging.info(f"Match {match_id} already exists in state['matches'], skipping append.")
-
-        state["processed_matches"].add(match_id)
-        logging.info(f"Added match {match_id} to state['matches'] (total matches: {len(state['matches'])})")
-
-        # Fully reset current_match
-        state["current_match"] = {
-            "id": None,
-            "status": "idle",
-            "winnerTeamId": None,
-            "winnerTeamName": None,
-            "eliminationOrder": [],
-            "killFeed": [],
-            "teams": {},
-            "players": {},
-            "leaderboards": {"currentMatchTopPlayers": []},
-            "activePlayers": [],
-            "teamKills": {}
-        }
-        state["match_state"]["status"] = "idle"
-        state["match_state"]["last_updated"] = int(time.time())
-        logging.info(f"Match {match_id} finalized and current_match fully reset")
-
-        # ✅ Record this match as processed and persist to disk
-        try:
-            state["all_time"].setdefault("processed_game_ids", set()).add(match_id)
-            save_all_time_players()
-        except Exception as e:
-            logging.error(f"Failed to record match {match_id} as processed: {e}")
-
-        # Force export JSON
-        _export_json()
-    except Exception as e:
-        logging.error(f"Error finalizing match {match_id}: {e}")
-        # Ensure reset on error
-        state["current_match"] = {
-            "id": None,
-            "status": "idle",
-            "winnerTeamId": None,
-            "winnerTeamName": None,
-            "eliminationOrder": [],
-            "killFeed": [],
-            "teams": {},
-            "players": {},
-            "leaderboards": {"currentMatchTopPlayers": []},
-            "activePlayers": [],
-            "teamKills": {}
-        }
-        state["match_state"]["status"] = "idle"
-        state["match_state"]["last_updated"] = int(time.time())
-        logging.info(f"Added match {match_id} to processed_game_ids set")
-        _export_json()
+def _reset_current_match():
+    """Reset the current match and match state after a match finishes or errors."""
+    state["current_match"] = {
+        "id": None,
+        "status": "idle",
+        "winnerTeamId": None,
+        "winnerTeamName": None,
+        "eliminationOrder": [],
+        "killFeed": [],
+        "teams": {},
+        "players": {},
+        "leaderboards": {"currentMatchTopPlayers": []},
+        "activePlayers": [],
+        "teamKills": {}
+    }
+    state["match_state"]["status"] = "idle"
+    state["match_state"]["last_updated"] = int(time.time())
 
 def _print_terminal_snapshot(test_mode=False):
     """Enhanced terminal output with colors and simulation progress."""
