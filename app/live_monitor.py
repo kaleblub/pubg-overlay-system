@@ -694,7 +694,7 @@ def _update_live_eliminations():
         state["current_match"]["status"] = "finished"
 
 def end_match_and_update_phase(final_match_data=None):
-    """Finalize match data, add missing teams by name (if applicable), and update phase standings."""
+    """Finalize match data, add missing teams by name (if applicable), and update phase and all-time standings."""
     global state, expected_teams, in_archive_processing
     try:
         if not final_match_data:
@@ -702,7 +702,6 @@ def end_match_and_update_phase(final_match_data=None):
         match_id = final_match_data.get("id")
         if not match_id:
             logging.warning("No match ID found, skipping finalization")
-            # Reset current_match even if no ID
             state["current_match"] = {
                 "id": None,
                 "status": "idle",
@@ -720,12 +719,27 @@ def end_match_and_update_phase(final_match_data=None):
             state["match_state"]["last_updated"] = int(time.time())
             _export_json()
             return
-        if match_id in state["processed_matches"]:
-            logging.info(f"Match {match_id} already processed, skipping finalization")
+        # Skip only if already processed AND we're reading archived logs
+        if (
+            in_archive_processing
+            and match_id in state["all_time"].get("processed_game_ids", set())
+        ):
+            logging.info(f"Archived match {match_id} already processed, skipping re-finalization")
             return
-        
+
+        # Skip if it's already in memory (this run only)
+        if match_id in state["processed_matches"]:
+            logging.info(f"Match {match_id} already processed in this session, skipping")
+            return
+
+
         logging.info(f"Finalizing match {match_id}")
-        
+
+        # Ensure processed_game_ids exists
+        if "processed_game_ids" not in state["all_time"]:
+            state["all_time"]["processed_game_ids"] = set()
+
+
         # Add missing_teams by name only if not processing archives
         if not in_archive_processing and expected_teams:
             match_team_names = {team["name"].lower() for team in final_match_data["teams"].values()}
@@ -733,7 +747,7 @@ def end_match_and_update_phase(final_match_data=None):
             for team_name, info in expected_teams.items():
                 if team_name.lower() not in match_team_names:
                     missing.append({
-                        "id": info["id"],  # Use INI ID for reference
+                        "id": info["id"],
                         "name": team_name,
                         "logo": get_asset_url(info["logoPath"], DEFAULT_TEAM_LOGO),
                         "kills": 0,
@@ -746,7 +760,7 @@ def end_match_and_update_phase(final_match_data=None):
                     })
             final_match_data["missing_teams"] = missing
             logging.info(f"Match {match_id}: Added {len(missing)} missing teams: {[t['name'] for t in missing]}")
-        
+
         # Calculate team totals for the match
         team_totals = {}
         elimination_order = final_match_data.get("eliminationOrder", [])
@@ -757,7 +771,7 @@ def end_match_and_update_phase(final_match_data=None):
         winner_team = final_match_data.get("winnerTeamName")
         if winner_team:
             rank_map[winner_team] = 1
-        
+
         for tid, team in final_match_data["teams"].items():
             team_name = team.get("name", "Unknown Team")
             kills = team.get("kills", 0)
@@ -772,10 +786,9 @@ def end_match_and_update_phase(final_match_data=None):
                 "wwcd": 1 if team_name == final_match_data.get("winnerTeamName") else 0,
                 "rank": rank
             }
-            # Update placementPointsLive in final_match_data
             final_match_data["teams"][tid]["placementPointsLive"] = placement_points
             logging.debug(f"Team {team_name} ranked {rank} with {placement_points} placement points, set as placementPointsLive")
-        
+
         # Update phase standings
         for team_name, totals in team_totals.items():
             if team_name not in state["phase"]["teams"]:
@@ -791,10 +804,17 @@ def end_match_and_update_phase(final_match_data=None):
             team["totals"]["points"] += totals["points"]
             team["totals"]["wwcd"] += totals["wwcd"]
             logging.debug(f"Updated {team_name}: +{totals['kills']} kills, +{totals['placementPoints']} placement (total: {team['totals']['points']} pts)")
-        
-        # Update player phase stats
+
+        # ✅ Prevent duplicate stat additions for matches already finalized
+        if match_id in state["all_time"].get("processed_game_ids", set()):
+            logging.info(f"Match {match_id} already finalized previously. Skipping stat accumulation.")
+            return
+
+        # Update player phase and all-time stats
+        player_count = 0
         for pid, player in final_match_data["players"].items():
             team_name = _get_team_name_by_id(player.get("teamId")) or "Unknown Team"
+            # Update phase players
             if pid not in state["phase"]["players"]:
                 state["phase"]["players"][pid] = {
                     "id": pid,
@@ -809,7 +829,33 @@ def end_match_and_update_phase(final_match_data=None):
             p["totals"]["damage"] += int(player["stats"].get("damage", 0))
             p["totals"]["knockouts"] += int(player["stats"].get("knockouts", 0))
             p["totals"]["matches"] += 1
-        
+            # Update all-time players
+            if pid not in state["all_time"]["players"]:
+                state["all_time"]["players"][pid] = {
+                    "id": pid,
+                    "name": player.get("name", "Unknown Player"),
+                    "photo": player.get("photo", DEFAULT_PLAYER_PHOTO),
+                    "teamName": team_name,
+                    "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
+                }
+            ap = state["all_time"]["players"][pid]
+            ap["name"] = player.get("name", ap["name"])
+            ap["photo"] = player.get("photo", ap["photo"])
+            ap["teamName"] = team_name
+            ap["totals"]["kills"] += int(player["stats"].get("kills", 0))
+            ap["totals"]["damage"] += int(player["stats"].get("damage", 0))
+            ap["totals"]["knockouts"] += int(player["stats"].get("knockouts", 0))
+            ap["totals"]["matches"] += 1
+            player_count += 1
+            logging.debug(f"Updated all-time stats for player {pid} ({ap['name']}): kills={ap['totals']['kills']}, matches={ap['totals']['matches']}")
+
+        logging.info(f"Processed {player_count} players for match {match_id}")
+        logging.debug(f"State before saving: {json.dumps(state['all_time']['players'], indent=2)}")
+
+        # Save all-time player data
+        save_all_time_players()
+        logging.info(f"Attempted to save all-time player data after match {match_id}")
+
         # Sort phase standings
         state["phase"]["standings"] = [
             {
@@ -827,17 +873,22 @@ def end_match_and_update_phase(final_match_data=None):
                 reverse=True
             ))
         ]
-        
+
         # Update all-time top players
         state["phase"]["allTimeTopPlayers"] = _calculate_top_players(
             state["phase"]["players"], state["phase"]["teams"]
         )
-        
+
         # Add to matches
-        state["matches"].append(final_match_data)
+        if not any(m.get("id") == match_id for m in state["matches"]):
+            state["matches"].append(final_match_data)
+            logging.info(f"Added match {match_id} to state['matches'] (total matches: {len(state['matches'])})")
+        else:
+            logging.info(f"Match {match_id} already exists in state['matches'], skipping append.")
+
         state["processed_matches"].add(match_id)
         logging.info(f"Added match {match_id} to state['matches'] (total matches: {len(state['matches'])})")
-        
+
         # Fully reset current_match
         state["current_match"] = {
             "id": None,
@@ -855,7 +906,14 @@ def end_match_and_update_phase(final_match_data=None):
         state["match_state"]["status"] = "idle"
         state["match_state"]["last_updated"] = int(time.time())
         logging.info(f"Match {match_id} finalized and current_match fully reset")
-        
+
+        # ✅ Record this match as processed and persist to disk
+        try:
+            state["all_time"].setdefault("processed_game_ids", set()).add(match_id)
+            save_all_time_players()
+        except Exception as e:
+            logging.error(f"Failed to record match {match_id} as processed: {e}")
+
         # Force export JSON
         _export_json()
     except Exception as e:
@@ -876,6 +934,7 @@ def end_match_and_update_phase(final_match_data=None):
         }
         state["match_state"]["status"] = "idle"
         state["match_state"]["last_updated"] = int(time.time())
+        logging.info(f"Added match {match_id} to processed_game_ids set")
         _export_json()
 
 def _print_terminal_snapshot(test_mode=False):
@@ -1074,42 +1133,163 @@ def get_all_log_files(log_dir, exclude_live_log=True):
     return sorted(out)
 
 def load_all_time_players():
-    """Load all-time player data from JSON file."""
+    """Load all-time player data and processed game IDs."""
     if not ALL_TIME_PLAYERS_JSON.exists():
         logging.info(f"No all-time players file found at {ALL_TIME_PLAYERS_JSON}")
+        state["all_time"]["processed_game_ids"] = set()
         return False
+
     try:
         with open(ALL_TIME_PLAYERS_JSON, "r", encoding="utf-8") as f:
             data = json.load(f)
+
             if not isinstance(data, dict) or "players" not in data:
                 logging.error(f"Invalid format in {ALL_TIME_PLAYERS_JSON}: missing 'players' key")
+                state["all_time"]["processed_game_ids"] = set()
                 return False
+
+            # Load players
             state["all_time"]["players"] = data["players"]
-            logging.info(f"Loaded {len(data['players'])} players from {ALL_TIME_PLAYERS_JSON}")
+
+            # Load processed game IDs (convert to set for fast lookup)
+            processed_ids = data.get("processed_game_ids", [])
+            if isinstance(processed_ids, list):
+                state["all_time"]["processed_game_ids"] = set(processed_ids)
+            else:
+                state["all_time"]["processed_game_ids"] = set()
+
+            logging.info(
+                f"Loaded {len(state['all_time']['players'])} players and "
+                f"{len(state['all_time']['processed_game_ids'])} processed game IDs from {ALL_TIME_PLAYERS_JSON}"
+            )
             return True
+
     except json.JSONDecodeError as e:
         logging.error(f"Error decoding JSON from {ALL_TIME_PLAYERS_JSON}: {e}")
-        return False
     except Exception as e:
         logging.error(f"Error loading all-time player data from {ALL_TIME_PLAYERS_JSON}: {e}")
-        return False
+
+    state["all_time"]["processed_game_ids"] = set()
+    return False
+
+def debug_log_content(log_text, file_name="unknown"):
+    """Debug log file content to verify snapshot and player data presence."""
+    logging.debug(f"Debugging log content for {file_name} (length: {len(log_text)} bytes)")
+    snapshot_pattern = r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] POST /totalmessage'
+    snapshots = re.findall(snapshot_pattern, log_text)
+    logging.debug(f"Found {len(snapshots)} snapshots in {file_name}")
+    player_pattern = r'TotalPlayerList:.*?\uId'
+    player_matches = re.findall(player_pattern, log_text, re.DOTALL)
+    logging.debug(f"Found {len(player_matches)} TotalPlayerList entries in {file_name}")
+    if player_matches:
+        logging.debug(f"Sample TotalPlayerList entry: {player_matches[0][:200]}...")
+    if not snapshots or not player_matches:
+        logging.warning(f"No valid snapshots or player data in {file_name}")
 
 def save_all_time_players():
-    """Save all-time player data to JSON file."""
+    """Save all-time player data to JSON file with enhanced error handling and debugging."""
+    import shutil
     try:
+        player_count = len(state["all_time"]["players"])
+        
+        # Ensure processed_game_ids is a set
+        if not isinstance(state["all_time"].get("processed_game_ids"), set):
+            logging.warning(f"processed_game_ids is not a set, it's a {type(state['all_time'].get('processed_game_ids'))}, converting...")
+            state["all_time"]["processed_game_ids"] = set(state["all_time"].get("processed_game_ids", []))
+        
+        processed_games = len(state["all_time"]["processed_game_ids"])
+        logging.info(f"Entering save_all_time_players: {player_count} players, {processed_games} games to save")
+        
+        # Debug: Show sample of game IDs
+        if processed_games > 0:
+            sample_ids = list(state["all_time"]["processed_game_ids"])[:5]
+            logging.info(f"Sample game IDs being saved: {sample_ids}")
+        else:
+            logging.warning("No processed game IDs to save!")
+        
         output_dir = Path(ALL_TIME_PLAYERS_JSON).parent
+        logging.debug(f"Ensuring output directory exists: {output_dir}")
         output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Check write permissions
+        if not os.access(output_dir, os.W_OK):
+            logging.error(f"No write permission for directory {output_dir}")
+            return
+
         temp_file = ALL_TIME_PLAYERS_JSON.with_suffix('.json.tmp')
-        with open(temp_file, "w", encoding="utf-8") as f:
-            json.dump({"players": state["all_time"]["players"]}, f, indent=2, ensure_ascii=False)
-        temp_file.rename(ALL_TIME_PLAYERS_JSON)
-        logging.info(f"Saved {len(state['all_time']['players'])} players to {ALL_TIME_PLAYERS_JSON}")
+        logging.debug(f"Attempting to write to temporary file: {temp_file}")
+
+        # Prepare data with processed game IDs (convert set to sorted list for readability)
+        processed_ids_list = sorted(list(state["all_time"]["processed_game_ids"]))
+        save_data = {
+            "players": state["all_time"]["players"],
+            "processed_game_ids": processed_ids_list
+        }
+        
+        logging.debug(f"Prepared save_data with {len(processed_ids_list)} game IDs")
+
+        # Write to temp file
+        try:
+            with open(temp_file, "w", encoding="utf-8") as f:
+                json.dump(save_data, f, indent=2, ensure_ascii=False)
+            logging.debug(f"Successfully wrote {player_count} players and {len(processed_ids_list)} game IDs to temp file {temp_file}")
+        except Exception as e:
+            logging.error(f"Failed to write to temp file {temp_file}: {e}")
+            if temp_file.exists():
+                temp_file.unlink(missing_ok=True)
+            return
+
+        # Verify temp file
+        if not temp_file.exists():
+            logging.error(f"Temporary file {temp_file} was not created")
+            return
+        if temp_file.stat().st_size == 0:
+            logging.error(f"Temporary file {temp_file} is empty")
+            temp_file.unlink(missing_ok=True)
+            return
+
+        # Close any existing file handles on Windows
+        import gc
+        gc.collect()
+
+        # Remove target file if it exists (Windows compatibility)
+        if ALL_TIME_PLAYERS_JSON.exists():
+            try:
+                ALL_TIME_PLAYERS_JSON.unlink()
+                logging.debug(f"Removed existing {ALL_TIME_PLAYERS_JSON}")
+            except Exception as e:
+                logging.warning(f"Could not remove existing file: {e}")
+
+        # Attempt to rename (now that target is gone)
+        try:
+            temp_file.rename(ALL_TIME_PLAYERS_JSON)
+            logging.info(f"Successfully saved {ALL_TIME_PLAYERS_JSON} with {player_count} players and {len(processed_ids_list)} processed games")
+            return
+        except OSError as e:
+            logging.error(f"Failed to rename {temp_file} to {ALL_TIME_PLAYERS_JSON}: {e}")
+
+        # Fallback: Direct copy
+        logging.warning(f"Attempting direct copy to {ALL_TIME_PLAYERS_JSON}")
+        try:
+            shutil.copy2(str(temp_file), str(ALL_TIME_PLAYERS_JSON))
+            logging.info(f"Successfully copied to {ALL_TIME_PLAYERS_JSON}")
+            temp_file.unlink(missing_ok=True)
+        except Exception as e:
+            logging.error(f"Failed to copy {temp_file} to {ALL_TIME_PLAYERS_JSON}: {e}")
+            if temp_file.exists():
+                temp_file.unlink(missing_ok=True)
+
     except Exception as e:
-        logging.error(f"Error saving all-time players to {ALL_TIME_PLAYERS_JSON}: {e}")
-        # Ensure file is not left empty or corrupted
-        if ALL_TIME_PLAYERS_JSON.exists() and ALL_TIME_PLAYERS_JSON.stat().st_size == 0:
-            logging.warning(f"Removing empty or corrupted {ALL_TIME_PLAYERS_JSON}")
-            ALL_TIME_PLAYERS_JSON.unlink(missing_ok=True)
+        logging.error(f"Unexpected error in save_all_time_players: {e}")
+        import traceback
+        logging.error(traceback.format_exc())
+        # Clean up temp file on error
+        try:
+            temp_file = ALL_TIME_PLAYERS_JSON.with_suffix('.json.tmp')
+            if temp_file.exists():
+                temp_file.unlink(missing_ok=True)
+        except:
+            pass
 
 def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown"):
     """Apply archived log data to all-time player statistics."""
@@ -1120,6 +1300,12 @@ def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown")
     processed_players = 0
     start_time = time.time()
     try:
+        # Validate and debug log content
+        debug_log_content(log_text, file_name)
+        if not validate_log_content(log_text):
+            logging.error(f"Invalid or empty log content in {file_name}, skipping processing")
+            return
+
         # Read log in chunks to reduce memory usage
         chunk_size = 1024 * 1024  # 1MB chunks
         snapshots = []
@@ -1137,7 +1323,7 @@ def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown")
             snapshots.extend(extract_snapshots(buffer))  # Process remaining buffer
         total_snapshots = len(snapshots)
         logging.info(f"Found {total_snapshots} snapshots in {file_name}")
-        
+
         # Group last snapshot per game_id
         game_snapshots = {}
         for i, snap in enumerate(snapshots):
@@ -1146,12 +1332,17 @@ def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown")
             game_snapshots[game_id] = snap
             if (i + 1) % 100 == 0:  # Progress update every 100 snapshots
                 print_progress_bar(i + 1, total_snapshots, prefix="Snapshots Scanned", suffix=f"{file_name}")
-        
+
         total_matches = len(game_snapshots)
         logging.info(f"Detected {total_matches} unique matches in {file_name}")
-        
+
         match_count = 0
         for game_id, last_snap in game_snapshots.items():
+            # Skip if already processed in all_time
+            if game_id in state["all_time"].get("processed_game_ids", set()):
+                logging.info(f"Skipping archived match {game_id}, already processed in all_time.")
+                continue
+
             if check_shutdown_conditions():
                 logging.info(f"Shutdown requested during processing of {file_name}. Stopping.")
                 break
@@ -1167,9 +1358,10 @@ def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown")
                 "players": {}
             }
             state["teamNameMapping"] = {}
-            
+
             process_snapshot(last_snap, parsed_logos)
-            
+            logging.debug(f"Processed snapshot for game {game_id}, current_match players: {len(state['current_match']['players'])}")
+
             # Update all-time stats
             for pid, pl in state["current_match"]["players"].items():
                 if not pid or pid == "None":
@@ -1191,22 +1383,41 @@ def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown")
                 at["totals"]["knockouts"] += int(pl["stats"].get("knockouts", 0))
                 at["totals"]["matches"] += 1
                 processed_players += 1
+                logging.debug(f"Updated all-time stats for player {pid} in match {game_id}: {at['totals']}")
+            # Mark this game_id as processed
+            state["all_time"].setdefault("processed_game_ids", set()).add(game_id)
             match_count += 1
             print_progress_bar(match_count, total_matches, prefix="Matches", suffix=f"{file_name}")
-        
+
         if total_matches == 0:
             logging.warning(f"No matches found in {file_name}")
         elapsed = time.time() - start_time
         logging.info(f"Processed {file_name} in {elapsed:.2f}s: {total_matches} matches, {processed_players} player updates")
+
+        # Save after processing all matches
+        save_all_time_players()
+        logging.info(f"Attempted to save all-time player data after processing {file_name}")
     except Exception as e:
         logging.error(f"Error processing archived log {file_name}: {e}")
     finally:
         in_archive_processing = False
         state["current_match"].update(temp_before)
         state["teamNameMapping"] = temp_mapping_before
-    # Save after each file
-    save_all_time_players()
-    logging.info(f"Completed {file_name} with {processed_players} player updates")
+
+def validate_log_content(log_text):
+    """Validate that the log text contains valid snapshot data."""
+    if not log_text or not isinstance(log_text, str):
+        logging.error("Log text is empty or invalid")
+        return False
+    snapshot_pattern = r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] POST /totalmessage'
+    if not re.search(snapshot_pattern, log_text):
+        logging.error("No valid snapshots found in log text")
+        return False
+    player_pattern = r'TotalPlayerList:.*?\uId'
+    if not re.search(player_pattern, log_text, re.DOTALL):
+        logging.warning("No player data found in log text")
+        return False
+    return True
 
 def process_archives_for_all_time(parsed_logos, force_repopulate=False):
     """Process archived logs for all-time player statistics."""
@@ -1752,8 +1963,8 @@ def main(test_mode=False, reprocess=False):
             print_colored(f"Failed to start web server: {e}", Fore.RED)
 
     # Load team logos and expected_teams (filtered non-placeholders, keyed by name)
-    ini_path = "C:\Users\Baghila\AppData\Local\ShadowTrackerExtra\Saved\TeamLogoAndColor.ini"
-    # ini_path = ".\TeamLogoAndColor.ini"
+    # ini_path = r"C:\Users\Baghila\AppData\Local\ShadowTrackerExtra\Saved\TeamLogoAndColor.ini"
+    ini_path = ".\TeamLogoAndColor.ini"
     if reprocess:
         team_logos = {}
         expected_teams = {}
