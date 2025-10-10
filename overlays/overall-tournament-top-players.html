@@ -36,15 +36,6 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
-        .overlay-subtitle {
-            text-align: center;
-            font-size: 1.5em;
-            font-weight: 400;
-            text-transform: uppercase;
-            margin-top: -10px;
-            color: #1d3148;
-        }
-        
         .players-container {
             display: flex;
             justify-content: center;
@@ -129,14 +120,12 @@
             height: 30px;
             object-fit: contain;
         }
-
     </style>
 </head>
 <body>
 
     <div id="top-players" class="overlay-container">
         <h1 class="overlay-title">Overall Top Players</h1>
-        <h2 class="overlay-subtitle" id="tournament-subtitle">SEMI FINAL B</h2>
         <div class="players-container" id="top-players-container"></div>
     </div>
     
@@ -145,33 +134,22 @@ const API_URL = '/api/live_data';
 const defaultLogo = "/assets/default-team-logo.jpg";
 let currentPlayers = [];
 
-function findTeamByPlayerId(playerId, teamsData) {
-    if (!teamsData) return null;
-    
-    for (const [teamId, team] of Object.entries(teamsData)) {
-        if (team.players && team.players.includes(playerId)) {
-            return team;
-        }
-    }
-    return null;
-}
-
 function findTeamByName(teamName, teamsData) {
     if (!teamsData || !teamName) return null;
     
-    for (const [teamId, team] of Object.entries(teamsData)) {
-        if (team.name && team.name === teamName) {
-            return team;
+    for (const [teamId, teamData] of Object.entries(teamsData)) {
+        if (teamData.name && teamData.name.toLowerCase() === teamName.toLowerCase()) {
+            return teamData;
         }
     }
     
     const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
-    for (const [teamId, team] of Object.entries(teamsData)) {
-        if (!team.name) continue;
+    for (const [teamId, teamData] of Object.entries(teamsData)) {
+        if (!teamData.name) continue;
         
-        const cleanTeamName = team.name.toLowerCase().replace('esports', '').trim();
+        const cleanTeamName = teamData.name.toLowerCase().replace('esports', '').trim();
         if (cleanTeamName.includes(cleanSearchName) || cleanSearchName.includes(cleanTeamName)) {
-            return team;
+            return teamData;
         }
     }
     
@@ -200,7 +178,8 @@ async function fetchOverallTopPlayers() {
         totalDamage: p.stats?.damage || 0,
         totalKnockouts: p.stats?.knockouts || 0,
         totalMatches: 1,
-        teamId: p.teamId
+        teamId: p.teamId,
+        teamName: findTeamByName(p.teamName || '', data.match.teams)?.name || p.teamName || 'Unknown Team'
       }));
       subtitle = "CURRENT MATCH";
     }
@@ -213,14 +192,10 @@ async function fetchOverallTopPlayers() {
         totalDamage: p.stats?.damage || 0,
         totalKnockouts: p.stats?.knockouts || 0,
         totalMatches: 1,
-        teamId: p.teamId
+        teamId: p.teamId,
+        teamName: findTeamByName(p.teamName || '', data.previous.teams)?.name || p.teamName || 'Unknown Team'
       }));
       subtitle = "PREVIOUS MATCH";
-    }
-
-    const subtitleElement = document.getElementById('tournament-subtitle');
-    if (subtitleElement && subtitleElement.textContent !== subtitle) {
-      subtitleElement.textContent = subtitle;
     }
 
     if (topPlayers.length === 0) {
@@ -233,28 +208,23 @@ async function fetchOverallTopPlayers() {
       return b.totalDamage - a.totalDamage;
     });
 
-    const teams = data.match?.teams || data.previous?.teams || {};
-    const players = data.match?.players || data.previous?.players || {};
+    const teams = data.match?.teams || data.previous?.teams || data.current_match?.teams || {};
 
     const playersWithTeam = topPlayers.slice(0, 5).map((player, index) => {
-      const playerData = players[player.playerId] || {};
+      const playerData = (data.match?.players || data.previous?.players || {})[player.playerId] || {};
       const teamId = player.teamId || playerData.teamId;
       
-      let team = teams[teamId] || null;
+      let team = teamId && teams[teamId] ? teams[teamId] : null;
       
       if (!team && player.teamName) {
         team = findTeamByName(player.teamName, teams);
-      }
-      
-      if (!team) {
-        team = findTeamByPlayerId(player.playerId || playerData.id, teams);
       }
       
       return {
         ...player,
         rank: index + 1,
         teamLogo: team?.logo || defaultLogo,
-        playerPhoto: playerData.photo || '/assets/PUBG.png',
+        playerPhoto: playerData.photo || player.playerPhoto || '/assets/PUBG.png',
         playerName: player.name || playerData.name || 'Unknown Player',
         teamName: team?.name || player.teamName || 'Unknown Team'
       };
@@ -283,7 +253,6 @@ function updateTopPlayers(players) {
     players.some((player, idx) => currentPlayers[idx]?.playerId !== player.playerId);
 
   if (playersChanged) {
-    // Full rebuild
     container.innerHTML = '';
     players.forEach((player) => {
       const playerCard = document.createElement('div');
@@ -291,7 +260,7 @@ function updateTopPlayers(players) {
       playerCard.dataset.playerId = player.playerId;
       playerCard.innerHTML = `
         <div class="player-rank">#${player.rank}</div>
-        <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src=defaultLogo">
+        <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='${defaultLogo}'">
         <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='/assets/PUBG.png'">
         <div class="player-name-bg">
           <div class="player-name">${player.playerName}</div>
@@ -306,7 +275,6 @@ function updateTopPlayers(players) {
     });
     currentPlayers = players;
   } else {
-    // Update only stats
     players.forEach((player, index) => {
       const card = container.children[index];
       if (!card) return;
@@ -334,7 +302,7 @@ function updateTopPlayers(players) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchOverallTopPlayers();
-  setInterval(fetchOverallTopPlayers, 2000);
+  setInterval(fetchOverallTopPlayers, 1000);
 });
 </script>
 

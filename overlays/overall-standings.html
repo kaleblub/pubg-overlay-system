@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PUBG Match Standings</title>
     <link rel="stylesheet" href="./styles.css">
-        <style>
+    <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
         body {
@@ -141,13 +141,11 @@
             align-items: center;
         }
     </style>
-
 </head>
 <body>
 
     <div id="match-standings" class="overlay-container">
-        <h1 class="overlay-title">Tournament Phase Standings</h1>
-        <h2 class="overlay-subtitle" id="match-subtitle">SEMI FINAL B</h2>
+        <h1 class="overlay-title">Overall Standings</h1>
         <div class="scoreboard-grid" id="scoreboard-grid">
             <div class="left-column">
                 <ul class="team-list" id="team-list-left"></ul>
@@ -163,6 +161,28 @@
 const API_URL = '/api/live_data';
 const defaultLogo = "/assets/default-team-logo.jpg";
 let currentStandings = [];
+
+function findTeamByName(teamName, teamsData) {
+    if (!teamsData || !teamName) return null;
+    
+    for (const [teamId, teamData] of Object.entries(teamsData)) {
+        if (teamData.name && teamData.name.toLowerCase() === teamName.toLowerCase()) {
+            return teamData;
+        }
+    }
+    
+    const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
+    for (const [teamId, teamData] of Object.entries(teamsData)) {
+        if (!teamData.name) continue;
+        
+        const cleanTeamName = teamData.name.toLowerCase().replace('esports', '').trim();
+        if (cleanTeamName.includes(cleanSearchName) || cleanSearchName.includes(cleanTeamName)) {
+            return teamData;
+        }
+    }
+    
+    return null;
+}
 
 async function fetchData() {
   try {
@@ -182,35 +202,13 @@ async function fetchData() {
     } else if (data.previous?.teams && Object.keys(data.previous.teams).length > 0) {
       teamsData = data.previous.teams;
       subtitle = "PREVIOUS MATCH";
+    } else if (data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
+      teamsData = data.current_match.teams;
+      subtitle = "CURRENT STANDINGS";
     }
-    
-    const subtitleEl = document.getElementById('match-subtitle');
-    if (subtitleEl && subtitleEl.textContent !== subtitle) {
-      subtitleEl.textContent = subtitle;
-    }
-
-    const findTeamByName = (teamName) => {
-      for (const [teamId, teamData] of Object.entries(teamsData)) {
-        if (teamData.name && teamData.name === teamName) {
-          return teamData;
-        }
-      }
-      
-      const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
-      for (const [teamId, teamData] of Object.entries(teamsData)) {
-        if (!teamData.name) continue;
-        
-        const cleanTeamName = teamData.name.toLowerCase().replace('esports', '').trim();
-        if (cleanTeamName.includes(cleanSearchName) || cleanSearchName.includes(cleanTeamName)) {
-          return teamData;
-        }
-      }
-      
-      return null;
-    };
 
     const standings = standingsRaw.map(teamStanding => {
-      const teamInfo = findTeamByName(teamStanding.teamName) || {};
+      const teamInfo = findTeamByName(teamStanding.teamName, teamsData) || {};
       return {
         ...teamStanding,
         teamLogo: teamInfo.logo || defaultLogo
@@ -219,6 +217,8 @@ async function fetchData() {
 
     standings.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
+      if (b.wwcd !== a.wwcd) return b.wwcd - a.wwcd;
+      if (b.placementPoints !== a.placementPoints) return b.placementPoints - a.placementPoints;
       return (b.kills || 0) - (a.kills || 0);
     });
 
@@ -249,7 +249,6 @@ function renderScoreboard(teams) {
     teams.some((team, idx) => currentStandings[idx]?.teamName !== team.teamName);
 
   if (standingsChanged) {
-    // Full rebuild
     teamListLeft.innerHTML = headerHtml;
     teamListRight.innerHTML = headerHtml;
 
@@ -267,7 +266,6 @@ function renderScoreboard(teams) {
     
     currentStandings = teams;
   } else {
-    // Update only stats
     const mid = Math.ceil(teams.length / 2);
     
     teams.forEach((team, index) => {
@@ -289,7 +287,7 @@ function renderTeamItem(team, rank) {
   li.innerHTML = `
     <div class="team-rank">#${rank}</div>
     <div class="team-name-column">
-      <img src="${team.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='https://placehold.co/25x25/A0522D/ffffff?text=L'">
+      <img src="${team.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='${defaultLogo}'">
       <span>${team.teamName}</span>
     </div>
     <div class="team-stats">
@@ -320,7 +318,7 @@ function updateTeamItem(teamItem, team) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
-  setInterval(fetchData, 2000);
+  setInterval(fetchData, 1000);
 });
 </script>
 

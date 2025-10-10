@@ -1,17 +1,13 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live Scoreboard Overlay</title>
-  <!-- <script src="https://cdn.tailwindcss.com"></script> -->
   <link rel="stylesheet" href="./styles.css">
   <style>
-    /* Inter font is a great default for a clean, modern look */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
    
-    /* Overall styling for the body */
     body {
       background-color: transparent;
       color: #ffffff;
@@ -24,7 +20,6 @@
       min-height: 100vh;
     }
    
-    /* Main container for the scoreboard */
     .scoreboard-container {
       width: 325px;
       max-width: 95%;
@@ -34,7 +29,6 @@
       background-color: var(--background-neutral-color);
     }
    
-    /* Header row styling */
     .header {
       display: grid;
       grid-template-columns: 30px 1fr 40px 70px 50px;
@@ -59,7 +53,6 @@
       text-align: center;
     }
 
-    /* Team row styling */
     .team-row {
       display: grid;
       grid-template-columns: 30px 1fr 40px 70px 50px;
@@ -76,7 +69,6 @@
       border-bottom: none;
     }
 
-    /* Column alignment */
     .rank-cell, .team-cell, .points-cell, .kills-cell, .status-cell {
       text-align: center;
     }
@@ -126,7 +118,6 @@
       padding: 5px 5px;
     }
     
-    /* Player status bar and health bar styling */
     .status-bar {
       width: 10px;
       height: 20px;
@@ -143,12 +134,10 @@
       transition: height 0.3s ease;
     }
     
-    /* Specific styles for low health */
     .status-bar-fill.low-health {
       background-color: #e74c3c;
     }
     
-    /* Styling for eliminated players */
     .status-x {
       width: 20px;
       height: 20px;
@@ -175,7 +164,6 @@
         font-size: 0.8em;
     }
 
-    /* Example row styling */
     .example-row {
       background-color: var(--main-color);
       display: flex;
@@ -232,7 +220,7 @@
     let currentStandings = [];
     const jsonUrl = "/api/live_data";
     const defaultLogo = "/assets/default-team-logo.jpg";
-    const retryDelay = 5000;
+    const retryDelay = 1000;
 
     const fetchData = async () => {
         try {
@@ -242,8 +230,6 @@
             }
             const data = await response.json();
             lastData = data;
-
-            console.log('Fetched data:', JSON.stringify(data, null, 2));
 
             const matchStatus = data.match_state?.status || 'idle';
             let currentMatchTeams = data.current_match?.teams || {};
@@ -329,17 +315,18 @@
             if (a.teamId === 'MISS' && b.teamId !== 'MISS') return 1;
             if (b.teamId === 'MISS' && a.teamId !== 'MISS') return -1;
             if (a.teamId === 'MISS' && b.teamId === 'MISS') return 0;
-            return (b.points !== a.points) ? (b.points - a.points) : (b.kills - a.kills);
+            if (b.points !== a.points) return b.points - a.points;
+            if (b.wwcd !== a.wwcd) return b.wwcd - a.wwcd;
+            if (b.placementPoints !== a.placementPoints) return b.placementPoints - a.placementPoints;
+            return b.kills - a.kills;
         });
 
         standings = standings.slice(0, 25);
 
-        // Check if standings order changed
         const standingsChanged = currentStandings.length !== standings.length || 
             standings.some((team, idx) => currentStandings[idx]?.teamId !== team.teamId);
 
         if (standingsChanged) {
-            // Full rebuild only when order changes
             teamsList.innerHTML = '';
             standings.forEach((team, index) => {
                 const teamRow = buildTeamRow(team, index, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus);
@@ -347,7 +334,6 @@
             });
             currentStandings = standings;
         } else {
-            // Update only changed values - keeps images in place
             standings.forEach((team, index) => {
                 const existingRow = teamsList.children[index];
                 if (existingRow) {
@@ -491,7 +477,6 @@
             pointsCell.textContent = totalPoints;
         }
 
-        // Update health bars for live matches
         if (statusCell && matchStatus === 'live' && teamInfo && !teamInfo.missing) {
             let playersToUse = currentPlayers;
             if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && lastMatchTeams) {
@@ -521,10 +506,9 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         fetchData();
-        setInterval(fetchData, 5000);
+        setInterval(fetchData, 1000);
     });
 </script>
 
 </body>
 </html>
-```

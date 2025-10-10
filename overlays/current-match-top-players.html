@@ -134,15 +134,14 @@
 <body>
 
     <div id="top-players" class="overlay-container">
-        <h1 class="overlay-title">Live Match Top Players</h1>
-        <h2 class="overlay-subtitle">CURRENT GAME</h2>
+        <h1 class="overlay-title">Top Players</h1>
         <div class="players-container" id="top-players-container"></div>
     </div>
     
 <script>
     const jsonUrl = '/api/live_data';
     let currentPlayers = [];
-    let playerCards = new Map(); // Cache player cards by player ID
+    let playerCards = new Map();
 
     async function retryFetch(url, options = {}, retries = 3) {
         for (let i = 0; i < retries; i++) {
@@ -248,19 +247,10 @@
                 subtitle = "WAITING FOR DATA";
             }
 
-            const subtitleEl = document.querySelector('.overlay-subtitle');
-            if (subtitleEl.textContent !== subtitle) {
-                subtitleEl.textContent = subtitle;
-            }
-            
             updateTopPlayers(topPlayersData);
             
         } catch (error) {
             console.error('Error fetching data:', error);
-            const subtitleEl = document.querySelector('.overlay-subtitle');
-            if (subtitleEl.textContent !== 'ERROR LOADING DATA') {
-                subtitleEl.textContent = 'ERROR LOADING DATA';
-            }
         }
     }
 
@@ -274,12 +264,10 @@
             return;
         }
 
-        // Check if we need to rebuild or update
         const needsRebuild = players.length !== currentPlayers.length || 
             players.some((player, idx) => !currentPlayers[idx] || currentPlayers[idx].id !== player.id);
 
         if (needsRebuild) {
-            // Clear existing cards and rebuild only if structure changes
             container.innerHTML = '';
             playerCards.clear();
             players.forEach((player, index) => {
@@ -303,7 +291,6 @@
             });
             currentPlayers = [...players];
         } else {
-            // Update existing cards without rebuilding images
             players.forEach((player, index) => {
                 const card = playerCards.get(player.id);
                 if (!card) return;
@@ -338,7 +325,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchData();
-        setInterval(fetchData, 5000); // Adjusted to 5 seconds to match stable overlay
+        setInterval(fetchData, 1000);
     });
 </script>
 
