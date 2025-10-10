@@ -211,15 +211,19 @@ async function fetchData() {
       const teamInfo = findTeamByName(teamStanding.teamName, teamsData) || {};
       return {
         ...teamStanding,
+        teamId: teamStanding.teamId || (teamInfo.missing ? 'MISS' : teamStanding.teamName),
         teamLogo: teamInfo.logo || defaultLogo
       };
     });
 
     standings.sort((a, b) => {
+      if (a.teamId === 'MISS' && b.teamId !== 'MISS') return 1;
+      if (b.teamId === 'MISS' && a.teamId !== 'MISS') return -1;
+      if (a.teamId === 'MISS' && b.teamId === 'MISS') return 0;
       if (b.points !== a.points) return b.points - a.points;
       if (b.wwcd !== a.wwcd) return b.wwcd - a.wwcd;
       if (b.placementPoints !== a.placementPoints) return b.placementPoints - a.placementPoints;
-      return (b.kills || 0) - (a.kills || 0);
+      return b.kills - a.kills;
     });
 
     renderScoreboard(standings);
@@ -228,7 +232,7 @@ async function fetchData() {
   }
 }
 
-function renderScoreboard(teams) {
+function renderScoreboard(standings) {
   const teamListLeft = document.getElementById('team-list-left');
   const teamListRight = document.getElementById('team-list-right');
   
@@ -245,16 +249,16 @@ function renderScoreboard(teams) {
     </li>
   `;
 
-  const standingsChanged = currentStandings.length !== teams.length || 
-    teams.some((team, idx) => currentStandings[idx]?.teamName !== team.teamName);
+  const standingsChanged = currentStandings.length !== standings.length || 
+    standings.some((team, idx) => currentStandings[idx]?.teamId !== team.teamId);
 
   if (standingsChanged) {
     teamListLeft.innerHTML = headerHtml;
     teamListRight.innerHTML = headerHtml;
 
-    const mid = Math.ceil(teams.length / 2);
-    const left = teams.slice(0, mid);
-    const right = teams.slice(mid);
+    const mid = Math.ceil(standings.length / 2);
+    const left = standings.slice(0, mid);
+    const right = standings.slice(mid);
 
     left.forEach((team, i) => {
       teamListLeft.appendChild(renderTeamItem(team, i + 1));
@@ -264,11 +268,11 @@ function renderScoreboard(teams) {
       teamListRight.appendChild(renderTeamItem(team, mid + i + 1));
     });
     
-    currentStandings = teams;
+    currentStandings = standings;
   } else {
-    const mid = Math.ceil(teams.length / 2);
+    const mid = Math.ceil(standings.length / 2);
     
-    teams.forEach((team, index) => {
+    standings.forEach((team, index) => {
       const list = index < mid ? teamListLeft : teamListRight;
       const listIndex = index < mid ? index + 1 : (index - mid + 1);
       const teamItem = list.children[listIndex];
@@ -282,17 +286,17 @@ function renderScoreboard(teams) {
 function renderTeamItem(team, rank) {
   const li = document.createElement('li');
   li.className = 'team-item';
-  li.dataset.teamName = team.teamName;
+  li.dataset.teamId = team.teamId;
   
   li.innerHTML = `
-    <div class="team-rank">#${rank}</div>
+    <div class="team-rank">${team.teamId === 'MISS' ? 'MISS' : `#${rank}`}</div>
     <div class="team-name-column">
       <img src="${team.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='${defaultLogo}'">
       <span>${team.teamName}</span>
     </div>
     <div class="team-stats">
       <span style="width:50px;text-align:center;">${team.wwcd || 0}</span>
-      <span style="width:70px;text-align:center;">${team.placementPoints || 0}</span>
+      <span style="width:70px;text-align:center;">${team.teamId === 'MISS' ? 'MISS' : team.placementPoints || 0}</span>
       <span style="width:50px;text-align:center;">${team.kills || 0}</span>
       <span style="width:50px;text-align:center;">${team.points || 0}</span>
     </div>
@@ -305,8 +309,8 @@ function updateTeamItem(teamItem, team) {
   if (stats[0] && stats[0].textContent !== (team.wwcd || 0).toString()) {
     stats[0].textContent = team.wwcd || 0;
   }
-  if (stats[1] && stats[1].textContent !== (team.placementPoints || 0).toString()) {
-    stats[1].textContent = team.placementPoints || 0;
+  if (stats[1] && stats[1].textContent !== (team.teamId === 'MISS' ? 'MISS' : (team.placementPoints || 0)).toString()) {
+    stats[1].textContent = team.teamId === 'MISS' ? 'MISS' : team.placementPoints || 0;
   }
   if (stats[2] && stats[2].textContent !== (team.kills || 0).toString()) {
     stats[2].textContent = team.kills || 0;

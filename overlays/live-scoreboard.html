@@ -149,6 +149,17 @@
       font-size: 0.9em;
     }
     
+    .miss-letter {
+      width: 10px;
+      height: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      color: #e74c3c;
+      font-size: 0.9em;
+    }
+    
     .status-text {
       text-align: center;
       padding: 10px;
@@ -395,11 +406,13 @@
         const statusCell = document.createElement('div');
         statusCell.className = 'player-status-cell';
 
-        if (teamInfo && teamInfo.missing) {
-            const missingText = document.createElement('div');
-            missingText.className = 'missing-text';
-            missingText.textContent = 'M I S S';
-            statusCell.appendChild(missingText);
+        if (team.teamId === 'MISS' || (teamInfo && teamInfo.missing)) {
+            ['M', 'I', 'S', 'S'].forEach(letter => {
+                const missLetter = document.createElement('div');
+                missLetter.className = 'miss-letter';
+                missLetter.textContent = letter;
+                statusCell.appendChild(missLetter);
+            });
         } else {
             let playersToUse = currentPlayers;
             if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && lastMatchTeams) {
@@ -444,7 +457,7 @@
         }
         teamRow.appendChild(statusCell);
 
-        const totalPoints = team.points || 0;
+        const totalPoints = team.teamId === 'MISS' ? 0 : team.points || 0;
 
         const pointsCell = document.createElement('div');
         pointsCell.className = 'points-cell';
@@ -472,12 +485,12 @@
             killsCell.textContent = killsToDisplay;
         }
 
-        const totalPoints = team.points || 0;
+        const totalPoints = team.teamId === 'MISS' ? 0 : team.points || 0;
         if (pointsCell && pointsCell.textContent !== totalPoints.toString()) {
             pointsCell.textContent = totalPoints;
         }
 
-        if (statusCell && matchStatus === 'live' && teamInfo && !teamInfo.missing) {
+        if (statusCell && matchStatus === 'live' && teamInfo && !teamInfo.missing && team.teamId !== 'MISS') {
             let playersToUse = currentPlayers;
             if ((!currentPlayers || Object.keys(currentPlayers).length === 0) && lastMatchTeams) {
                 playersToUse = lastMatchTeams[numericId]?.players || [];

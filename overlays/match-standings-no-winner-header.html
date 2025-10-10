@@ -178,7 +178,7 @@ let lastData = null;
 let currentStandings = [];
 const API_URL = '/api/live_data';
 const defaultLogo = "/assets/default-team-logo.jpg";
-const retryDelay = 5000;
+const retryDelay = 1000;
 
 async function fetchData() {
     try {
@@ -202,7 +202,7 @@ async function fetchData() {
                 placementPoints: team.placementPointsLive || 0,
                 points: (team.kills || 0) + (team.placementPointsLive || 0),
                 wwcd: 0,
-                rank: team.rank || 0
+                rank: team.missing ? 'MISS' : team.rank || 0
             }));
         } else if (data.matches?.length > 0) {
             const latestMatch = data.matches[data.matches.length - 1];
@@ -250,7 +250,7 @@ async function fetchData() {
                 placementPoints: team.placementPointsLive || 0,
                 points: (team.kills || 0) + (team.placementPointsLive || 0),
                 wwcd: 0,
-                rank: team.rank || 0
+                rank: team.missing ? 'MISS' : team.rank || 0
             }));
         }
 
@@ -283,7 +283,7 @@ async function fetchData() {
     } catch (error) {
         console.error('Error fetching data:', error);
         if (lastData) {
-            // Use cached data (simplified for brevity)
+            renderNoData(true);
         } else {
             renderNoData(false);
         }
@@ -313,7 +313,7 @@ function renderScoreboard(standings, teams, subtitle, data, isCached = false) {
     const teamsWithMatchTotals = standings.map(team => ({
         ...team,
         matchKills: team.kills,
-        placementPoints: team.placementPoints,
+        placementPoints: team.rank === 'MISS' ? 'MISS' : team.placementPoints,
         matchTotal: team.points,
         wwcd: team.wwcd
     }));
@@ -324,7 +324,9 @@ function renderScoreboard(standings, teams, subtitle, data, isCached = false) {
         if (a.rank === 'MISS' && b.rank === 'MISS') return 0;
         if (b.matchTotal !== a.matchTotal) return b.matchTotal - a.matchTotal;
         if (b.wwcd !== a.wwcd) return b.wwcd - a.wwcd;
-        if (b.placementPoints !== a.placementPoints) return b.placementPoints - a.placementPoints;
+        if (b.placementPoints !== a.placementPoints && b.placementPoints !== 'MISS' && a.placementPoints !== 'MISS') {
+            return b.placementPoints - a.placementPoints;
+        }
         return b.matchKills - a.matchKills;
     });
 
@@ -383,7 +385,7 @@ function renderTeamItem(team, overallIndex, teams) {
       </div>
       <div class="team-stats">
         <span style="width:50px;text-align:center;">${team.matchKills}</span>
-        <span style="width:70px;text-align:center;">${team.placementPoints}</span>
+        <span style="width:70px;text-align:center;">${team.rank === 'MISS' ? 'MISS' : team.placementPoints}</span>
         <span style="width:50px;text-align:center;">${team.matchTotal}</span>
       </div>
     `;
@@ -395,8 +397,8 @@ function updateTeamItem(teamItem, team) {
     if (stats[0] && stats[0].textContent !== team.matchKills.toString()) {
         stats[0].textContent = team.matchKills;
     }
-    if (stats[1] && stats[1].textContent !== team.placementPoints.toString()) {
-        stats[1].textContent = team.placementPoints;
+    if (stats[1] && stats[1].textContent !== (team.rank === 'MISS' ? 'MISS' : team.placementPoints).toString()) {
+        stats[1].textContent = team.rank === 'MISS' ? 'MISS' : team.placementPoints;
     }
     if (stats[2] && stats[2].textContent !== team.matchTotal.toString()) {
         stats[2].textContent = team.matchTotal;
