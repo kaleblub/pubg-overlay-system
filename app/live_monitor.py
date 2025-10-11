@@ -221,11 +221,54 @@ def _parse_kv_object(text):
     return obj
 
 def _parse_ini(config_string):
+    import os
+    import shutil
+    from pathlib import Path
+
     teams = {}
+
+    # Define source and target directories
+    source_dir = Path(r"C:/LOGO")
+    project_root = Path(__file__).resolve().parent
+    target_dir = project_root / "assets" / "LOGO"
+    os.makedirs(target_dir, exist_ok=True)
+
     for line in config_string.strip().splitlines():
         m = re.search(r'TeamLogoAndColor=\(TeamNo=(\d+),TeamName=([^,]+),TeamLogoPath=([^,]+)', line)
-        if m:
-            teams[str(int(m.group(1)))] = {"name": m.group(2), "logoPath": m.group(3)}
+        if not m:
+            continue
+
+        team_no = str(int(m.group(1)))
+        team_name = m.group(2).strip('"')
+        logo_path = m.group(3).strip('"')
+
+        # Extract filename
+        filename = os.path.basename(logo_path)
+        if filename:
+            source_file = source_dir / filename
+            target_file = target_dir / filename
+
+            # Copy only if file exists and is new/updated
+            try:
+                if source_file.exists():
+                    if not target_file.exists() or source_file.stat().st_mtime > target_file.stat().st_mtime:
+                        shutil.copy2(source_file, target_file)
+                        logging.info(f"Copied logo: {filename} → assets/LOGO/")
+                else:
+                    logging.warning(f"Logo not found in source: {source_file}")
+            except Exception as e:
+                logging.error(f"Error copying logo {filename}: {e}")
+
+            # Create Flask-served relative URL
+            relative_url = f"/assets/LOGO/{filename}"
+        else:
+            relative_url = ""
+
+        teams[team_no] = {
+            "name": team_name,
+            "logoPath": relative_url
+        }
+
     return teams
 
 def get_team_logos(ini_file_path):
