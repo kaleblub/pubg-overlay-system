@@ -324,7 +324,6 @@
         }
         
         // Merge missing teams into lastMatchTeams
-        // Priority: 1. current_match.missing_teams (for live), 2. last match's missing_teams
         let missingTeamsSource = null;
         
         if (matchStatus === 'live' && lastData && lastData.current_match && lastData.current_match.missing_teams) {
@@ -352,36 +351,50 @@
             });
         }
 
+        // Augment standings with adjusted points and kills
+        standings.forEach(team => {
+            if (team.teamId === 'MISS') {
+                team.adjustedPoints = 0;
+                team.adjustedKills = 0;
+            } else {
+                const numericId = teamNameToId[team.teamId] || teamNameToId[team.teamName];
+                let currentKills = 0;
+                let teamInfo;
+                if (matchStatus === 'live' && numericId && currentMatchTeams[numericId]) {
+                    teamInfo = currentMatchTeams[numericId];
+                    currentKills = teamInfo.kills || 0;
+                } else if (numericId && lastMatchTeams && lastMatchTeams[numericId]) {
+                    teamInfo = lastMatchTeams[numericId];
+                }
+                team.adjustedPoints = matchStatus === 'live' ? (team.points || 0) + currentKills : (team.points || 0);
+                team.adjustedKills = matchStatus === 'live' ? (team.kills || 0) + currentKills : (team.kills || 0);
+            }
+        });
+
+        // Sort standings based on adjustedPoints during live matches, or points otherwise
         standings.sort((a, b) => {
             if (a.teamId === 'MISS' && b.teamId !== 'MISS') return 1;
             if (b.teamId === 'MISS' && a.teamId !== 'MISS') return -1;
             if (a.teamId === 'MISS' && b.teamId === 'MISS') return 0;
-            if (b.points !== a.points) return b.points - a.points;
+            const pointsA = matchStatus === 'live' ? a.adjustedPoints : a.points;
+            const pointsB = matchStatus === 'live' ? b.adjustedPoints : b.points;
+            if (pointsB !== pointsA) return pointsB - pointsA;
             if (b.wwcd !== a.wwcd) return b.wwcd - a.wwcd;
             if (b.placementPoints !== a.placementPoints) return b.placementPoints - a.placementPoints;
-            return b.kills - a.kills;
+            const killsA = matchStatus === 'live' ? a.adjustedKills : a.kills;
+            const killsB = matchStatus === 'live' ? b.adjustedKills : b.kills;
+            return killsB - killsA;
         });
 
         standings = standings.slice(0, 25);
 
-        const standingsChanged = currentStandings.length !== standings.length || 
-            standings.some((team, idx) => currentStandings[idx]?.teamId !== team.teamId);
-
-        if (standingsChanged) {
-            teamsList.innerHTML = '';
-            standings.forEach((team, index) => {
-                const teamRow = buildTeamRow(team, index, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus);
-                teamsList.appendChild(teamRow);
-            });
-            currentStandings = standings;
-        } else {
-            standings.forEach((team, index) => {
-                const existingRow = teamsList.children[index];
-                if (existingRow) {
-                    updateTeamRow(existingRow, team, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus);
-                }
-            });
-        }
+        // Always rebuild rows to ensure correct rank display
+        teamsList.innerHTML = '';
+        standings.forEach((team, index) => {
+            const teamRow = buildTeamRow(team, index, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus);
+            teamsList.appendChild(teamRow);
+        });
+        currentStandings = standings;
     };
 
     function buildTeamRow(team, index, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus) {
@@ -414,7 +427,6 @@
         logoImg.onerror = function() { this.src = defaultLogo; };
         teamNameCell.appendChild(logoImg);
 
-        // Get abbreviation from logo filename if available
         if (teamLogo && teamLogo !== defaultLogo) {
             const logoFilename = teamLogo.split('/').pop();
             if (logoFilename) {
@@ -427,7 +439,7 @@
         teamNameCell.appendChild(nameSpan);
         teamRow.appendChild(teamNameCell);
 
-        let killsToDisplay = teamInfo?.kills ?? team.kills ?? 0;
+        const killsToDisplay = teamInfo?.kills ?? team.kills ?? 0;
 
         const killsCell = document.createElement('div');
         killsCell.className = 'kills-cell';
@@ -488,7 +500,7 @@
         }
         teamRow.appendChild(statusCell);
 
-        const totalPoints = team.teamId === 'MISS' ? 0 : team.points || 0;
+        const totalPoints = team.teamId === 'MISS' ? 0 : team.adjustedPoints;
 
         const pointsCell = document.createElement('div');
         pointsCell.className = 'points-cell';
@@ -507,16 +519,21 @@
             teamInfo = lastMatchTeams[numericId];
         }
 
+        const rankCell = teamRow.querySelector('.rank-cell');
         const killsCell = teamRow.querySelector('.kills-cell');
         const pointsCell = teamRow.querySelector('.points-cell');
         const statusCell = teamRow.querySelector('.player-status-cell');
+
+        // Update rank to reflect current index
+        const rankIndex = parseInt(teamRow.parentNode.children[Array.from(teamRow.parentNode.children).indexOf(teamRow)].dataset.teamId === team.teamId ? Array.from(teamRow.parentNode.children).indexOf(teamRow) + 1 : rankCell.textContent);
+        rankCell.textContent = team.teamId === 'MISS' ? 'MISS' : rankIndex;
 
         const killsToDisplay = teamInfo?.kills ?? team.kills ?? 0;
         if (killsCell && killsCell.textContent !== killsToDisplay.toString()) {
             killsCell.textContent = killsToDisplay;
         }
 
-        const totalPoints = team.teamId === 'MISS' ? 0 : team.points || 0;
+        const totalPoints = team.teamId === 'MISS' ? 0 : team.adjustedPoints;
         if (pointsCell && pointsCell.textContent !== totalPoints.toString()) {
             pointsCell.textContent = totalPoints;
         }
