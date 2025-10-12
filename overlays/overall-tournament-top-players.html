@@ -143,166 +143,206 @@ function findTeamByName(teamName, teamsData) {
         }
     }
     
-    const cleanSearchName = teamName.toLowerCase().replace('esports', '').trim();
-    for (const [teamId, teamData] of Object.entries(teamsData)) {
-        if (!teamData.name) continue;
-        
-        const cleanTeamName = teamData.name.toLowerCase().replace('esports', '').trim();
-        if (cleanTeamName.includes(cleanSearchName) || cleanSearchName.includes(cleanTeamName)) {
-            return teamData;
-        }
-    }
-    
     return null;
 }
 
 async function fetchOverallTopPlayers() {
-  try {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
 
-    let topPlayers = [];
-    let subtitle = "TOURNAMENT LEADERS";
+        let topPlayers = [];
+        let subtitle = "TOURNAMENT LEADERS";
+        let teamsData = {};
 
-    if (data.phase?.allTimeTopPlayers && data.phase.allTimeTopPlayers.length > 0) {
-      topPlayers = data.phase.allTimeTopPlayers;
-      subtitle = "ALL-TIME LEADERS";
-    } 
-    else if (data.match?.players && Object.keys(data.match.players).length > 0) {
-      const allPlayers = Object.values(data.match.players);
-      topPlayers = allPlayers.map(p => ({
-        playerId: p.id,
-        name: p.name,
-        totalKills: p.stats?.kills || 0,
-        totalDamage: p.stats?.damage || 0,
-        totalKnockouts: p.stats?.knockouts || 0,
-        totalMatches: 1,
-        teamId: p.teamId,
-        teamName: findTeamByName(p.teamName || '', data.match.teams)?.name || p.teamName || 'Unknown Team'
-      }));
-      subtitle = "CURRENT MATCH";
+        const matchStatus = data.match_state?.status || 'idle';
+
+        // Prioritize current match teams for live matches
+        if (matchStatus === 'live' && data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
+            teamsData = { ...data.current_match.teams };
+            subtitle = "CURRENT MATCH";
+            if (data.current_match?.missing_teams) {
+                data.current_match.missing_teams.forEach(team => {
+                    if (team.id && team.name) {
+                        teamsData[team.id] = {
+                            id: team.id,
+                            name: team.name,
+                            logo: team.logo || defaultLogo,
+                            missing: true
+                        };
+                    }
+                });
+            }
+        } else if (data.matches?.length > 0) {
+            // Use the latest match's teams and missing teams
+            const latestMatch = data.matches[data.matches.length - 1];
+            teamsData = { ...(latestMatch?.teams || {}) };
+            subtitle = "PREVIOUS MATCH";
+            if (latestMatch?.missing_teams) {
+                latestMatch.missing_teams.forEach(team => {
+                    if (team.id && team.name) {
+                        teamsData[team.id] = {
+                            id: team.id,
+                            name: team.name,
+                            logo: team.logo || defaultLogo,
+                            missing: true
+                        };
+                    }
+                });
+            }
+        } else if (data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
+            teamsData = { ...data.current_match.teams };
+            subtitle = "CURRENT STANDINGS";
+            if (data.current_match?.missing_teams) {
+                data.current_match.missing_teams.forEach(team => {
+                    if (team.id && team.name) {
+                        teamsData[team.id] = {
+                            id: team.id,
+                            name: team.name,
+                            logo: team.logo || defaultLogo,
+                            missing: true
+                        };
+                    }
+                });
+            }
+        }
+
+        if (data.phase?.allTimeTopPlayers && data.phase.allTimeTopPlayers.length > 0) {
+            topPlayers = data.phase.allTimeTopPlayers;
+            subtitle = "ALL-TIME LEADERS";
+        } else if (data.current_match?.players && Object.keys(data.current_match.players).length > 0) {
+            const allPlayers = Object.values(data.current_match.players);
+            topPlayers = allPlayers.map(p => ({
+                playerId: p.id,
+                name: p.name,
+                totalKills: p.stats?.kills || 0,
+                totalDamage: p.stats?.damage || 0,
+                totalKnockouts: p.stats?.knockouts || 0,
+                totalMatches: 1,
+                teamId: p.teamId,
+                teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team'
+            }));
+        } else if (data.matches?.length > 0) {
+            const latestMatch = data.matches[data.matches.length - 1];
+            if (latestMatch?.players && Object.keys(latestMatch.players).length > 0) {
+                const allPlayers = Object.values(latestMatch.players);
+                topPlayers = allPlayers.map(p => ({
+                    playerId: p.id,
+                    name: p.name,
+                    totalKills: p.stats?.kills || 0,
+                    totalDamage: p.stats?.damage || 0,
+                    totalKnockouts: p.stats?.knockouts || 0,
+                    totalMatches: 1,
+                    teamId: p.teamId,
+                    teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team'
+                }));
+            }
+        }
+
+        if (topPlayers.length === 0) {
+            updateTopPlayers([]);
+            return;
+        }
+
+        topPlayers.sort((a, b) => {
+            if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
+            return b.totalDamage - a.totalDamage;
+        });
+
+        const playersWithTeam = topPlayers.slice(0, 5).map((player, index) => {
+            const playerData = (data.current_match?.players || (data.matches?.length > 0 ? data.matches[data.matches.length - 1].players : {}) || {})[player.playerId] || {};
+            const teamId = player.teamId || playerData.teamId;
+            
+            let team = teamId && teamsData[teamId] ? teamsData[teamId] : null;
+            
+            if (!team && player.teamName) {
+                team = findTeamByName(player.teamName, teamsData);
+            }
+            
+            return {
+                ...player,
+                rank: index + 1,
+                teamLogo: team?.logo || defaultLogo,
+                playerPhoto: playerData.photo || player.playerPhoto || '/assets/PUBG.png',
+                playerName: player.name || playerData.name || 'Unknown Player',
+                teamName: team?.name || player.teamName || 'Unknown Team'
+            };
+        });
+
+        updateTopPlayers(playersWithTeam);
+        
+    } catch (error) {
+        console.error('Error fetching overall top players:', error);
+        updateTopPlayers([]);
     }
-    else if (data.previous?.players && Object.keys(data.previous.players).length > 0) {
-      const allPlayers = Object.values(data.previous.players);
-      topPlayers = allPlayers.map(p => ({
-        playerId: p.id,
-        name: p.name,
-        totalKills: p.stats?.kills || 0,
-        totalDamage: p.stats?.damage || 0,
-        totalKnockouts: p.stats?.knockouts || 0,
-        totalMatches: 1,
-        teamId: p.teamId,
-        teamName: findTeamByName(p.teamName || '', data.previous.teams)?.name || p.teamName || 'Unknown Team'
-      }));
-      subtitle = "PREVIOUS MATCH";
-    }
-
-    if (topPlayers.length === 0) {
-      updateTopPlayers([]);
-      return;
-    }
-
-    topPlayers.sort((a, b) => {
-      if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
-      return b.totalDamage - a.totalDamage;
-    });
-
-    const teams = data.match?.teams || data.previous?.teams || data.current_match?.teams || {};
-
-    const playersWithTeam = topPlayers.slice(0, 5).map((player, index) => {
-      const playerData = (data.match?.players || data.previous?.players || {})[player.playerId] || {};
-      const teamId = player.teamId || playerData.teamId;
-      
-      let team = teamId && teams[teamId] ? teams[teamId] : null;
-      
-      if (!team && player.teamName) {
-        team = findTeamByName(player.teamName, teams);
-      }
-      
-      return {
-        ...player,
-        rank: index + 1,
-        teamLogo: team?.logo || defaultLogo,
-        playerPhoto: playerData.photo || player.playerPhoto || '/assets/PUBG.png',
-        playerName: player.name || playerData.name || 'Unknown Player',
-        teamName: team?.name || player.teamName || 'Unknown Team'
-      };
-    });
-
-    updateTopPlayers(playersWithTeam);
-    
-  } catch (error) {
-    console.error('Error fetching overall top players:', error);
-    updateTopPlayers([]);
-  }
 }
 
 function updateTopPlayers(players) {
-  const container = document.getElementById('top-players-container');
-  if (!container) return;
-  
-  if (!players.length) {
-    if (!container.querySelector('p')) {
-      container.innerHTML = `<p style="color:red; text-align:center; padding: 20px;">No overall top player data available.</p>`;
+    const container = document.getElementById('top-players-container');
+    if (!container) return;
+    
+    if (!players.length) {
+        if (!container.querySelector('p')) {
+            container.innerHTML = `<p style="color:red; text-align:center; padding: 20px;">No overall top player data available.</p>`;
+        }
+        return;
     }
-    return;
-  }
 
-  const playersChanged = currentPlayers.length !== players.length || 
-    players.some((player, idx) => currentPlayers[idx]?.playerId !== player.playerId);
+    const playersChanged = currentPlayers.length !== players.length || 
+        players.some((player, idx) => currentPlayers[idx]?.playerId !== player.playerId);
 
-  if (playersChanged) {
-    container.innerHTML = '';
-    players.forEach((player) => {
-      const playerCard = document.createElement('div');
-      playerCard.className = 'player-card';
-      playerCard.dataset.playerId = player.playerId;
-      playerCard.innerHTML = `
-        <div class="player-rank">#${player.rank}</div>
-        <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='${defaultLogo}'">
-        <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='/assets/PUBG.png'">
-        <div class="player-name-bg">
-          <div class="player-name">${player.playerName}</div>
-          <div class="team-name">${player.teamName}</div>
-        </div>
-        <div class="elimination-count">Eliminations: ${player.totalKills || 0}</div>
-        <div class="damage-count">Damage: ${player.totalDamage || 0}</div>
-        <div class="knockout-count">Knockouts: ${player.totalKnockouts || 0}</div>
-        ${player.totalMatches ? `<div class="matches-count">Matches: ${player.totalMatches}</div>` : ''}
-      `;
-      container.appendChild(playerCard);
-    });
-    currentPlayers = players;
-  } else {
-    players.forEach((player, index) => {
-      const card = container.children[index];
-      if (!card) return;
-      
-      const elimCount = card.querySelector('.elimination-count');
-      const damageCount = card.querySelector('.damage-count');
-      const knockoutCount = card.querySelector('.knockout-count');
-      
-      const newElimText = `Eliminations: ${player.totalKills || 0}`;
-      const newDamageText = `Damage: ${player.totalDamage || 0}`;
-      const newKnockoutText = `Knockouts: ${player.totalKnockouts || 0}`;
-      
-      if (elimCount && elimCount.textContent !== newElimText) {
-        elimCount.textContent = newElimText;
-      }
-      if (damageCount && damageCount.textContent !== newDamageText) {
-        damageCount.textContent = newDamageText;
-      }
-      if (knockoutCount && knockoutCount.textContent !== newKnockoutText) {
-        knockoutCount.textContent = newKnockoutText;
-      }
-    });
-  }
+    if (playersChanged) {
+        container.innerHTML = '';
+        players.forEach((player) => {
+            const playerCard = document.createElement('div');
+            playerCard.className = 'player-card';
+            playerCard.dataset.playerId = player.playerId;
+            playerCard.innerHTML = `
+                <div class="player-rank">#${player.rank}</div>
+                <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='${defaultLogo}'">
+                <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='/assets/PUBG.png'">
+                <div class="player-name-bg">
+                    <div class="player-name">${player.playerName}</div>
+                    <div class="team-name">${player.teamName}</div>
+                </div>
+                <div class="elimination-count">Eliminations: ${player.totalKills || 0}</div>
+                <div class="damage-count">Damage: ${player.totalDamage || 0}</div>
+                <div class="knockout-count">Knockouts: ${player.totalKnockouts || 0}</div>
+                ${player.totalMatches ? `<div class="matches-count">Matches: ${player.totalMatches}</div>` : ''}
+            `;
+            container.appendChild(playerCard);
+        });
+        currentPlayers = players;
+    } else {
+        players.forEach((player, index) => {
+            const card = container.children[index];
+            if (!card) return;
+            
+            const elimCount = card.querySelector('.elimination-count');
+            const damageCount = card.querySelector('.damage-count');
+            const knockoutCount = card.querySelector('.knockout-count');
+            
+            const newElimText = `Eliminations: ${player.totalKills || 0}`;
+            const newDamageText = `Damage: ${player.totalDamage || 0}`;
+            const newKnockoutText = `Knockouts: ${player.totalKnockouts || 0}`;
+            
+            if (elimCount && elimCount.textContent !== newElimText) {
+                elimCount.textContent = newElimText;
+            }
+            if (damageCount && damageCount.textContent !== newDamageText) {
+                damageCount.textContent = newDamageText;
+            }
+            if (knockoutCount && knockoutCount.textContent !== newKnockoutText) {
+                knockoutCount.textContent = newKnockoutText;
+            }
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetchOverallTopPlayers();
-  setInterval(fetchOverallTopPlayers, 1000);
+    fetchOverallTopPlayers();
+    setInterval(fetchOverallTopPlayers, 1000);
 });
 </script>
 
