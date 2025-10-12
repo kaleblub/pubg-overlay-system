@@ -311,6 +311,7 @@
             return;
         }
 
+        // Build team name to ID mapping and merge missing teams into lastMatchTeams
         const teamNameToId = {};
         if (matchStatus === 'live' && currentMatchTeams) {
             Object.values(currentMatchTeams).forEach(team => {
@@ -319,6 +320,35 @@
         } else if (lastMatchTeams) {
             Object.values(lastMatchTeams).forEach(team => {
                 teamNameToId[team.name] = team.id;
+            });
+        }
+        
+        // Merge missing teams into lastMatchTeams
+        // Priority: 1. current_match.missing_teams (for live), 2. last match's missing_teams
+        let missingTeamsSource = null;
+        
+        if (matchStatus === 'live' && lastData && lastData.current_match && lastData.current_match.missing_teams) {
+            missingTeamsSource = lastData.current_match.missing_teams;
+        } else if (lastData && lastData.matches && lastData.matches.length > 0) {
+            const lastMatch = lastData.matches[lastData.matches.length - 1];
+            if (lastMatch && lastMatch.missing_teams) {
+                missingTeamsSource = lastMatch.missing_teams;
+            }
+        }
+        
+        if (missingTeamsSource && Array.isArray(missingTeamsSource)) {
+            if (!lastMatchTeams) lastMatchTeams = {};
+            missingTeamsSource.forEach(team => {
+                if (team.id && team.name) {
+                    lastMatchTeams[team.id] = {
+                        id: team.id,
+                        name: team.name,
+                        logo: team.logo || defaultLogo,
+                        kills: team.kills || 0,
+                        missing: true
+                    };
+                    teamNameToId[team.name] = team.id;
+                }
             });
         }
 
@@ -365,7 +395,7 @@
         teamRow.appendChild(rankCell);
 
         let teamInfo = null;
-        const numericId = teamNameToId[team.teamId];
+        const numericId = teamNameToId[team.teamId] || teamNameToId[team.teamName];
         if (matchStatus === 'live' && numericId && currentMatchTeams[numericId]) {
             teamInfo = currentMatchTeams[numericId];
         } else if (numericId && lastMatchTeams && lastMatchTeams[numericId]) {
@@ -384,6 +414,7 @@
         logoImg.onerror = function() { this.src = defaultLogo; };
         teamNameCell.appendChild(logoImg);
 
+        // Get abbreviation from logo filename if available
         if (teamLogo && teamLogo !== defaultLogo) {
             const logoFilename = teamLogo.split('/').pop();
             if (logoFilename) {
@@ -469,7 +500,7 @@
 
     function updateTeamRow(teamRow, team, teamNameToId, currentMatchTeams, currentPlayers, lastMatchTeams, matchStatus) {
         let teamInfo = null;
-        const numericId = teamNameToId[team.teamId];
+        const numericId = teamNameToId[team.teamId] || teamNameToId[team.teamName];
         if (matchStatus === 'live' && numericId && currentMatchTeams[numericId]) {
             teamInfo = currentMatchTeams[numericId];
         } else if (numericId && lastMatchTeams && lastMatchTeams[numericId]) {

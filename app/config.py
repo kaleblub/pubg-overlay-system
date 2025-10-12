@@ -19,9 +19,9 @@ SIMULATED_LOG_FILE = ROOT_DIR / "simulated_live.txt"
 
 # Asset paths
 LOGO_FOLDER_PATH = ROOT_DIR / "assets" / "LOGO"
-ADJACENT_LOGO_FOLDER_PATH = "http://localhost:5000/assets/LOGO/"
-DEFAULT_TEAM_LOGO = "http://localhost:5000/assets/default-team-logo.jpg"
-DEFAULT_PLAYER_PHOTO = "http://localhost:5000/assets/PUBG.png"
+ADJACENT_LOGO_FOLDER_PATH = "/assets/LOGO/"  # Changed to relative path
+DEFAULT_TEAM_LOGO = "/assets/default-team-logo.jpg"  # Changed to relative path
+DEFAULT_PLAYER_PHOTO = "/assets/PUBG.png"  # Changed to relative path
 
 # Team configuration
 TEAM_CONFIG_FILE = ROOT_DIR / "TeamLogoAndColor.ini"
@@ -37,7 +37,7 @@ PLACEMENT_POINTS = {1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1}
 
 # ---------- Server Configuration ----------
 WEB_SERVER_PORT = 5000
-WEB_SERVER_HOST = "localhost"
+WEB_SERVER_HOST = "0.0.0.0"  # Changed to allow network access
 
 # ---------- Logging Configuration ----------
 LOG_LEVEL = "INFO"

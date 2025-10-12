@@ -165,40 +165,40 @@ def _calculate_top_players(players_dict, teams_dict):
     return top_players
 
 def _finalize_and_persist():
-    """Finalizes match data and resets current live state."""
+    global state
     if state["current_match"]["id"] and state["match_state"]["status"] == "live":
         logging.info(f"Finalizing and persisting match ID: {state['current_match']['id']}")
         final_match_data = copy.deepcopy(state["current_match"])
         end_match_and_update_phase(final_match_data)
-        state["current_match"] = {
-            "id": None,
-            "status": "idle",
-            "winnerTeamId": None,
-            "winnerTeamName": None,
-            "eliminationOrder": [],
-            "killFeed": [],
-            "teams": {},
-            "players": {}
-        }
-        state["match_state"]["status"] = "idle"
-        state["match_state"]["last_updated"] = int(time.time())
+        # The line above handles the full reset via _reset_current_match().
+        # Removed the redundant and incomplete manual reset block here.
         logging.info("Live match state fully reset to idle.")
     else:
         logging.warning("Finalization requested but no active match ID or in processing mode. Skipping.")
         if not state["current_match"]["id"]:
-            state["current_match"] = {
-                "id": None,
-                "status": "idle",
-                "winnerTeamId": None,
-                "winnerTeamName": None,
-                "eliminationOrder": [],
-                "killFeed": [],
-                "teams": {},
-                "players": {}
-            }
-            state["match_state"]["status"] = "idle"
-            state["match_state"]["last_updated"] = int(time.time())
-            logging.info("Forced full reset due to no active match ID.")
+            # Use the comprehensive reset function when no match is active.
+            _reset_current_match() 
+            
+    # Write state to JSON with relative paths
+    json_file_path = os.path.join(PROJECT_ROOT, 'live_scoreboard.json')
+    state_copy = copy.deepcopy(state)
+    # Strip any localhost prefixes
+    for team in state_copy["current_match"]["teams"].values():
+        if team.get("logo") and team["logo"].startswith("http://"):
+            team["logo"] = team["logo"].replace("http://localhost:5000", "")
+    for team in state_copy["phase"]["teams"].values():
+        if team.get("logo") and team["logo"].startswith("http://"):
+            team["logo"] = team["logo"].replace("http://localhost:5000", "")
+    for match in state_copy.get("matches", []):
+        for team in match.get("teams", {}).values():
+            if team.get("logo") and team["logo"].startswith("http://"):
+                team["logo"] = team["logo"].replace("http://localhost:5000", "")
+    try:
+        with open(json_file_path, 'w', encoding='utf-8') as f:
+            json.dump(state_copy, f, indent=2)
+        logging.info(f"Persisted state to {json_file_path}")
+    except Exception as e:
+        logging.error(f"Failed to write JSON: {e}")
 
 def _parse_kv_object(text):
     obj = {}
@@ -271,6 +271,32 @@ def _parse_ini(config_string):
 
     return teams
 
+def _calculate_missing_teams():
+    """Calculate missing teams for current match based on expected_teams."""
+    if not expected_teams or not state["current_match"]["id"]:
+        return []
+    
+    # Get current match team names (case-insensitive)
+    match_team_names = {t.get("name", "").lower() for t in state["current_match"]["teams"].values()}
+    
+    missing = []
+    for team_name, info in expected_teams.items():
+        if team_name.lower() not in match_team_names:
+            missing.append({
+                "id": info["id"],
+                "name": team_name,
+                "logo": get_asset_url(info["logoPath"], DEFAULT_TEAM_LOGO),
+                "kills": 0,
+                "placementPoints": 0,
+                "points": 0,
+                "rank": "MISS",
+                "liveMembers": 0,
+                "players": [],
+                "missing": True
+            })
+    
+    return missing
+
 def get_team_logos(ini_file_path):
     try:
         with open(ini_file_path, "r", encoding="utf-8") as fh:
@@ -282,10 +308,13 @@ def get_team_logos(ini_file_path):
                 for tid, info in all_teams.items():
                     team_name = info["name"]
                     if "empty_" not in info["logoPath"].lower() and not team_name.startswith("Team "):
+                        # Convert local path to Flask-relative URL
+                        filename = os.path.basename(info["logoPath"])
+                        logo_url = f"/assets/LOGO/{filename}" if filename else "/assets/default-team-logo.jpg"
                         filtered_teams[team_name] = {
                             "id": tid,
                             "name": team_name,
-                            "logoPath": info["logoPath"]
+                            "logoPath": logo_url
                         }
                 logging.info(f"Loaded {len(filtered_teams)} teams from INI: {[(name, info['logoPath']) for name, info in filtered_teams.items()]}")
                 return filtered_teams
@@ -293,6 +322,8 @@ def get_team_logos(ini_file_path):
                 logging.warning("Team logos INI block not found")
     except FileNotFoundError:
         logging.error(f"INI file not found at {ini_file_path}")
+    except Exception as e:
+        logging.error(f"Error parsing INI file: {e}")
     return {}
 
 def get_asset_url(full_path_from_log, default_url):
@@ -541,6 +572,8 @@ def process_snapshot(snap_text, parsed_logos):
         end_match_and_update_phase()
     if not in_archive_processing and not in_catchup_processing:
         _update_phase_from_live_match()
+    if state["current_match"]["id"] and not in_archive_processing and not in_catchup_processing:
+        state["current_match"]["missing_teams"] = _calculate_missing_teams()
     state["match_state"]["status"] = "live" if state["current_match"]["id"] else "idle"
     state["match_state"]["last_updated"] = int(time.time())
 
@@ -978,7 +1011,8 @@ def rebuild_phase_from_matches():
 
 
 def _reset_current_match():
-    """Reset the current match and match state after a match finishes or errors."""
+    """Reset the current_match state to its comprehensive initial idle state."""
+    global state
     state["current_match"] = {
         "id": None,
         "status": "idle",
@@ -988,12 +1022,15 @@ def _reset_current_match():
         "killFeed": [],
         "teams": {},
         "players": {},
+        "missing_teams": [],
         "leaderboards": {"currentMatchTopPlayers": []},
-        "activePlayers": [],
-        "teamKills": {}
+        "activePlayers": 0,
+        "teamKills": 0,
+        "placementPointsMap": {}
     }
     state["match_state"]["status"] = "idle"
     state["match_state"]["last_updated"] = int(time.time())
+    logging.info("Current match state comprehensively reset to idle.")
 
 def _print_terminal_snapshot(test_mode=False):
     """Enhanced terminal output with colors and simulation progress."""
@@ -1150,6 +1187,9 @@ def _get_team_kills():
 def _export_json():
     """Exports the current state to a JSON file."""
     try:
+        # Calculate missing teams for current match
+        missing_teams = _calculate_missing_teams()
+        
         data = {
             "match_state": state["match_state"],
             "phase": {
@@ -1165,6 +1205,7 @@ def _export_json():
                 "killFeed": state["current_match"]["killFeed"],
                 "teams": state["current_match"]["teams"],
                 "players": state["current_match"]["players"],
+                "missing_teams": missing_teams,
                 "leaderboards": {
                     "currentMatchTopPlayers": _current_match_top_players()
                 },
@@ -2021,8 +2062,8 @@ def main(test_mode=False, reprocess=False):
             print_colored(f"Failed to start web server: {e}", Fore.RED)
 
     # Load team logos and expected_teams (filtered non-placeholders, keyed by name)
-    ini_path = r"C:\Users\Baghila\AppData\Local\ShadowTrackerExtra\Saved\TeamLogoAndColor.ini"
-    # ini_path = ".\TeamLogoAndColor.ini"
+    # ini_path = r"C:\Users\Baghila\AppData\Local\ShadowTrackerExtra\Saved\TeamLogoAndColor.ini"
+    ini_path = ".\TeamLogoAndColor.ini"
     if reprocess:
         team_logos = {}
         expected_teams = {}
