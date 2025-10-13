@@ -133,6 +133,7 @@
 const API_URL = '/api/live_data';
 const defaultLogo = "/assets/default-team-logo.jpg";
 let currentPlayers = [];
+let lastSuccessfulData = null;
 
 function findTeamByName(teamName, teamsData) {
     if (!teamsData || !teamName) return null;
@@ -146,22 +147,37 @@ function findTeamByName(teamName, teamsData) {
     return null;
 }
 
-async function fetchOverallTopPlayers() {
-    try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+async function retryFetch(url, options = {}, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response;
+        } catch (error) {
+            console.warn(`Fetch attempt ${i + 1} failed:`, error.message);
+            if (i < retries - 1) {
+                await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+            } else {
+                throw error;
+            }
+        }
+    }
+}
 
-        let topPlayers = [];
-        let subtitle = "TOURNAMENT LEADERS";
-        let teamsData = {};
+async function fetchOverallTopPlayers() {
+    let newTopPlayers = [];
+    let teamsData = {};
+    let fallbackSource = null;
+    try {
+        const response = await retryFetch(API_URL);
+        const data = await response.json();
+        lastSuccessfulData = data;
 
         const matchStatus = data.match_state?.status || 'idle';
 
         // Prioritize current match teams for live matches
         if (matchStatus === 'live' && data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
             teamsData = { ...data.current_match.teams };
-            subtitle = "CURRENT MATCH";
             if (data.current_match?.missing_teams) {
                 data.current_match.missing_teams.forEach(team => {
                     if (team.id && team.name) {
@@ -178,7 +194,6 @@ async function fetchOverallTopPlayers() {
             // Use the latest match's teams and missing teams
             const latestMatch = data.matches[data.matches.length - 1];
             teamsData = { ...(latestMatch?.teams || {}) };
-            subtitle = "PREVIOUS MATCH";
             if (latestMatch?.missing_teams) {
                 latestMatch.missing_teams.forEach(team => {
                     if (team.id && team.name) {
@@ -193,7 +208,6 @@ async function fetchOverallTopPlayers() {
             }
         } else if (data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
             teamsData = { ...data.current_match.teams };
-            subtitle = "CURRENT STANDINGS";
             if (data.current_match?.missing_teams) {
                 data.current_match.missing_teams.forEach(team => {
                     if (team.id && team.name) {
@@ -208,12 +222,13 @@ async function fetchOverallTopPlayers() {
             }
         }
 
+        let rawTopPlayers = [];
         if (data.phase?.allTimeTopPlayers && data.phase.allTimeTopPlayers.length > 0) {
-            topPlayers = data.phase.allTimeTopPlayers;
-            subtitle = "ALL-TIME LEADERS";
+            rawTopPlayers = data.phase.allTimeTopPlayers;
+            fallbackSource = 'allTime';
         } else if (data.current_match?.players && Object.keys(data.current_match.players).length > 0) {
             const allPlayers = Object.values(data.current_match.players);
-            topPlayers = allPlayers.map(p => ({
+            rawTopPlayers = allPlayers.map(p => ({
                 playerId: p.id,
                 name: p.name,
                 totalKills: p.stats?.kills || 0,
@@ -221,13 +236,15 @@ async function fetchOverallTopPlayers() {
                 totalKnockouts: p.stats?.knockouts || 0,
                 totalMatches: 1,
                 teamId: p.teamId,
-                teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team'
+                teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team',
+                playerPhoto: p.photo
             }));
+            fallbackSource = 'current';
         } else if (data.matches?.length > 0) {
             const latestMatch = data.matches[data.matches.length - 1];
             if (latestMatch?.players && Object.keys(latestMatch.players).length > 0) {
                 const allPlayers = Object.values(latestMatch.players);
-                topPlayers = allPlayers.map(p => ({
+                rawTopPlayers = allPlayers.map(p => ({
                     playerId: p.id,
                     name: p.name,
                     totalKills: p.stats?.kills || 0,
@@ -235,45 +252,50 @@ async function fetchOverallTopPlayers() {
                     totalKnockouts: p.stats?.knockouts || 0,
                     totalMatches: 1,
                     teamId: p.teamId,
-                    teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team'
+                    teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team',
+                    playerPhoto: p.photo
                 }));
+                fallbackSource = 'previous';
             }
         }
 
-        if (topPlayers.length === 0) {
-            updateTopPlayers([]);
-            return;
+        if (rawTopPlayers.length > 0) {
+            rawTopPlayers.sort((a, b) => {
+                if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
+                return b.totalDamage - a.totalDamage;
+            });
+
+            newTopPlayers = rawTopPlayers.slice(0, 5).map((player, index) => {
+                const playerData = (data.current_match?.players || (data.matches?.length > 0 ? data.matches[data.matches.length - 1].players : {}) || {})[player.playerId] || player;
+                const teamId = player.teamId || playerData.teamId;
+                
+                let team = teamId && teamsData[teamId] ? teamsData[teamId] : null;
+                
+                if (!team && player.teamName) {
+                    team = findTeamByName(player.teamName, teamsData);
+                }
+                
+                return {
+                    ...player,
+                    rank: index + 1,
+                    teamLogo: team?.logo || defaultLogo,
+                    playerPhoto: player.playerPhoto || playerData.photo || '/assets/PUBG.png',
+                    playerName: player.name || playerData.name || 'Unknown Player',
+                    teamName: team?.name || player.teamName || 'Unknown Team'
+                };
+            });
         }
-
-        topPlayers.sort((a, b) => {
-            if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
-            return b.totalDamage - a.totalDamage;
-        });
-
-        const playersWithTeam = topPlayers.slice(0, 5).map((player, index) => {
-            const playerData = (data.current_match?.players || (data.matches?.length > 0 ? data.matches[data.matches.length - 1].players : {}) || {})[player.playerId] || {};
-            const teamId = player.teamId || playerData.teamId;
-            
-            let team = teamId && teamsData[teamId] ? teamsData[teamId] : null;
-            
-            if (!team && player.teamName) {
-                team = findTeamByName(player.teamName, teamsData);
-            }
-            
-            return {
-                ...player,
-                rank: index + 1,
-                teamLogo: team?.logo || defaultLogo,
-                playerPhoto: playerData.photo || player.playerPhoto || '/assets/PUBG.png',
-                playerName: player.name || playerData.name || 'Unknown Player',
-                teamName: team?.name || player.teamName || 'Unknown Team'
-            };
-        });
-
-        updateTopPlayers(playersWithTeam);
         
     } catch (error) {
         console.error('Error fetching overall top players:', error);
+    }
+
+    if (newTopPlayers.length > 0) {
+        updateTopPlayers(newTopPlayers);
+    } else if (currentPlayers.length > 0) {
+        // Keep displaying the last successful data without changes
+        console.log('Using cached top players data');
+    } else {
         updateTopPlayers([]);
     }
 }
@@ -283,7 +305,7 @@ function updateTopPlayers(players) {
     if (!container) return;
     
     if (!players.length) {
-        if (!container.querySelector('p')) {
+        if (container.children.length === 0 || !container.querySelector('p')) {
             container.innerHTML = `<p style="color:red; text-align:center; padding: 20px;">No overall top player data available.</p>`;
         }
         return;
@@ -314,7 +336,8 @@ function updateTopPlayers(players) {
             container.appendChild(playerCard);
         });
         currentPlayers = players;
-    } else {
+    } else if (players.length > 0) {
+        // Update stats if possible
         players.forEach((player, index) => {
             const card = container.children[index];
             if (!card) return;
@@ -337,6 +360,7 @@ function updateTopPlayers(players) {
                 knockoutCount.textContent = newKnockoutText;
             }
         });
+        currentPlayers = players;
     }
 }
 
