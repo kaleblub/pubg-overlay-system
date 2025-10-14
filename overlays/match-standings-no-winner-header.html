@@ -345,7 +345,11 @@ function renderScoreboard(standings, teams, subtitle, data, isCached = false) {
     const standingsChanged = currentStandings.length !== sortedStandings.length || 
         sortedStandings.some((team, idx) => currentStandings[idx]?.teamId !== team.teamId);
 
-    if (standingsChanged) {
+    if (
+        standingsChanged ||
+        teamListRight.children.length < Math.ceil(sortedStandings.length / 2) ||
+        teamListLeft.children.length < Math.ceil(sortedStandings.length / 2)
+    ) {
         teamListLeft.innerHTML = headerHtml;
         teamListRight.innerHTML = headerHtml;
 
@@ -368,6 +372,11 @@ function renderScoreboard(standings, teams, subtitle, data, isCached = false) {
                 updateTeamItem(teamItem, team);
             }
         });
+    }
+    if (teamListRight.children.length <= 1) {
+        console.warn("Right column empty or header-only — forcing immediate rebuild");
+        currentStandings = [];
+        renderScoreboard(sortedStandings, teams, subtitle, data, false);
     }
 }
 
