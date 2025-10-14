@@ -22,6 +22,8 @@ LOGO_FOLDER_PATH = ROOT_DIR / "assets" / "LOGO"
 ADJACENT_LOGO_FOLDER_PATH = "/assets/LOGO/"  # Changed to relative path
 DEFAULT_TEAM_LOGO = "/assets/default-team-logo.jpg"  # Changed to relative path
 DEFAULT_PLAYER_PHOTO = "/assets/PUBG.png"  # Changed to relative path
+PLAYER_PHOTOS_FOLDER = ROOT_DIR / "assets" / "Players"
+ADJACENT_PLAYER_PHOTOS_PATH = "/assets/Players/"
 
 # Team configuration
 TEAM_CONFIG_FILE = ROOT_DIR / "TeamLogoAndColor.ini"
@@ -50,8 +52,9 @@ def ensure_directories():
         LOGS_DIR,
         TEST_LOGS_DIR,
         ARCHIVE_LOG_DIR,
-        LOGO_FOLDER_PATH.parent,  # assets directory
-        LOGO_FOLDER_PATH
+        LOGO_FOLDER_PATH.parent,
+        LOGO_FOLDER_PATH,
+        PLAYER_PHOTOS_FOLDER
     ]
     
     for directory in directories:

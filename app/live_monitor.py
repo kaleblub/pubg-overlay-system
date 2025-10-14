@@ -345,27 +345,57 @@ def get_asset_url(full_path_from_log, default_url):
         pass
     return default_url
 
-def ensure_directories():
-    """Ensure all required directories exist."""
-    directories = [
-        CURRENT_LOG_DIR,
-        ARCHIVE_LOG_DIR,
-        TEST_LOGS_DIR,
-        LOGO_FOLDER_PATH
-    ]
-    for directory in directories:
-        try:
-            if hasattr(directory, 'mkdir'):
-                directory.mkdir(parents=True, exist_ok=True)
-            else:
-                Path(directory).mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            logging.warning(f"Could not create directory {directory}: {e}")
+def get_player_photo_url(player_id, default_url=None):
+    """
+    Get player photo URL from assets/Players folder.
+    Looks for {player_id}.png in the folder.
+    Returns the Flask-relative URL if found, otherwise returns default_url.
+    """
+    if default_url is None:
+        default_url = DEFAULT_PLAYER_PHOTO
+    
+    if not player_id or not str(player_id).strip():
+        return default_url
+    
     try:
-        Path(OUTPUT_JSON).parent.mkdir(parents=True, exist_ok=True)
-        Path(ALL_TIME_PLAYERS_JSON).parent.mkdir(parents=True, exist_ok=True)
+        # Clean the player ID
+        clean_id = str(player_id).strip()
+        
+        # Check if player photo exists
+        player_photo_path = PLAYER_PHOTOS_FOLDER / f"{clean_id}.png"
+        
+        if player_photo_path.exists() and player_photo_path.is_file():
+            # Return Flask-served relative URL
+            return f"{ADJACENT_PLAYER_PHOTOS_PATH}{clean_id}.png"
+        else:
+            logging.debug(f"Player photo not found for ID {clean_id}, using default")
+            return default_url
+            
     except Exception as e:
-        logging.warning(f"Could not create output directories: {e}")
+        logging.warning(f"Error getting player photo for ID {player_id}: {e}")
+        return default_url
+
+# def ensure_directories():
+#     """Ensure all required directories exist."""
+#     directories = [
+#         CURRENT_LOG_DIR,
+#         ARCHIVE_LOG_DIR,
+#         TEST_LOGS_DIR,
+#         LOGO_FOLDER_PATH
+#     ]
+#     for directory in directories:
+#         try:
+#             if hasattr(directory, 'mkdir'):
+#                 directory.mkdir(parents=True, exist_ok=True)
+#             else:
+#                 Path(directory).mkdir(parents=True, exist_ok=True)
+#         except Exception as e:
+#             logging.warning(f"Could not create directory {directory}: {e}")
+#     try:
+#         Path(OUTPUT_JSON).parent.mkdir(parents=True, exist_ok=True)
+#         Path(ALL_TIME_PLAYERS_JSON).parent.mkdir(parents=True, exist_ok=True)
+#     except Exception as e:
+#         logging.warning(f"Could not create output directories: {e}")
 
 # ---------- Team Name Mapping Helpers ----------
 def _get_team_name_by_id(team_id):
@@ -407,11 +437,15 @@ def _add_or_update_player(player_data, is_alive, health=0, health_max=100):
     team_name = _get_team_name_by_id(team_id) if team_id else None
     if not team_name:
         team_name = player_data.get("teamName", "Unknown Team")
+    
+    # Get photo from assets folder
+    player_photo = get_player_photo_url(player_id, player_data.get("photo", DEFAULT_PLAYER_PHOTO))
+    
     if player_id not in state["phase"]["players"]:
         state["phase"]["players"][player_id] = {
             "id": player_id,
             "name": player_data.get("name", "Unknown Player"),
-            "photo": player_data.get("photo", DEFAULT_PLAYER_PHOTO),
+            "photo": player_photo,  # CHANGED: Use photo from assets
             "teamName": team_name,
             "live": {
                 "isAlive": is_alive,
@@ -430,6 +464,8 @@ def _add_or_update_player(player_data, is_alive, health=0, health_max=100):
         state["phase"]["players"][player_id]["live"]["health"] = health
         state["phase"]["players"][player_id]["live"]["healthMax"] = health_max
         state["phase"]["players"][player_id]["teamName"] = team_name
+        # Update photo if we have a better one from assets
+        state["phase"]["players"][player_id]["photo"] = player_photo
 
 def _add_or_update_team(team_data):
     """Add or update a team's entry in the phase.teams state."""
@@ -574,8 +610,10 @@ def process_snapshot(snap_text, parsed_logos):
         _update_phase_from_live_match()
     if state["current_match"]["id"] and not in_archive_processing and not in_catchup_processing:
         state["current_match"]["missing_teams"] = _calculate_missing_teams()
-    state["match_state"]["status"] = "live" if state["current_match"]["id"] else "idle"
-    state["match_state"]["last_updated"] = int(time.time())
+    if state["match_state"]["status"] == "idle":
+        if state["current_match"]["teams"] or state["current_match"]["players"] or state["current_match"]["killFeed"]:
+            logging.info("Match state went idle — resetting current_match to clean state.")
+            _reset_current_match()
 
 def _reset_match_but_keep_id(new_id=None):
     """Reset match state but keep the ID if provided."""
@@ -654,14 +692,20 @@ def _upsert_player_from_total(p):
     if pid not in team["players"]:
         team["players"].append(pid)
     is_alive = (p.get("liveState") != 5)
+    
+    # Get player photo from log OR from assets folder
+    log_photo = p.get("picUrl")
+    player_photo = get_player_photo_url(pid, log_photo or DEFAULT_PLAYER_PHOTO)
+    
     player = state["current_match"]["players"].setdefault(pid, {
         "id": pid, "teamId": tid, "name": p.get("playerName") or "Unknown",
-        "photo": p.get("picUrl") or DEFAULT_PLAYER_PHOTO,
+        "photo": player_photo,  # CHANGED: Use the photo from assets or default
         "live": {"isAlive": True, "health": 0, "healthMax": 100, "liveState": 0},
         "stats": {"kills": 0, "damage": 0, "knockouts": 0}
     })
     player["name"] = p.get("playerName") or player["name"]
-    player["photo"] = p.get("picUrl") or player["photo"]
+    # Update photo: prefer assets folder, then log photo, then existing
+    player["photo"] = get_player_photo_url(pid, log_photo or player["photo"])
     player["teamId"] = tid
     player["live"] = {
         "isAlive": is_alive,
@@ -843,16 +887,17 @@ def end_match_and_update_phase(final_match_data=None):
                 team_name = _get_team_name_by_id(player.get("teamId")) or player.get("teamName", "Unknown Team")
                 # All-time player
                 if pid not in state["all_time"]["players"]:
+                    player_photo = get_player_photo_url(pid, player.get("photo", DEFAULT_PLAYER_PHOTO))  # ADD THIS LINE
                     state["all_time"]["players"][pid] = {
                         "id": pid,
                         "name": player.get("name", "Unknown Player"),
-                        "photo": player.get("photo", DEFAULT_PLAYER_PHOTO),
+                        "photo": player_photo,
                         "teamName": team_name,
                         "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
                     }
                 ap = state["all_time"]["players"][pid]
                 ap["name"] = player.get("name", ap.get("name"))
-                ap["photo"] = player.get("photo", ap.get("photo"))
+                ap["photo"] = get_player_photo_url(pid, player.get("photo", ap.get("photo")))  # CHANGE THIS LINE
                 ap["teamName"] = team_name
                 ap["totals"]["kills"] += int(player.get("stats", {}).get("kills", 0))
                 ap["totals"]["damage"] += int(player.get("stats", {}).get("damage", 0))
@@ -884,13 +929,16 @@ def end_match_and_update_phase(final_match_data=None):
         rebuild_phase_from_matches()
 
         # Force export JSON
-        _export_json()
+        # _export_json()
 
         # Reset current match state (keeps matches list intact)
         _reset_current_match()
         state["match_state"]["status"] = "idle"
         state["match_state"]["last_updated"] = int(time.time())
         logging.info(f"Match {match_id} finalized and current match reset")
+        
+        _export_json()
+
 
     except Exception as e:
         logging.error(f"Error finalizing match {match_id}: {e}")
@@ -1467,15 +1515,16 @@ def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown")
                     logging.warning(f"Skipping invalid player ID in match {game_id}")
                     continue
                 team_name = _get_team_name_by_id(pl.get("teamId")) or "Unknown Team"
+                player_photo = get_player_photo_url(pid, pl.get("photo", DEFAULT_PLAYER_PHOTO))
                 at = state["all_time"]["players"].setdefault(pid, {
                     "id": pid,
                     "name": pl.get("name", "Unknown Player"),
                     "teamName": team_name,
-                    "photo": pl.get("photo", DEFAULT_PLAYER_PHOTO),
+                    "photo": player_photo,  # CHANGED: Use photo from assets
                     "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
                 })
                 at["name"] = pl.get("name", at["name"])
-                at["photo"] = pl.get("photo", at["photo"])
+                at["photo"] = get_player_photo_url(pid, pl.get("photo", at.get("photo")))  # CHANGED
                 at["teamName"] = team_name
                 at["totals"]["kills"] += int(pl["stats"].get("kills", 0))
                 at["totals"]["damage"] += int(pl["stats"].get("damage", 0))
