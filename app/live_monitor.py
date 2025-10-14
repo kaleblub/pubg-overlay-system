@@ -375,27 +375,27 @@ def get_player_photo_url(player_id, default_url=None):
         logging.warning(f"Error getting player photo for ID {player_id}: {e}")
         return default_url
 
-# def ensure_directories():
-#     """Ensure all required directories exist."""
-#     directories = [
-#         CURRENT_LOG_DIR,
-#         ARCHIVE_LOG_DIR,
-#         TEST_LOGS_DIR,
-#         LOGO_FOLDER_PATH
-#     ]
-#     for directory in directories:
-#         try:
-#             if hasattr(directory, 'mkdir'):
-#                 directory.mkdir(parents=True, exist_ok=True)
-#             else:
-#                 Path(directory).mkdir(parents=True, exist_ok=True)
-#         except Exception as e:
-#             logging.warning(f"Could not create directory {directory}: {e}")
-#     try:
-#         Path(OUTPUT_JSON).parent.mkdir(parents=True, exist_ok=True)
-#         Path(ALL_TIME_PLAYERS_JSON).parent.mkdir(parents=True, exist_ok=True)
-#     except Exception as e:
-#         logging.warning(f"Could not create output directories: {e}")
+def ensure_directories():
+    """Ensure all required directories exist."""
+    directories = [
+        CURRENT_LOG_DIR,
+        ARCHIVE_LOG_DIR,
+        TEST_LOGS_DIR,
+        LOGO_FOLDER_PATH
+    ]
+    for directory in directories:
+        try:
+            if hasattr(directory, 'mkdir'):
+                directory.mkdir(parents=True, exist_ok=True)
+            else:
+                Path(directory).mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logging.warning(f"Could not create directory {directory}: {e}")
+    try:
+        Path(OUTPUT_JSON).parent.mkdir(parents=True, exist_ok=True)
+        Path(ALL_TIME_PLAYERS_JSON).parent.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        logging.warning(f"Could not create output directories: {e}")
 
 # ---------- Team Name Mapping Helpers ----------
 def _get_team_name_by_id(team_id):
@@ -445,7 +445,7 @@ def _add_or_update_player(player_data, is_alive, health=0, health_max=100):
         state["phase"]["players"][player_id] = {
             "id": player_id,
             "name": player_data.get("name", "Unknown Player"),
-            "photo": player_photo,  # CHANGED: Use photo from assets
+            "photo": player_photo,
             "teamName": team_name,
             "live": {
                 "isAlive": is_alive,
@@ -603,7 +603,7 @@ def process_snapshot(snap_text, parsed_logos):
                 t = _parse_kv_object(obj_txt)
                 _upsert_team_from_teaminfo(t, parsed_logos)
     _recalculate_live_members()
-    _update_live_eliminations()
+    _update_live_eliminations(snap_text)
     if state["current_match"]["status"] == "finished" and not in_archive_processing and not in_catchup_processing:
         end_match_and_update_phase()
     if not in_archive_processing and not in_catchup_processing:
@@ -699,9 +699,10 @@ def _upsert_player_from_total(p):
     
     player = state["current_match"]["players"].setdefault(pid, {
         "id": pid, "teamId": tid, "name": p.get("playerName") or "Unknown",
-        "photo": player_photo,  # CHANGED: Use the photo from assets or default
+        "photo": player_photo,
         "live": {"isAlive": True, "health": 0, "healthMax": 100, "liveState": 0},
-        "stats": {"kills": 0, "damage": 0, "knockouts": 0}
+        "stats": {"kills": 0, "damage": 0, "knockouts": 0},
+        "rank": None  # Store rank from log
     })
     player["name"] = p.get("playerName") or player["name"]
     # Update photo: prefer assets folder, then log photo, then existing
@@ -713,6 +714,7 @@ def _upsert_player_from_total(p):
         "healthMax": int(p.get("healthMax") or 100),
         "liveState": int(p.get("liveState") or 0)
     }
+    player["rank"] = int(p.get("rank") or 0)  # Store the rank from the log
     new_kills = int(p.get("killNum") or 0)
     current_kills = player["stats"]["kills"]
     if new_kills > current_kills:
@@ -800,18 +802,52 @@ def _update_player_death_status(player_name, health):
             _add_or_update_player(p_data, is_alive=False, health=health)
             return
 
-def _update_live_eliminations():
-    """Update live eliminations tracking by team names."""
-    for tid, t in state["current_match"]["teams"].items():
-        team_name = t["name"]
-        if t["liveMembers"] == 0 and team_name not in state["current_match"]["eliminationOrder"]:
-            state["current_match"]["eliminationOrder"].append(team_name)
-            logging.info(f"Team {team_name} eliminated")
+def _update_live_eliminations(snap_text):
+    """Update live eliminations tracking by team ranks from player data."""
+    # Step 1: Collect team ranks from players in the snapshot
+    team_ranks = {}
+    parts = OBJ_BLOCKS.split(snap_text)
+    for i, marker in enumerate(parts):
+        if marker == "TotalPlayerList:" and i + 1 < len(parts):
+            for obj_txt in re.findall(r'\{[^{}]*\}', parts[i+1]):
+                p = _parse_kv_object(obj_txt)
+                tid = str(p.get("teamId") or "")
+                rank = p.get("rank")
+                # Validate rank
+                try:
+                    rank = int(rank) if rank is not None else 0
+                except (ValueError, TypeError):
+                    rank = 0
+                if tid and tid != "None" and rank > 0:
+                    # Store all player ranks for the team
+                    team_ranks.setdefault(tid, []).append(rank)
+
+    # Step 2: Identify newly eliminated teams (liveMembers == 0)
+    eliminated_teams = []
+    for tid, team in state["current_match"]["teams"].items():
+        team_name = team["name"]
+        if team["liveMembers"] == 0 and team_name not in state["current_match"]["eliminationOrder"]:
+            # Use the maximum rank from the team's players (higher rank = earlier elimination)
+            ranks = team_ranks.get(tid, [float('inf')])
+            rank = max(ranks) if ranks else float('inf')
+            eliminated_teams.append((tid, team_name, rank))
+            logging.info(f"Team {team_name} (ID: {tid}) eliminated with rank {rank} (player ranks: {ranks})")
+
+    # Step 3: Sort eliminated teams by rank descending (higher rank = earlier elimination)
+    eliminated_teams.sort(key=lambda x: x[2], reverse=True)
+
+    # Step 4: Append to eliminationOrder in sorted order
+    for tid, team_name, rank in eliminated_teams:
+        state["current_match"]["eliminationOrder"].append(team_name)
+        logging.debug(f"Added {team_name} to eliminationOrder with rank {rank}")
+
+    # Step 5: Check for match end (only one team left alive)
     alive = [tid for tid, t in state["current_match"]["teams"].items() if t["liveMembers"] > 0]
     if len(alive) == 1 and state["current_match"]["status"] == "live":
         state["current_match"]["winnerTeamId"] = alive[0]
         state["current_match"]["winnerTeamName"] = _get_team_name_by_id(alive[0])
         state["current_match"]["status"] = "finished"
+        logging.info(f"Match ended. Winner: {state['current_match']['winnerTeamName']} (ID: {alive[0]})")
 
 def end_match_and_update_phase(final_match_data=None):
     """
@@ -877,7 +913,6 @@ def end_match_and_update_phase(final_match_data=None):
             final_match_data["teams"][tid]["placementPointsLive"] = placement_points
             logging.debug(f"Set {team_name} placementPointsLive={placement_points} (rank={rank})")
 
-
         # --- Update all-time players only if this match was not already processed ---
         if not already_processed:
             player_count = 0
@@ -887,7 +922,7 @@ def end_match_and_update_phase(final_match_data=None):
                 team_name = _get_team_name_by_id(player.get("teamId")) or player.get("teamName", "Unknown Team")
                 # All-time player
                 if pid not in state["all_time"]["players"]:
-                    player_photo = get_player_photo_url(pid, player.get("photo", DEFAULT_PLAYER_PHOTO))  # ADD THIS LINE
+                    player_photo = get_player_photo_url(pid, player.get("photo", DEFAULT_PLAYER_PHOTO))
                     state["all_time"]["players"][pid] = {
                         "id": pid,
                         "name": player.get("name", "Unknown Player"),
@@ -897,7 +932,7 @@ def end_match_and_update_phase(final_match_data=None):
                     }
                 ap = state["all_time"]["players"][pid]
                 ap["name"] = player.get("name", ap.get("name"))
-                ap["photo"] = get_player_photo_url(pid, player.get("photo", ap.get("photo")))  # CHANGE THIS LINE
+                ap["photo"] = get_player_photo_url(pid, player.get("photo", ap.get("photo")))
                 ap["teamName"] = team_name
                 ap["totals"]["kills"] += int(player.get("stats", {}).get("kills", 0))
                 ap["totals"]["damage"] += int(player.get("stats", {}).get("damage", 0))
@@ -1057,7 +1092,6 @@ def rebuild_phase_from_matches():
         state["phase"]["allTimeTopPlayers"] = []
     logging.info("Rebuild finished: %d teams, %d players", len(state["phase"]["teams"]), len(state["phase"]["players"]))
 
-
 def _reset_current_match():
     """Reset the current_match state to its comprehensive initial idle state."""
     global state
@@ -1178,6 +1212,7 @@ def _all_time_top_players():
             "playerId": pid,
             "name": p.get("name", "Unknown"),
             "teamName": p.get("teamName", "Unknown Team"),
+            "photo": p.get("photo", DEFAULT_PLAYER_PHOTO),
             "totalKills": t.get("kills", 0),
             "totalDamage": t.get("damage", 0),
             "totalKnockouts": t.get("knockouts", 0),
@@ -1520,11 +1555,11 @@ def apply_archived_file_to_all_time(log_text, parsed_logos, file_name="unknown")
                     "id": pid,
                     "name": pl.get("name", "Unknown Player"),
                     "teamName": team_name,
-                    "photo": player_photo,  # CHANGED: Use photo from assets
+                    "photo": player_photo,
                     "totals": {"kills": 0, "damage": 0, "knockouts": 0, "matches": 0}
                 })
                 at["name"] = pl.get("name", at["name"])
-                at["photo"] = get_player_photo_url(pid, pl.get("photo", at.get("photo")))  # CHANGED
+                at["photo"] = get_player_photo_url(pid, pl.get("photo", at.get("photo")))
                 at["teamName"] = team_name
                 at["totals"]["kills"] += int(pl["stats"].get("kills", 0))
                 at["totals"]["damage"] += int(pl["stats"].get("damage", 0))

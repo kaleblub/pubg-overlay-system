@@ -95,7 +95,7 @@
         .player-image {
             width: 200px;
             height: 200px;
-            object-fit: cover;
+            object-fit: contain;
             margin-top: 15px;
         }
 
@@ -132,20 +132,9 @@
 <script>
 const API_URL = '/api/live_data';
 const defaultLogo = "/assets/default-team-logo.jpg";
+const defaultPhoto = "/assets/PUBG.png";
 let currentPlayers = [];
-let lastSuccessfulData = null;
-
-function findTeamByName(teamName, teamsData) {
-    if (!teamsData || !teamName) return null;
-    
-    for (const [teamId, teamData] of Object.entries(teamsData)) {
-        if (teamData.name && teamData.name.toLowerCase() === teamName.toLowerCase()) {
-            return teamData;
-        }
-    }
-    
-    return null;
-}
+let playerCards = new Map();
 
 async function retryFetch(url, options = {}, retries = 3) {
     for (let i = 0; i < retries; i++) {
@@ -164,19 +153,36 @@ async function retryFetch(url, options = {}, retries = 3) {
     }
 }
 
+function findTeamByName(teamName, teamsData) {
+    if (!teamsData || !teamName) return null;
+    for (const team of Object.values(teamsData)) {
+        if (team.name && team.name.toLowerCase() === teamName.toLowerCase()) {
+            return team;
+        }
+    }
+    return null;
+}
+
+function findTeamByPlayerId(playerId, teamsData) {
+    if (!teamsData) return null;
+    for (const team of Object.values(teamsData)) {
+        if (team.players && team.players.includes(playerId)) {
+            return team;
+        }
+    }
+    return null;
+}
+
 async function fetchOverallTopPlayers() {
-    let newTopPlayers = [];
-    let teamsData = {};
-    let fallbackSource = null;
     try {
         const response = await retryFetch(API_URL);
         const data = await response.json();
-        lastSuccessfulData = data;
 
-        const matchStatus = data.match_state?.status || 'idle';
+        let teamsData = {};
+        let topPlayersData = [];
 
-        // Prioritize current match teams for live matches
-        if (matchStatus === 'live' && data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
+        // Determine teams data source
+        if (data.match_state?.status === 'live' && data.current_match?.teams) {
             teamsData = { ...data.current_match.teams };
             if (data.current_match?.missing_teams) {
                 data.current_match.missing_teams.forEach(team => {
@@ -185,13 +191,13 @@ async function fetchOverallTopPlayers() {
                             id: team.id,
                             name: team.name,
                             logo: team.logo || defaultLogo,
+                            players: team.players || [],
                             missing: true
                         };
                     }
                 });
             }
         } else if (data.matches?.length > 0) {
-            // Use the latest match's teams and missing teams
             const latestMatch = data.matches[data.matches.length - 1];
             teamsData = { ...(latestMatch?.teams || {}) };
             if (latestMatch?.missing_teams) {
@@ -201,20 +207,7 @@ async function fetchOverallTopPlayers() {
                             id: team.id,
                             name: team.name,
                             logo: team.logo || defaultLogo,
-                            missing: true
-                        };
-                    }
-                });
-            }
-        } else if (data.current_match?.teams && Object.keys(data.current_match.teams).length > 0) {
-            teamsData = { ...data.current_match.teams };
-            if (data.current_match?.missing_teams) {
-                data.current_match.missing_teams.forEach(team => {
-                    if (team.id && team.name) {
-                        teamsData[team.id] = {
-                            id: team.id,
-                            name: team.name,
-                            logo: team.logo || defaultLogo,
+                            players: team.players || [],
                             missing: true
                         };
                     }
@@ -222,82 +215,67 @@ async function fetchOverallTopPlayers() {
             }
         }
 
-        let rawTopPlayers = [];
-        if (data.phase?.allTimeTopPlayers && data.phase.allTimeTopPlayers.length > 0) {
-            rawTopPlayers = data.phase.allTimeTopPlayers;
-            fallbackSource = 'allTime';
-        } else if (data.current_match?.players && Object.keys(data.current_match.players).length > 0) {
-            const allPlayers = Object.values(data.current_match.players);
-            rawTopPlayers = allPlayers.map(p => ({
-                playerId: p.id,
-                name: p.name,
-                totalKills: p.stats?.kills || 0,
-                totalDamage: p.stats?.damage || 0,
-                totalKnockouts: p.stats?.knockouts || 0,
-                totalMatches: 1,
-                teamId: p.teamId,
-                teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team',
-                playerPhoto: p.photo
-            }));
-            fallbackSource = 'current';
-        } else if (data.matches?.length > 0) {
-            const latestMatch = data.matches[data.matches.length - 1];
-            if (latestMatch?.players && Object.keys(latestMatch.players).length > 0) {
-                const allPlayers = Object.values(latestMatch.players);
-                rawTopPlayers = allPlayers.map(p => ({
-                    playerId: p.id,
-                    name: p.name,
-                    totalKills: p.stats?.kills || 0,
-                    totalDamage: p.stats?.damage || 0,
-                    totalKnockouts: p.stats?.knockouts || 0,
-                    totalMatches: 1,
-                    teamId: p.teamId,
-                    teamName: findTeamByName(p.teamName || '', teamsData)?.name || p.teamName || 'Unknown Team',
-                    playerPhoto: p.photo
-                }));
-                fallbackSource = 'previous';
-            }
-        }
-
-        if (rawTopPlayers.length > 0) {
-            rawTopPlayers.sort((a, b) => {
-                if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills;
-                return b.totalDamage - a.totalDamage;
-            });
-
-            newTopPlayers = rawTopPlayers.slice(0, 5).map((player, index) => {
-                const playerData = (data.current_match?.players || (data.matches?.length > 0 ? data.matches[data.matches.length - 1].players : {}) || {})[player.playerId] || player;
-                const teamId = player.teamId || playerData.teamId;
-                
-                let team = teamId && teamsData[teamId] ? teamsData[teamId] : null;
-                
-                if (!team && player.teamName) {
-                    team = findTeamByName(player.teamName, teamsData);
-                }
-                
+        // Fetch top players, preferring phase.allTimeTopPlayers
+        if (data.phase?.allTimeTopPlayers?.length > 0) {
+            topPlayersData = data.phase.allTimeTopPlayers.map((player, index) => {
+                const playerData = (data.current_match?.players || (data.matches?.length > 0 ? data.matches[data.matches.length - 1].players : {}) || {})[player.playerId] || {};
+                const team = findTeamByPlayerId(player.playerId, teamsData) || findTeamByName(player.teamName, teamsData);
                 return {
-                    ...player,
-                    rank: index + 1,
-                    teamLogo: team?.logo || defaultLogo,
-                    playerPhoto: player.playerPhoto || playerData.photo || '/assets/PUBG.png',
+                    id: player.playerId,
                     playerName: player.name || playerData.name || 'Unknown Player',
-                    teamName: team?.name || player.teamName || 'Unknown Team'
+                    playerPhoto: player.photo || playerData.photo || defaultPhoto,
+                    teamName: team?.name || player.teamName || 'Unknown Team',
+                    teamLogo: team?.logo || defaultLogo,
+                    kills: player.totalKills || 0,
+                    damage: player.totalDamage || 0,
+                    knockouts: player.totalKnockouts || 0,
+                    matches: player.totalMatches || 0,
+                    rank: index + 1
                 };
             });
+        } else if (data.current_match?.players && Object.keys(data.current_match.players).length > 0) {
+            topPlayersData = processPlayers(data.current_match.players, teamsData);
+        } else if (data.matches?.length > 0) {
+            const latestMatch = data.matches[data.matches.length - 1];
+            if (latestMatch?.players) {
+                topPlayersData = processPlayers(latestMatch.players, teamsData);
+            }
         }
-        
+
+        updateTopPlayers(topPlayersData);
     } catch (error) {
         console.error('Error fetching overall top players:', error);
+        updateTopPlayers(currentPlayers);
     }
+}
 
-    if (newTopPlayers.length > 0) {
-        updateTopPlayers(newTopPlayers);
-    } else if (currentPlayers.length > 0) {
-        // Keep displaying the last successful data without changes
-        console.log('Using cached top players data');
-    } else {
-        updateTopPlayers([]);
-    }
+function processPlayers(playersMap, teamsMap) {
+    if (!playersMap || Object.keys(playersMap).length === 0) return [];
+    
+    const playersWithTeam = Object.values(playersMap).map(p => {
+        const team = findTeamByPlayerId(p.id, teamsMap);
+        const stats = p.stats || {};
+        return {
+            id: p.id,
+            playerName: p.name || 'Unknown Player',
+            playerPhoto: p.photo || defaultPhoto,
+            kills: stats.kills || 0,
+            damage: stats.damage || 0,
+            knockouts: stats.knockouts || 0,
+            teamLogo: team?.logo || defaultLogo,
+            teamName: team?.name || 'Unknown Team'
+        };
+    });
+
+    playersWithTeam.sort((a, b) => {
+        if (b.kills !== a.kills) return b.kills - a.kills;
+        return b.damage - a.damage;
+    });
+
+    return playersWithTeam.slice(0, 5).map((player, index) => ({
+        ...player,
+        rank: index + 1
+    }));
 }
 
 function updateTopPlayers(players) {
@@ -305,62 +283,75 @@ function updateTopPlayers(players) {
     if (!container) return;
     
     if (!players.length) {
-        if (container.children.length === 0 || !container.querySelector('p')) {
-            container.innerHTML = `<p style="color:red; text-align:center; padding: 20px;">No overall top player data available.</p>`;
-        }
+        container.innerHTML = '';
         return;
     }
 
-    const playersChanged = currentPlayers.length !== players.length || 
-        players.some((player, idx) => currentPlayers[idx]?.playerId !== player.playerId);
+    const needsRebuild = players.length !== currentPlayers.length || 
+        players.some((player, idx) => !currentPlayers[idx] || currentPlayers[idx].id !== player.id);
 
-    if (playersChanged) {
+    if (needsRebuild) {
         container.innerHTML = '';
+        playerCards.clear();
         players.forEach((player) => {
             const playerCard = document.createElement('div');
             playerCard.className = 'player-card';
-            playerCard.dataset.playerId = player.playerId;
+            playerCard.dataset.playerId = player.id;
             playerCard.innerHTML = `
                 <div class="player-rank">#${player.rank}</div>
                 <img src="${player.teamLogo}" alt="Team Logo" class="team-logo" onerror="this.src='${defaultLogo}'">
-                <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="this.src='/assets/PUBG.png'">
+                <img src="${player.playerPhoto}" alt="Player Image" class="player-image" onerror="console.error('Failed to load player image for ${player.playerName}: ${player.playerPhoto}'); this.src='${defaultPhoto}'">
                 <div class="player-name-bg">
                     <div class="player-name">${player.playerName}</div>
                     <div class="team-name">${player.teamName}</div>
                 </div>
-                <div class="elimination-count">Eliminations: ${player.totalKills || 0}</div>
-                <div class="damage-count">Damage: ${player.totalDamage || 0}</div>
-                <div class="knockout-count">Knockouts: ${player.totalKnockouts || 0}</div>
-                ${player.totalMatches ? `<div class="matches-count">Matches: ${player.totalMatches}</div>` : ''}
+                <div class="elimination-count">Eliminations: ${player.kills}</div>
+                <div class="damage-count">Damage: ${player.damage.toFixed(0)}</div>
+                <div class="knockout-count">Knockouts: ${player.knockouts}</div>
+                ${player.matches ? `<div class="matches-count">Matches: ${player.matches}</div>` : ''}
             `;
             container.appendChild(playerCard);
+            playerCards.set(player.id, playerCard);
         });
-        currentPlayers = players;
-    } else if (players.length > 0) {
-        // Update stats if possible
+        currentPlayers = [...players];
+    } else {
         players.forEach((player, index) => {
-            const card = container.children[index];
+            const card = playerCards.get(player.id);
             if (!card) return;
-            
-            const elimCount = card.querySelector('.elimination-count');
+
+            const rank = card.querySelector('.player-rank');
+            const eliminationCount = card.querySelector('.elimination-count');
             const damageCount = card.querySelector('.damage-count');
             const knockoutCount = card.querySelector('.knockout-count');
-            
-            const newElimText = `Eliminations: ${player.totalKills || 0}`;
-            const newDamageText = `Damage: ${player.totalDamage || 0}`;
-            const newKnockoutText = `Knockouts: ${player.totalKnockouts || 0}`;
-            
-            if (elimCount && elimCount.textContent !== newElimText) {
-                elimCount.textContent = newElimText;
+            const playerName = card.querySelector('.player-name');
+            const teamName = card.querySelector('.team-name');
+            const teamLogo = card.querySelector('.team-logo');
+            const playerPhoto = card.querySelector('.player-image');
+
+            if (rank) rank.textContent = `#${player.rank}`;
+            if (eliminationCount && eliminationCount.textContent !== `Eliminations: ${player.kills}`) {
+                eliminationCount.textContent = `Eliminations: ${player.kills}`;
             }
-            if (damageCount && damageCount.textContent !== newDamageText) {
-                damageCount.textContent = newDamageText;
+            if (damageCount && damageCount.textContent !== `Damage: ${player.damage.toFixed(0)}`) {
+                damageCount.textContent = `Damage: ${player.damage.toFixed(0)}`;
             }
-            if (knockoutCount && knockoutCount.textContent !== newKnockoutText) {
-                knockoutCount.textContent = newKnockoutText;
+            if (knockoutCount && knockoutCount.textContent !== `Knockouts: ${player.knockouts}`) {
+                knockoutCount.textContent = `Knockouts: ${player.knockouts}`;
+            }
+            if (playerName && playerName.textContent !== player.playerName) {
+                playerName.textContent = player.playerName;
+            }
+            if (teamName && teamName.textContent !== player.teamName) {
+                teamName.textContent = player.teamName;
+            }
+            if (teamLogo && teamLogo.src !== player.teamLogo) {
+                teamLogo.src = player.teamLogo;
+            }
+            if (playerPhoto && playerPhoto.src !== player.playerPhoto) {
+                playerPhoto.src = player.playerPhoto;
             }
         });
-        currentPlayers = players;
+        currentPlayers = [...players];
     }
 }
 
