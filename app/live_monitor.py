@@ -740,6 +740,164 @@ def _upsert_player_from_total(p):
                              player["live"]["health"], player["live"]["healthMax"])
     _recompute_team_kills(tid)
 
+
+def _validate_and_correct_team_ranks(final_match_data):
+    """
+    Validate team rankings against player rank data from logs.
+    If discrepancies are found, reorganize rankings to match log file ranks.
+    Returns corrected final_match_data with accurate placement points.
+    """
+    logging.info(f"Validating team ranks for match {final_match_data.get('id')}")
+    
+    # Step 1: Extract team ranks from player data (use most common rank per team)
+    team_ranks_from_players = {}
+    for pid, player in final_match_data.get("players", {}).items():
+        team_id = player.get("teamId")
+        player_rank = player.get("rank", 0)
+        
+        if team_id and player_rank > 0:
+            if team_id not in team_ranks_from_players:
+                team_ranks_from_players[team_id] = []
+            team_ranks_from_players[team_id].append(player_rank)
+    
+    # Get the most common rank for each team (should be consistent)
+    team_log_ranks = {}
+    for team_id, ranks in team_ranks_from_players.items():
+        if ranks:
+            # Use the most common rank (mode)
+            from collections import Counter
+            most_common_rank = Counter(ranks).most_common(1)[0][0]
+            team_log_ranks[team_id] = most_common_rank
+            team_name = final_match_data["teams"][team_id].get("name", "Unknown")
+            logging.debug(f"Team {team_name} (ID: {team_id}) - Log rank: {most_common_rank} (from player ranks: {ranks})")
+    
+    # Step 2: Calculate ranks from elimination order (our current method)
+    elimination_order = final_match_data.get("eliminationOrder", [])
+    winner_name = final_match_data.get("winnerTeamName")
+    
+    script_rank_map = {}
+    # Eliminated teams get ranks based on reverse elimination order
+    for i, team_name in enumerate(reversed(elimination_order)):
+        script_rank_map[team_name] = i + 2  # Start from rank 2
+    # Winner gets rank 1
+    if winner_name:
+        script_rank_map[winner_name] = 1
+    
+    # Step 3: Compare script ranks vs log ranks
+    discrepancies = []
+    team_name_to_id = {team["name"]: tid for tid, team in final_match_data["teams"].items()}
+    
+    for team_name, script_rank in script_rank_map.items():
+        team_id = team_name_to_id.get(team_name)
+        if team_id and team_id in team_log_ranks:
+            log_rank = team_log_ranks[team_id]
+            if script_rank != log_rank:
+                discrepancies.append({
+                    "team_name": team_name,
+                    "team_id": team_id,
+                    "script_rank": script_rank,
+                    "log_rank": log_rank
+                })
+                logging.warning(
+                    f"Rank mismatch for {team_name}: Script={script_rank}, Log={log_rank}"
+                )
+    
+    # Step 4: If discrepancies found, use log ranks as source of truth
+    if discrepancies:
+        logging.info(f"Found {len(discrepancies)} rank discrepancies. Correcting ranks based on log data...")
+        
+        # Build corrected rank map from log data
+        corrected_rank_map = {}
+        for team_id, log_rank in team_log_ranks.items():
+            team_name = final_match_data["teams"][team_id].get("name")
+            if team_name:
+                corrected_rank_map[team_name] = log_rank
+        
+        # Update winner if log says someone else won
+        log_winner_team_id = None
+        for team_id, rank in team_log_ranks.items():
+            if rank == 1:
+                log_winner_team_id = team_id
+                break
+        
+        if log_winner_team_id:
+            log_winner_name = final_match_data["teams"][log_winner_team_id].get("name")
+            if log_winner_name != winner_name:
+                logging.info(f"Correcting winner: {winner_name} -> {log_winner_name}")
+                final_match_data["winnerTeamName"] = log_winner_name
+                final_match_data["winnerTeamId"] = log_winner_team_id
+        
+        # Rebuild elimination order based on log ranks (sorted by rank descending)
+        teams_by_log_rank = sorted(
+            [(team_name, rank) for team_name, rank in corrected_rank_map.items()],
+            key=lambda x: x[1],
+            reverse=True
+        )
+        
+        # Elimination order should exclude the winner (rank 1)
+        new_elimination_order = [
+            team_name for team_name, rank in teams_by_log_rank if rank > 1
+        ]
+        
+        if new_elimination_order != elimination_order:
+            logging.info(f"Correcting elimination order based on log ranks")
+            logging.debug(f"Old order: {elimination_order}")
+            logging.debug(f"New order: {new_elimination_order}")
+            final_match_data["eliminationOrder"] = new_elimination_order
+        
+        # Use corrected ranks for placement points
+        rank_map_to_use = corrected_rank_map
+    else:
+        logging.info("All team ranks match log data. No corrections needed.")
+        rank_map_to_use = script_rank_map
+    
+    # Step 5: Apply placement points based on validated/corrected ranks
+    placement_points_map = {1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1}
+    
+    for tid, team in final_match_data.get("teams", {}).items():
+        team_name = team.get("name", "Unknown Team")
+        rank = rank_map_to_use.get(team_name, len(final_match_data["teams"]))
+        placement_points = placement_points_map.get(rank, 0)
+        
+        old_points = team.get("placementPointsLive", 0)
+        if old_points != placement_points:
+            logging.info(
+                f"Correcting placement points for {team_name}: "
+                f"{old_points} -> {placement_points} (rank: {rank})"
+            )
+        
+        final_match_data["teams"][tid]["placementPointsLive"] = placement_points
+        logging.debug(f"Set {team_name} rank={rank}, placementPoints={placement_points}")
+    
+    return final_match_data
+
+
+def _extract_final_snapshot_player_ranks(snap_text):
+    """
+    Extract player rank data from the final snapshot of a match.
+    Returns dict of {team_id: [player_ranks]}
+    """
+    team_ranks = {}
+    parts = OBJ_BLOCKS.split(snap_text)
+    
+    for i, marker in enumerate(parts):
+        if marker == "TotalPlayerList:" and i + 1 < len(parts):
+            for obj_txt in re.findall(r'\{[^{}]*\}', parts[i+1]):
+                p = _parse_kv_object(obj_txt)
+                tid = str(p.get("teamId") or "")
+                rank = p.get("rank")
+                
+                # Validate rank
+                try:
+                    rank = int(rank) if rank is not None else 0
+                except (ValueError, TypeError):
+                    rank = 0
+                
+                if tid and tid != "None" and rank > 0:
+                    team_ranks.setdefault(tid, []).append(rank)
+    
+    return team_ranks
+
 def _recompute_team_kills(tid):
     team = state["current_match"]["teams"].get(tid)
     if not team:
@@ -896,7 +1054,12 @@ def end_match_and_update_phase(final_match_data=None):
             final_match_data["missing_teams"] = missing
             logging.debug(f"Match {match_id}: Added {len(missing)} missing teams")
 
+        # *** NEW: Validate and correct team ranks based on player data ***
+        final_match_data = _validate_and_correct_team_ranks(final_match_data)
+
         # --- Calculate and assign placementPointsLive per team ---
+        # NOTE: This section is now handled by _validate_and_correct_team_ranks
+        # but keeping this as fallback for teams without player data
         elimination_order = final_match_data.get("eliminationOrder", [])
         total_teams = len(final_match_data.get("teams", {}))
         rank_map = {t: i + 2 for i, t in enumerate(reversed(elimination_order))}
@@ -906,12 +1069,14 @@ def end_match_and_update_phase(final_match_data=None):
 
         placement_points_map = {1: 10, 2: 6, 3: 5, 4: 4, 5: 3, 6: 2, 7: 1, 8: 1}
 
+        # Only apply fallback placement points if not already set by validation
         for tid, team in final_match_data.get("teams", {}).items():
-            team_name = team.get("name", "Unknown Team")
-            rank = rank_map.get(team_name, total_teams)
-            placement_points = placement_points_map.get(rank, 0)
-            final_match_data["teams"][tid]["placementPointsLive"] = placement_points
-            logging.debug(f"Set {team_name} placementPointsLive={placement_points} (rank={rank})")
+            if "placementPointsLive" not in team or team["placementPointsLive"] is None:
+                team_name = team.get("name", "Unknown Team")
+                rank = rank_map.get(team_name, total_teams)
+                placement_points = placement_points_map.get(rank, 0)
+                final_match_data["teams"][tid]["placementPointsLive"] = placement_points
+                logging.debug(f"Fallback: Set {team_name} placementPointsLive={placement_points} (rank={rank})")
 
         # --- Update all-time players only if this match was not already processed ---
         if not already_processed:
@@ -963,9 +1128,6 @@ def end_match_and_update_phase(final_match_data=None):
         # --- Rebuild phase from canonical matches list so we never double-count ---
         rebuild_phase_from_matches()
 
-        # Force export JSON
-        # _export_json()
-
         # Reset current match state (keeps matches list intact)
         _reset_current_match()
         state["match_state"]["status"] = "idle"
@@ -973,7 +1135,6 @@ def end_match_and_update_phase(final_match_data=None):
         logging.info(f"Match {match_id} finalized and current match reset")
         
         _export_json()
-
 
     except Exception as e:
         logging.error(f"Error finalizing match {match_id}: {e}")
