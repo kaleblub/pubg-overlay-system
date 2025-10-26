@@ -18,26 +18,24 @@
         }
 
         #elim-popup {
-            display: none;
+            display: none; /* No !important to allow JS override */
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%); /* Center the popup */
+            transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
             border-radius: 10px;
             z-index: 1000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.5s ease-in-out;
-            display: flex;
+            opacity: 1; /* Ensure visible */
             flex-direction: row;
             align-items: stretch;
-            width: 600px; /* Fixed width for consistency */
-            height: 150px; /* Fixed height for logo and text */
-        }
-
-        #elim-popup.show {
-            display: flex;
+            min-width: 400px; /* Minimum width */
+            width: auto; /* Grow with content */
+            max-width: 800px; /* Prevent excessive width */
+            min-height: 120px; /* Minimum height */
+            height: auto; /* Grow with content */
+            padding: 10px; /* Add padding for content */
         }
 
         .column {
@@ -49,19 +47,22 @@
         }
 
         .left-column {
-            width: 30%;
+            width: 100px; /* Fixed width for logo */
             position: relative;
             border-right: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: var(--main-color, #ffffff);
         }
 
         .center-column {
-            width: 40%;
+            flex: 1; /* Grow to fit team name */
             text-align: center;
             border-right: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: var(--accent-color, #333333);
+            min-width: 150px; /* Ensure enough space for text */
         }
 
         .right-column {
-            width: 30%;
+            width: 100px; /* Fixed width for kills */
         }
 
         #elim-placement {
@@ -70,7 +71,7 @@
             left: 5px;
             font-size: 1.2em;
             font-weight: 700;
-            color: var(--main-color);
+            color: var(--main-color, #ffffff);
             background: rgba(0, 0, 0, 0.7);
             padding: 2px 8px;
             border-radius: 5px;
@@ -78,34 +79,39 @@
 
         #elim-logo {
             width: 100%;
-            height: 80%;
+            height: 80px; /* Fixed height for logo */
             object-fit: contain;
-            margin-top: 20px; /* Space for placement */
+            margin-top: 20px;
         }
 
         #elim-name {
-            font-size: 1.5em;
+            font-size: 1.8em; /* Adjusted for wrapping */
             font-weight: 700;
             text-transform: uppercase;
-            color: var(--main-color);
+            color: rgba(0, 0, 0, 0.8);
             margin-bottom: 5px;
+            white-space: normal; /* Allow wrapping */
+            word-wrap: break-word; /* Ensure long words wrap */
+            max-width: 100%;
+            line-height: 1.2; /* Improve readability */
         }
 
         .elim-status {
-            font-size: 1.2em;
-            color: red;
+            font-size: 1.8em; /* Match team name size */
+            color: var(--main-color, #ffffff);
             text-transform: uppercase;
+            margin-top: 5px;
         }
 
         #elim-kills {
-            font-size: 2em;
+            font-size: 3.5em; /* Slightly smaller for balance */
             font-weight: 700;
-            color: var(--main-color);
+            color: var(--main-color, #ffffff);
             margin-bottom: 5px;
         }
 
         .kills-label {
-            font-size: 1em;
+            font-size: 1.8em; /* Match other text */
             text-transform: uppercase;
         }
 
@@ -124,15 +130,15 @@
 
     <div id="elim-popup">
         <div class="column left-column">
-            <div id="elim-placement">Xth</div>
+            <div id="elim-placement"></div>
             <img id="elim-logo" src="" alt="Team Logo">
         </div>
         <div class="column center-column">
-            <div id="elim-name">Team Name</div>
+            <div id="elim-name"></div>
             <div class="elim-status">ELIMINATED</div>
         </div>
         <div class="column right-column">
-            <div id="elim-kills">Y</div>
+            <div id="elim-kills"></div>
             <div class="kills-label">KILLS</div>
         </div>
     </div>
@@ -143,16 +149,11 @@ const defaultLogo = "/assets/default-team-logo.jpg";
 let prevElimOrder = [];
 let prevMatchId = null;
 const POPUP_DURATION = 5000; // 5 seconds
-let isFirstFetchForMatch = true;
 
-function abbreviateTeamName(name) {
-    if (!name) return 'Unknown';
-    // Split by spaces, take first letter of each word, or first 3 chars if single word
-    const words = name.split(' ');
-    if (words.length > 1) {
-        return words.map(word => word[0]).join('').toUpperCase().slice(0, 4);
-    }
-    return name.slice(0, 4).toUpperCase();
+function getOrdinal(n) {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 async function fetchData() {
@@ -173,20 +174,22 @@ async function fetchData() {
         console.log('Current Match ID:', currentMatchId);
         console.log('Current Elimination Order:', currentElimOrder);
         console.log('Teams:', teams);
+        console.log('Previous Elimination Order:', prevElimOrder);
 
         if (currentMatchId !== prevMatchId) {
             console.log(`Match ID changed from ${prevMatchId} to ${currentMatchId}. Resetting prevElimOrder.`);
             prevElimOrder = [];
-            isFirstFetchForMatch = true;
             prevMatchId = currentMatchId;
         }
 
         if (matchStatus === 'live' && currentMatchId && Object.keys(teams).length > 0) {
             const findTeamByName = (name) => {
-                return Object.values(teams).find(team => team.name.toLowerCase() === name.toLowerCase());
+                const team = Object.values(teams).find(team => team.name.trim().toLowerCase() === name.trim().toLowerCase());
+                console.log(`Looking up team: ${name}, Found:`, team);
+                return team;
             };
 
-            let eliminationsToProcess = isFirstFetchForMatch ? currentElimOrder : currentElimOrder.slice(prevElimOrder.length);
+            const eliminationsToProcess = currentElimOrder.slice(prevElimOrder.length);
             console.log('Eliminations to process:', eliminationsToProcess);
 
             if (eliminationsToProcess.length > 0) {
@@ -198,10 +201,10 @@ async function fetchData() {
                         const totalTeams = Object.keys(teams).length;
                         const elimIndex = currentElimOrder.indexOf(teamName);
                         const placement = totalTeams - elimIndex;
-                        console.log(`Showing popup for team: ${team.name}, Placement: ${placement}, Kills: ${team.kills || 0}`);
+                        console.log(`Queuing popup for team: ${team.name}, Placement: ${placement}, Kills: ${team.kills || 0}`);
 
                         showPopup({
-                            name: abbreviateTeamName(team.name),
+                            name: team.name,
                             logo: team.logo || defaultLogo,
                             placement: placement,
                             kills: team.kills || 0
@@ -211,11 +214,10 @@ async function fetchData() {
                     }
                 });
             } else {
-                console.log('No eliminations to process.');
+                console.log('No new eliminations to process.');
             }
 
             prevElimOrder = [...currentElimOrder];
-            isFirstFetchForMatch = false;
             console.log('Updated prevElimOrder:', prevElimOrder);
         } else {
             console.log('Not processing: Match not live or no valid data.', {
@@ -244,18 +246,24 @@ function showPopup(teamData) {
         logo.src = defaultLogo; 
     };
     name.textContent = teamData.name;
-    place.textContent = `${teamData.placement}th`;
+    place.textContent = getOrdinal(teamData.placement);
     kills.textContent = teamData.kills;
 
     popup.style.display = 'flex';
+    popup.style.opacity = '1';
     popup.style.animation = 'fadeIn 0.5s ease-in-out';
-    console.log('Popup displayed for team:', teamData.name);
+    console.log('Popup displayed for team:', teamData.name, 'Styles:', {
+        display: popup.style.display,
+        opacity: popup.style.opacity,
+        zIndex: popup.style.zIndex
+    });
 
     setTimeout(() => {
         console.log('Hiding popup for team:', teamData.name);
         popup.style.animation = 'fadeOut 0.5s ease-in-out';
         setTimeout(() => {
             popup.style.display = 'none';
+            popup.style.opacity = '0';
             console.log('Popup hidden');
         }, 500);
     }, POPUP_DURATION);
@@ -263,6 +271,8 @@ function showPopup(teamData) {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Overlay initialized, starting data fetch...');
+    const popup = document.getElementById('elim-popup');
+    console.log('Initial popup display style:', popup.style.display);
     fetchData();
     setInterval(fetchData, 1000);
 });
