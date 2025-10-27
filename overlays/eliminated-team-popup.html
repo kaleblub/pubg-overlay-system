@@ -18,7 +18,7 @@
         }
 
         #elim-popup {
-            display: none; /* No !important to allow JS override */
+            display: none;
             position: fixed;
             top: 50%;
             left: 50%;
@@ -27,15 +27,15 @@
             border-radius: 10px;
             z-index: 1000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-            opacity: 1; /* Ensure visible */
+            opacity: 1;
             flex-direction: row;
             align-items: stretch;
-            min-width: 400px; /* Minimum width */
-            width: auto; /* Grow with content */
-            max-width: 800px; /* Prevent excessive width */
-            min-height: 120px; /* Minimum height */
-            height: auto; /* Grow with content */
-            padding: 10px; /* Add padding for content */
+            min-width: 400px;
+            width: auto;
+            max-width: 800px;
+            min-height: 120px;
+            height: auto;
+            padding: 10px;
         }
 
         .column {
@@ -47,25 +47,25 @@
         }
 
         .left-column {
-            width: 100px; /* Fixed width for logo */
+            width: 100px;
             position: relative;
             border-right: 1px solid rgba(255, 255, 255, 0.2);
             background-color: var(--main-color, #ffffff);
         }
 
         .center-column {
-            flex: 1; /* Grow to fit team name */
+            flex: 1;
             text-align: center;
             border-right: 1px solid rgba(255, 255, 255, 0.2);
             background-color: var(--accent-color, #333333);
-            min-width: 150px; /* Ensure enough space for text */
+            min-width: 150px;
         }
 
         .right-column {
-            width: 100px; /* Fixed width for kills */
+            width: 100px;
         }
 
-        #elim-placement {
+        #elim-placement { /* <-- Correct ID from your original file */
             position: absolute;
             top: 5px;
             left: 5px;
@@ -77,41 +77,41 @@
             border-radius: 5px;
         }
 
-        #elim-logo {
+        #elim-logo { /* <-- Correct ID from your original file */
             width: 100%;
-            height: 80px; /* Fixed height for logo */
+            height: 80px;
             object-fit: contain;
             margin-top: 20px;
         }
 
-        #elim-name {
-            font-size: 1.8em; /* Adjusted for wrapping */
+        #elim-name { /* <-- Correct ID from your original file */
+            font-size: 1.8em;
             font-weight: 700;
             text-transform: uppercase;
             color: rgba(0, 0, 0, 0.8);
             margin-bottom: 5px;
-            white-space: normal; /* Allow wrapping */
-            word-wrap: break-word; /* Ensure long words wrap */
+            white-space: normal;
+            word-wrap: break-word;
             max-width: 100%;
-            line-height: 1.2; /* Improve readability */
+            line-height: 1.2;
         }
 
         .elim-status {
-            font-size: 1.8em; /* Match team name size */
+            font-size: 1.8em;
             color: var(--main-color, #ffffff);
             text-transform: uppercase;
             margin-top: 5px;
         }
 
-        #elim-kills {
-            font-size: 3.5em; /* Slightly smaller for balance */
+        #elim-kills { /* <-- Correct ID from your original file */
+            font-size: 3.5em;
             font-weight: 700;
             color: var(--main-color, #ffffff);
             margin-bottom: 5px;
         }
 
         .kills-label {
-            font-size: 1.8em; /* Match other text */
+            font-size: 1.8em;
             text-transform: uppercase;
         }
 
@@ -144,138 +144,261 @@
     </div>
     
 <script>
-const API_URL = '/api/live_data';
-const defaultLogo = "/assets/default-team-logo.jpg";
-let prevElimOrder = [];
-let prevMatchId = null;
-const POPUP_DURATION = 5000; // 5 seconds
+    // --- Configuration ---
+    // 🔥 FIX: Using root-relative path to find the file at http://localhost:5000/live_scoreboard.json
+    const API_URL = '/live_scoreboard.json'; 
+    const defaultLogo = "/assets/default-team-logo.jpg"; // Your default logo
+    const POPUP_DURATION = 6000; // 6 seconds
+    const POPUP_TRANSITION = 500; // 0.5 seconds
+    const POLLING_INTERVAL = 1000; // 1 second
 
-function getOrdinal(n) {
-    const s = ["th", "st", "nd", "rd"];
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
+    // --- Global State ---
+    let prevElimOrder = [];
+    let prevMatchId = null;
+    const popupQueue = [];
+    let isShowingPopup = false;
+    let currentPopupTimeout = null;
+    // Tracks the ID of the last match whose 2nd place team was queued
+    let lastProcessedFinishedMatchId = null;
 
-async function fetchData() {
-    try {
-        console.log('Fetching data from:', API_URL);
-        const response = await fetch(API_URL);
-        console.log('Fetch response status:', response.status);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        console.log('Received data:', JSON.stringify(data, null, 2));
+    // --- DOM Elements ---
+    let popup, logo, name, place, kills;
+
+    // --- Utility Function ---
+    function getOrdinal(n) {
+        if (typeof n !== 'number') return 'N/A';
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    /**
+     * 🔥 NEW: Specifically checks the 'matches' array for the 2nd place team
+     * of the most recently finished match.
+     */
+    function checkFinalElimination(data) {
+        const completedMatches = data.matches || [];
+        if (completedMatches.length === 0) return;
+
+        const finishedMatch = completedMatches[completedMatches.length - 1];
+
+        // Ensure match is finished and we haven't already processed it
+        if (!finishedMatch || finishedMatch.status !== 'finished' || finishedMatch.id === lastProcessedFinishedMatchId) {
+            return;
+        }
+
+        const eliminationOrder = finishedMatch.eliminationOrder;
+        
+        // 2nd place team is the last one in the eliminationOrder array
+        if (eliminationOrder && eliminationOrder.length > 0) {
+            const secondPlaceTeamName = eliminationOrder[eliminationOrder.length - 1];
+            const secondPlaceTeam = Object.values(finishedMatch.teams).find(
+                team => team.name === secondPlaceTeamName
+            );
+
+            if (secondPlaceTeam) {
+                // Check if already queued (e.g., by live elim logic)
+                const isAlreadyQueued = popupQueue.some(item => 
+                    item.name === secondPlaceTeamName && item.placement === 2
+                );
+
+                if (!isAlreadyQueued) {
+                    const popupData = {
+                        name: secondPlaceTeam.name,
+                        logo: secondPlaceTeam.logo || defaultLogo,
+                        placement: 2, // Explicitly 2nd place
+                        kills: secondPlaceTeam.kills || 0
+                    };
+                    
+                    console.log(`🔥 Final elimination queued: ${popupData.name} (2nd place from finished match ID: ${finishedMatch.id})`);
+                    popupQueue.push(popupData);
+                    lastProcessedFinishedMatchId = finishedMatch.id; // Mark as processed
+                    processPopupQueue();
+                }
+            }
+        }
+    }
+
+    /**
+     * Main data fetching and processing function, based on your original file.
+     */
+    async function fetchData() {
+        let data;
+        try {
+            const response = await fetch(API_URL);
+            if (!response.ok) {
+                console.error(`HTTP error! status: ${response.status} (URL: ${API_URL})`);
+                return;
+            }
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                console.error("CRITICAL: Failed to parse JSON. File is malformed.", jsonError);
+                return; // Stop execution for this cycle
+            }
+
+        } catch (fetchError) {
+            console.error('Network error fetching data:', fetchError);
+            return; // Stop execution for this cycle
+        }
 
         const matchStatus = data.match_state?.status || 'idle';
         const currentMatchId = data.current_match?.id || null;
         const currentElimOrder = data.current_match?.eliminationOrder || [];
         const teams = data.current_match?.teams || {};
 
-        console.log('Match Status:', matchStatus);
-        console.log('Current Match ID:', currentMatchId);
-        console.log('Current Elimination Order:', currentElimOrder);
-        console.log('Teams:', teams);
-        console.log('Previous Elimination Order:', prevElimOrder);
-
+        // ----------------------------------------
+        // 🔥 CRITICAL MATCH TRANSITION LOGIC
+        // ----------------------------------------
         if (currentMatchId !== prevMatchId) {
-            console.log(`Match ID changed from ${prevMatchId} to ${currentMatchId}. Resetting prevElimOrder.`);
-            prevElimOrder = [];
-            prevMatchId = currentMatchId;
+            
+            // CASE 1: A new match is starting (ID is new and NOT null)
+            if (currentMatchId !== null) {
+                console.log(`\n========================================\n🔥 NEW LIVE MATCH DETECTED: ${currentMatchId}\n========================================`);
+                prevElimOrder = [];
+                prevMatchId = currentMatchId;
+                
+                // Hard reset
+                if (popupQueue.length > 0) {
+                     console.log(`⚠️ Forcing queue reset and clearing ${popupQueue.length} remaining eliminations.`);
+                }
+                popupQueue.length = 0; // Clear queue
+                if (currentPopupTimeout) {
+                    clearTimeout(currentPopupTimeout);
+                    currentPopupTimeout = null;
+                }
+                isShowingPopup = false;
+                if (popup) popup.style.display = 'none';
+
+            } 
+            // CASE 2: The match just finished (ID changed from X to null)
+            else if (prevMatchId !== null) {
+                 console.log(`Match ${prevMatchId} finished (ID: null). Retaining queue to finish processing.`);
+                 // We DO NOT reset prevMatchId or the queue here.
+                 // We allow the queue to drain and for checkFinalElimination to run.
+            }
+        }
+        
+        // CASE 3: We are idle (null) and the queue is finally empty
+        if (currentMatchId === null && popupQueue.length === 0 && !isShowingPopup && prevMatchId !== null) {
+             console.log(`Queue empty after IDLE. Resetting prevMatchId from ${prevMatchId} to null.`);
+             prevMatchId = null;
+             prevElimOrder = [];
         }
 
-        if (matchStatus === 'live' && currentMatchId && Object.keys(teams).length > 0) {
+        // Process live eliminations (from your original file's logic)
+        if (Object.keys(teams).length > 0 && currentElimOrder.length > prevElimOrder.length) {
             const findTeamByName = (name) => {
-                const team = Object.values(teams).find(team => team.name.trim().toLowerCase() === name.trim().toLowerCase());
-                console.log(`Looking up team: ${name}, Found:`, team);
-                return team;
+                return Object.values(teams).find(team => 
+                    team.name.trim().toLowerCase() === name.trim().toLowerCase()
+                );
             };
 
             const eliminationsToProcess = currentElimOrder.slice(prevElimOrder.length);
-            console.log('Eliminations to process:', eliminationsToProcess);
-
+            
             if (eliminationsToProcess.length > 0) {
-                eliminationsToProcess.forEach((teamName, index) => {
-                    console.log('Processing elimination for team:', teamName);
+                console.log(`🔥 ${eliminationsToProcess.length} NEW LIVE ELIMINATION(S):`, eliminationsToProcess);
+                
+                eliminationsToProcess.forEach((teamName) => {
                     const team = findTeamByName(teamName);
 
                     if (team) {
                         const totalTeams = Object.keys(teams).length;
                         const elimIndex = currentElimOrder.indexOf(teamName);
                         const placement = totalTeams - elimIndex;
-                        console.log(`Queuing popup for team: ${team.name}, Placement: ${placement}, Kills: ${team.kills || 0}`);
-
-                        showPopup({
-                            name: team.name,
-                            logo: team.logo || defaultLogo,
-                            placement: placement,
-                            kills: team.kills || 0
-                        });
+                        
+                        // Don't queue 2nd place here; let checkFinalElimination handle it
+                        if (placement > 2) { 
+                            const popupData = {
+                                name: team.name,
+                                logo: team.logo || defaultLogo,
+                                placement: placement,
+                                kills: team.kills || 0
+                            };
+                            
+                            console.log(`📋 Queuing: ${team.name} - ${getOrdinal(placement)} place, ${team.kills || 0} kills`);
+                            popupQueue.push(popupData);
+                        }
                     } else {
-                        console.warn(`Team ${teamName} not found in teams object.`);
+                        console.warn(`⚠️ Team ${teamName} not found in teams object`);
                     }
                 });
-            } else {
-                console.log('No new eliminations to process.');
+
+                prevElimOrder = [...currentElimOrder];
+                if (!isShowingPopup) {
+                    processPopupQueue();
+                }
             }
-
-            prevElimOrder = [...currentElimOrder];
-            console.log('Updated prevElimOrder:', prevElimOrder);
-        } else {
-            console.log('Not processing: Match not live or no valid data.', {
-                isLive: matchStatus === 'live',
-                hasMatchId: !!currentMatchId,
-                hasTeams: Object.keys(teams).length > 0
-            });
         }
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        setTimeout(fetchData, 1000);
+
+        // Always check for the 2nd place team using the finished match data
+        checkFinalElimination(data);
     }
-}
 
-function showPopup(teamData) {
-    console.log('Showing popup with data:', teamData);
-    const popup = document.getElementById('elim-popup');
-    const logo = document.getElementById('elim-logo');
-    const name = document.getElementById('elim-name');
-    const place = document.getElementById('elim-placement');
-    const kills = document.getElementById('elim-kills');
+    function processPopupQueue() {
+        if (isShowingPopup || popupQueue.length === 0) {
+            return;
+        }
+        if (!logo || !name || !place || !kills) {
+            console.error("Popup elements are missing. Halting queue processing.");
+            return; 
+        }
 
-    logo.src = teamData.logo;
-    logo.onerror = () => { 
-        console.warn(`Failed to load logo: ${teamData.logo}, using default: ${defaultLogo}`);
-        logo.src = defaultLogo; 
-    };
-    name.textContent = teamData.name;
-    place.textContent = getOrdinal(teamData.placement);
-    kills.textContent = teamData.kills;
+        isShowingPopup = true;
+        const teamData = popupQueue.shift();
+        console.log(`▶️ Showing popup (${popupQueue.length} remaining in queue):`, teamData.name);
+        
+        logo.src = teamData.logo;
+        logo.onerror = () => { 
+            console.warn(`Failed to load logo: ${teamData.logo}`);
+            logo.src = defaultLogo; 
+        };
+        name.textContent = teamData.name;
+        place.textContent = getOrdinal(teamData.placement);
+        kills.textContent = teamData.kills;
 
-    popup.style.display = 'flex';
-    popup.style.opacity = '1';
-    popup.style.animation = 'fadeIn 0.5s ease-in-out';
-    console.log('Popup displayed for team:', teamData.name, 'Styles:', {
-        display: popup.style.display,
-        opacity: popup.style.opacity,
-        zIndex: popup.style.zIndex
+        popup.style.display = 'flex';
+        popup.style.opacity = '1';
+        popup.style.animation = 'fadeIn 0.5s ease-in-out';
+
+        currentPopupTimeout = setTimeout(() => {
+            console.log(`⏱️ Hiding popup: ${teamData.name}`);
+            popup.style.animation = 'fadeOut 0.5s ease-in-out';
+            
+            setTimeout(() => {
+                popup.style.display = 'none';
+                popup.style.opacity = '0';
+                isShowingPopup = false;
+                currentPopupTimeout = null;
+                
+                console.log(`✓ Popup hidden. Queue has ${popupQueue.length} items remaining`);
+                
+                if (popupQueue.length > 0) {
+                    console.log('Processing next item in queue...');
+                    processPopupQueue();
+                }
+            }, POPUP_TRANSITION);
+        }, POPUP_DURATION);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize DOM elements using your original file's IDs
+        popup = document.getElementById('elim-popup');
+        logo = document.getElementById('elim-logo');
+        name = document.getElementById('elim-name');
+        place = document.getElementById('elim-placement');
+        kills = document.getElementById('elim-kills');
+
+        // Safety check for the critical elements
+        if (!popup || !logo || !name || !place || !kills) {
+            console.error("FATAL ERROR: One or more critical DOM elements could not be found. Please ensure your HTML contains elements with IDs: 'elim-popup', 'elim-logo', 'elim-name', 'elim-placement', and 'elim-kills'.");
+            return;
+        }
+        
+        console.log('🎮 Overlay script loaded. Starting polling...');
+        fetchData(); // Initial fetch
+        setInterval(fetchData, POLLING_INTERVAL);
     });
-
-    setTimeout(() => {
-        console.log('Hiding popup for team:', teamData.name);
-        popup.style.animation = 'fadeOut 0.5s ease-in-out';
-        setTimeout(() => {
-            popup.style.display = 'none';
-            popup.style.opacity = '0';
-            console.log('Popup hidden');
-        }, 500);
-    }, POPUP_DURATION);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Overlay initialized, starting data fetch...');
-    const popup = document.getElementById('elim-popup');
-    console.log('Initial popup display style:', popup.style.display);
-    fetchData();
-    setInterval(fetchData, 1000);
-});
 </script>
 
 </body>
