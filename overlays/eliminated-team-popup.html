@@ -18,24 +18,29 @@
         }
 
         #elim-popup {
-            display: none;
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -45%);
+            opacity: 0;
+            display: none;
             background: rgba(0, 0, 0, 0.8);
             border-radius: 10px;
             z-index: 1000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-            opacity: 1;
             flex-direction: row;
             align-items: stretch;
             min-width: 400px;
-            width: auto;
             max-width: 800px;
             min-height: 120px;
-            height: auto;
             padding: 10px;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        #elim-popup.show {
+            display: flex;
+            opacity: 1;
+            transform: translate(-50%, -50%);
         }
 
         .column {
@@ -115,7 +120,7 @@
             text-transform: uppercase;
         }
 
-        @keyframes fadeIn {
+        /* @keyframes fadeIn {
             from { opacity: 0; transform: translate(-50%, -40%); }
             to { opacity: 1; transform: translate(-50%, -50%); }
         }
@@ -123,7 +128,7 @@
         @keyframes fadeOut {
             from { opacity: 1; transform: translate(-50%, -50%); }
             to { opacity: 0; transform: translate(-50%, -40%); }
-        }
+        } */
     </style>
 </head>
 <body>
@@ -335,51 +340,36 @@
         checkFinalElimination(data);
     }
 
-    function processPopupQueue() {
-        if (isShowingPopup || popupQueue.length === 0) {
-            return;
-        }
-        if (!logo || !name || !place || !kills) {
-            console.error("Popup elements are missing. Halting queue processing.");
-            return; 
-        }
+function processPopupQueue() {
+    if (isShowingPopup || popupQueue.length === 0) return;
+    if (!logo || !name || !place || !kills) return;
 
-        isShowingPopup = true;
-        const teamData = popupQueue.shift();
-        console.log(`▶️ Showing popup (${popupQueue.length} remaining in queue):`, teamData.name);
-        
-        logo.src = teamData.logo;
-        logo.onerror = () => { 
-            console.warn(`Failed to load logo: ${teamData.logo}`);
-            logo.src = defaultLogo; 
-        };
-        name.textContent = teamData.name;
-        place.textContent = getOrdinal(teamData.placement);
-        kills.textContent = teamData.kills;
+    isShowingPopup = true;
+    const teamData = popupQueue.shift();
 
-        popup.style.display = 'flex';
-        popup.style.opacity = '1';
-        popup.style.animation = 'fadeIn 0.5s ease-in-out';
+    logo.src = teamData.logo;
+    logo.onerror = () => (logo.src = defaultLogo);
+    name.textContent = teamData.name;
+    place.textContent = getOrdinal(teamData.placement);
+    kills.textContent = teamData.kills;
 
-        currentPopupTimeout = setTimeout(() => {
-            console.log(`⏱️ Hiding popup: ${teamData.name}`);
-            popup.style.animation = 'fadeOut 0.5s ease-in-out';
-            
-            setTimeout(() => {
-                popup.style.display = 'none';
-                popup.style.opacity = '0';
-                isShowingPopup = false;
-                currentPopupTimeout = null;
-                
-                console.log(`✓ Popup hidden. Queue has ${popupQueue.length} items remaining`);
-                
-                if (popupQueue.length > 0) {
-                    console.log('Processing next item in queue...');
-                    processPopupQueue();
-                }
-            }, POPUP_TRANSITION);
-        }, POPUP_DURATION);
-    }
+    // --- Fade In ---
+    popup.style.display = 'flex';
+    requestAnimationFrame(() => popup.classList.add('show'));
+
+    // --- Wait, then Fade Out ---
+    currentPopupTimeout = setTimeout(() => {
+        popup.classList.remove('show');
+
+        // Wait for fade-out animation to finish before hiding it
+        setTimeout(() => {
+            popup.style.display = 'none';
+            isShowingPopup = false;
+            currentPopupTimeout = null;
+            if (popupQueue.length > 0) processPopupQueue();
+        }, POPUP_TRANSITION);
+    }, POPUP_DURATION);
+}
 
     document.addEventListener('DOMContentLoaded', () => {
         // Initialize DOM elements using your original file's IDs
